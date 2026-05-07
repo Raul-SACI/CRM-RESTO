@@ -37,31 +37,51 @@ export function Admin() {
     fetchData();
   }, [activeTab]);
 
-  const fetchData = async () => {
-    setLoading(true);
+  const fetchData = async (forceRefresh = false) => {
+    // 1. Cargar desde caché primero para respuesta instantánea
+    const cacheKey = `admin_cache_${activeTab}`;
+    const cached = localStorage.getItem(cacheKey);
+    if (cached && !forceRefresh) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (activeTab === 'clients') setClients(parsed);
+        else if (activeTab === 'prizes') setPrizes(parsed);
+        else if (activeTab === 'staff') setStaff(parsed);
+        else if (activeTab === 'history') setAllTransactions(parsed);
+        setLoading(false);
+      } catch (e) {
+        console.error("Cache parse error:", e);
+      }
+    } else {
+      setLoading(true);
+    }
     
-    // Timeout de seguridad para no bloquear la UI si Supabase demora
+    // Timeout de seguridad
     const fetchTimeout = setTimeout(() => {
       setLoading(false);
     }, 8000);
 
     try {
+      let result: any = null;
       if (activeTab === 'clients') {
-        const { data, error } = await supabase.from('profiles').select('*').eq('role', 'client').order('points', { ascending: false });
-        if (error) throw error;
-        if (data) setClients(data);
+        result = await supabase.from('profiles').select('*').eq('role', 'client').order('points', { ascending: false });
       } else if (activeTab === 'prizes') {
-        const { data, error } = await supabase.from('catalogo_premios').select('*').order('points_cost', { ascending: true });
-        if (error) throw error;
-        if (data) setPrizes(data);
+        result = await supabase.from('catalogo_premios').select('*').order('points_cost', { ascending: true });
       } else if (activeTab === 'staff') {
-        const { data, error } = await supabase.from('profiles').select('*').in('role', ['waiter', 'admin']).order('role', { ascending: false });
-        if (error) throw error;
-        if (data) setStaff(data);
+        result = await supabase.from('profiles').select('*').in('role', ['waiter', 'admin']).order('role', { ascending: false });
       } else if (activeTab === 'history') {
-        const { data, error } = await supabase.from('transactions').select('*, profiles(full_name)').order('created_at', { ascending: false }).limit(50);
-        if (error) throw error;
-        if (data) setAllTransactions(data);
+        result = await supabase.from('transactions').select('*, profiles(full_name)').order('created_at', { ascending: false }).limit(50);
+      }
+
+      if (result?.error) throw result.error;
+      if (result?.data) {
+        if (activeTab === 'clients') setClients(result.data);
+        else if (activeTab === 'prizes') setPrizes(result.data);
+        else if (activeTab === 'staff') setStaff(result.data);
+        else if (activeTab === 'history') setAllTransactions(result.data);
+        
+        // Guardar en caché
+        localStorage.setItem(cacheKey, JSON.stringify(result.data));
       }
     } catch (e: any) {
       console.error("Fetch error in Admin:", e);

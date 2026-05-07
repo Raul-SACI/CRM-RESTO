@@ -124,47 +124,51 @@ export default function App() {
       created_at: new Date().toISOString()
     };
 
-    // Actualizar inmediatamente con fallback si no hay perfil para no bloquear
-    setProfile(prev => prev || emergencyProfile);
+    // 1. Intentar cargar desde caché local para velocidad instantánea
+    const cached = localStorage.getItem(`profile_${userId}`);
+    if (cached) {
+      try {
+        setProfile(JSON.parse(cached));
+      } catch (e) {
+        setProfile(emergencyProfile);
+      }
+    } else {
+      setProfile(prev => prev || emergencyProfile);
+    }
+    
+    setLoading(false);
 
     try {
-      // Intentar obtener el perfil existente
-      let { data, error } = await supabase
+      const profilePromise = supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .maybeSingle();
+
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout')), 5000)
+      );
+
+      const result: any = await Promise.race([profilePromise, timeoutPromise]);
+      let { data, error } = result;
       
       if (error) {
         console.error("Supabase fetch error:", error);
-        setProfile(emergencyProfile);
-        setLoading(false);
         return;
       }
       
+      const finalProfile = data ? { ...data, role: isAdminEmail ? 'admin' : data.role } : emergencyProfile;
+      setProfile(finalProfile);
+      
+      // Guardar en caché para la próxima vez
+      localStorage.setItem(`profile_${userId}`, JSON.stringify(finalProfile));
+      
       if (!data) {
-        // No existe, intentar crear
-        const { data: created, error: createError } = await supabase
-          .from('profiles')
-          .insert(emergencyProfile)
-          .select()
-          .maybeSingle();
-        
-        if (createError) {
-          console.error("Error creating profile:", createError);
-          setProfile(emergencyProfile);
-        } else {
-          setProfile(created || emergencyProfile);
-        }
-      } else {
-        // Perfil encontrado, forzar admin si corresponde
-        setProfile({ ...data, role: isAdminEmail ? 'admin' : data.role });
+        // Si no existe, intentar crear en segundo plano
+        await supabase.from('profiles').insert(emergencyProfile);
       }
     } catch (e) {
       console.error("Profile fetch error definitive:", e);
-      setProfile(emergencyProfile);
-    } finally {
-      setLoading(false);
     }
   };
 

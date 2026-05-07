@@ -13,8 +13,21 @@ export function Layout({ children }: LayoutProps) {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate('/auth');
+    try {
+      // Intentamos cerrar sesión en Supabase
+      const { error } = await supabase.auth.signOut();
+      if (error) console.error("SignOut error:", error);
+    } catch (e) {
+      console.error("Critical SignOut error:", e);
+    } finally {
+      // Limpiamos TODO para evitar rastros de sesiones bloqueadas
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      // Forzamos redirección y recarga completa
+      window.location.href = '#/auth';
+      window.location.reload();
+    }
   };
 
   return (

@@ -19,6 +19,16 @@ export function Dashboard() {
       
       let isMounted = true;
       const fetchTransactions = async () => {
+        // Cargar desde caché primero
+        const cached = localStorage.getItem(`tx_cache_${profile.id}`);
+        if (cached && isMounted) {
+          try {
+            setTransactions(JSON.parse(cached));
+          } catch (e) {
+            console.error("TX cache error:", e);
+          }
+        }
+
         const { data, error } = await supabase
           .from('transactions')
           .select('*')
@@ -26,7 +36,10 @@ export function Dashboard() {
           .order('created_at', { ascending: false })
           .limit(5);
         
-        if (isMounted && !error) setTransactions(data);
+        if (isMounted && !error && data) {
+          setTransactions(data);
+          localStorage.setItem(`tx_cache_${profile.id}`, JSON.stringify(data));
+        }
         if (isMounted) setLoading(false);
       };
 

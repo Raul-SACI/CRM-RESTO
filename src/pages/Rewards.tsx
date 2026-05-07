@@ -13,14 +13,39 @@ export function Rewards() {
 
   useEffect(() => {
     const fetchPrizes = async () => {
-      const { data, error } = await supabase
-        .from('catalogo_premios')
-        .select('*')
-        .eq('is_active', true)
-        .order('points_cost', { ascending: true });
-      
-      if (!error) setPrizes(data);
-      setLoading(false);
+      // 1. Cargar desde caché para velocidad instantánea
+      const cached = localStorage.getItem('rewards_cache');
+      if (cached) {
+        try {
+          setPrizes(JSON.parse(cached));
+          setLoading(false);
+        } catch (e) {
+          console.error("Rewards cache error:", e);
+        }
+      }
+
+      // Timeout de seguridad de 6s
+      const timeout = setTimeout(() => {
+        setLoading(false);
+      }, 6000);
+
+      try {
+        const { data, error } = await supabase
+          .from('catalogo_premios')
+          .select('*')
+          .eq('is_active', true)
+          .order('points_cost', { ascending: true });
+        
+        if (!error && data) {
+          setPrizes(data);
+          localStorage.setItem('rewards_cache', JSON.stringify(data));
+        }
+      } catch (err) {
+        console.error("Rewards fetch error:", err);
+      } finally {
+        clearTimeout(timeout);
+        setLoading(false);
+      }
     };
 
     fetchPrizes();
