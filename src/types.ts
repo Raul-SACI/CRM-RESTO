@@ -1,0 +1,29 @@
+export interface Profile {
+  id: string;
+  dni: string;
+  full_name: string;
+  email: string;
+  birth_date: string;
+  points: number;
+  role: 'client' | 'waiter' | 'admin';
+  created_at: string;
+}
+
+export interface Transaction {
+  id: string;
+  client_id: string;
+  waiter_id: string;
+  amount: number;
+  points_earned: number;
+  description: string;
+  created_at: string;
+}
+
+export interface Prize {
+  id: string;
+  title: string;
+  description: string;
+  points_cost: number;
+  image_url: string;
+  is_active: boolean;
+}
