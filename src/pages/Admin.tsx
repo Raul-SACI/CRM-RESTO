@@ -61,8 +61,12 @@ export function Admin() {
 
   const handleCreatePrize = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("Intentando crear premio:", newPrize);
     const { error } = await supabase.from('catalogo_premios').insert([newPrize]);
-    if (!error) {
+    if (error) {
+      console.error("Error creando premio:", error);
+      alert(`Error al crear premio: ${error.message}`);
+    } else {
       setNewPrize({ title: '', description: '', points_cost: 0, image_url: '' });
       fetchData();
       alert('Premio creado con éxito');
@@ -71,8 +75,14 @@ export function Admin() {
 
   const handleDeletePrize = async (id: string) => {
     if (confirm('¿Eliminar este premio?')) {
-      await supabase.from('catalogo_premios').delete().eq('id', id);
-      fetchData();
+      console.log("Intentando eliminar premio ID:", id);
+      const { error } = await supabase.from('catalogo_premios').delete().eq('id', id);
+      if (error) {
+        console.error("Error eliminando premio:", error);
+        alert(`Error al eliminar: ${error.message}`);
+      } else {
+        fetchData();
+      }
     }
   };
 
@@ -209,6 +219,12 @@ export function Admin() {
                 </form>
               </div>
               <div className="md:col-span-2 space-y-4">
+                {prizes.length === 0 && (
+                  <div className="bg-ash p-12 rounded-3xl border border-dashed border-white/10 text-center">
+                    <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">No hay premios cargados</p>
+                    <p className="text-[10px] text-slate-600 max-w-xs mx-auto">Si no puedes agregar, asegúrate de haber ejecutado el SQL de permisos en la consola de Supabase.</p>
+                  </div>
+                )}
                 {prizes.map(prize => (
                   <div key={prize.id} className="bg-ash p-4 rounded-2xl border border-white/5 flex items-center gap-4 group transition-all">
                     <img src={prize.image_url} className="w-16 h-16 rounded-xl object-cover shrink-0" />
