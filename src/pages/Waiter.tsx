@@ -74,33 +74,30 @@ export function Waiter() {
     setStatus(null);
     
     try {
-      // Intentamos buscar por DNI exacto o ID de Supabase
-      // Simplificamos la query eliminando comillas que pueden causar errores en el parseo
+      // Intentamos buscar por DNI o ID de Supabase
+      // Usamos el filtro de forma más robusta
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .or(`dni.eq.${searchDni},id.eq.${searchDni}`)
+        .or(`dni.eq."${searchDni}",id.eq."${searchDni}"`)
         .maybeSingle();
       
       if (error) {
-        console.error("Supabase error:", error);
+        console.error("Supabase search error:", error);
         throw error;
       }
       
       if (data) {
         setClient(data);
-      } else {
-        // Solo mostramos error si el usuario terminó de escribir o es una búsqueda manual
-        if (dniToSearch || (dni && dni.length >= 7)) {
-          setStatus({ type: 'error', message: 'Cliente no registrado' });
-        }
+        setStatus(null);
+      } else if (dniToSearch || (dni && dni.length >= 7)) {
+        setStatus({ type: 'error', message: 'Cliente no registrado' });
       }
     } catch (err: any) {
       console.error("Search error trace:", err);
-      // Mostramos un mensaje más descriptivo del error para ayudar al usuario
       setStatus({ 
         type: 'error', 
-        message: err.message?.includes('JWT') ? 'Sesión expirada' : 'Error al buscar cliente'
+        message: 'Error al buscar cliente. Verifica la conexión.'
       });
     } finally {
       setSearching(false);
@@ -219,14 +216,31 @@ export function Waiter() {
           
           <div className="space-y-4 md:space-y-8">
             <div className="space-y-2">
-              <div className="relative">
-                <Search className="absolute left-4 md:left-5 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                <input
-                  placeholder="DNI del cliente..."
-                  className="w-full bg-slate-100 border-none rounded-xl md:rounded-2xl py-3 md:py-5 pl-11 md:pl-14 pr-4 text-xl md:text-2xl font-black outline-none focus:ring-2 focus:ring-love transition-all text-black placeholder:text-slate-200"
-                  value={dni}
-                  onChange={(e) => setDni(e.target.value)}
-                />
+              <div className="relative flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-4 md:left-5 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                  <input
+                    placeholder="Escribir DNI..."
+                    className="w-full bg-slate-100 border-none rounded-xl md:rounded-2xl py-3 md:py-5 pl-11 md:pl-14 pr-4 text-xl md:text-2xl font-black outline-none focus:ring-2 focus:ring-love transition-all text-black placeholder:text-slate-200"
+                    value={dni}
+                    onChange={(e) => setDni(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && searchClient(dni)}
+                  />
+                  {searching && (
+                    <motion.div 
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 border-2 border-love border-t-transparent rounded-full"
+                    />
+                  )}
+                </div>
+                <button 
+                  onClick={() => searchClient(dni)}
+                  disabled={searching || !dni}
+                  className="bg-love text-white px-4 md:px-6 rounded-xl md:rounded-2xl font-bold uppercase text-[10px] tracking-widest active:scale-95 transition-all disabled:opacity-50"
+                >
+                  Buscar
+                </button>
               </div>
             </div>
 

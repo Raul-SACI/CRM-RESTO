@@ -153,28 +153,41 @@ export default function App() {
     }
   };
 
+  // Escuchar cambios en la autenticación
   useEffect(() => {
     if (!isConfigured) {
       setLoading(false);
       return;
     }
 
-    // Check active session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setUser(session.user);
-        fetchProfile(session.user.id, session.user.email);
-      } else {
-        setUser(null);
-        setLoading(false);
-      }
-    }).catch(() => setLoading(false));
+    let isMounted = true;
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const initializeAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!isMounted) return;
+
+        if (session?.user) {
+          setUser(session.user);
+          await fetchProfile(session.user.id, session.user.email);
+        } else {
+          setUser(null);
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error("Auth initialization error:", error);
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    initializeAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (!isMounted) return;
+      
       if (session?.user) {
         setUser(session.user);
-        fetchProfile(session.user.id, session.user.email);
+        await fetchProfile(session.user.id, session.user.email);
       } else {
         setUser(null);
         setProfile(null);
@@ -182,7 +195,10 @@ export default function App() {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, [isConfigured]);
 
   const refreshProfile = async () => {
