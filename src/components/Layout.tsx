@@ -30,16 +30,22 @@ export function Layout({ children }: LayoutProps) {
         
         <nav className="flex items-center gap-2 md:gap-4">
           <NavLink to="/" className={({ isActive }) => `px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-tighter transition-all ${isActive ? 'bg-love text-ivory' : 'bg-black/30 border border-white/10 text-ivory/60 hover:text-ivory'}`}>
-            <span className="md:inline">Dashboard</span>
+            <span className="md:inline">Inicio</span>
           </NavLink>
           
           <NavLink to="/rewards" className={({ isActive }) => `px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-tighter transition-all ${isActive ? 'bg-love text-ivory' : 'bg-black/30 border border-white/10 text-ivory/60 hover:text-ivory'}`}>
             <span className="md:inline">Premios</span>
           </NavLink>
 
-          {profile?.role === 'waiter' && (
+          {(profile?.role === 'waiter' || profile?.role === 'admin') && (
             <NavLink to="/waiter" className={({ isActive }) => `px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-tighter transition-all ${isActive ? 'bg-love text-ivory' : 'bg-black/30 border border-white/10 text-ivory/60 hover:text-ivory'}`}>
-              <span className="md:inline">Waiter Mode</span>
+              <span className="md:inline">Atención</span>
+            </NavLink>
+          )}
+
+          {profile?.role === 'admin' && (
+            <NavLink to="/admin" className={({ isActive }) => `px-4 py-2 rounded-full text-[10px] font-bold uppercase tracking-tighter transition-all ${isActive ? 'bg-love text-ivory' : 'bg-black/30 border border-white/10 text-ivory/60 hover:text-ivory'}`}>
+              <span className="md:inline">Panel Admin</span>
             </NavLink>
           )}
           

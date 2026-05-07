@@ -10,6 +10,7 @@ import { Profile } from '@/src/types';
 import { Auth } from '@/src/pages/Auth';
 import { Dashboard } from '@/src/pages/Dashboard';
 import { Waiter } from '@/src/pages/Waiter';
+import { Admin } from '@/src/pages/Admin';
 import { Rewards } from '@/src/pages/Rewards';
 import { Layout } from '@/src/components/Layout';
 import { motion, AnimatePresence } from 'motion/react';
@@ -137,7 +138,12 @@ export default function App() {
             
             <Route 
               path="/waiter" 
-              element={user && profile?.role === 'waiter' ? <Layout><Waiter /></Layout> : <Navigate to="/" />} 
+              element={user && (profile?.role === 'waiter' || profile?.role === 'admin') ? <Layout><Waiter /></Layout> : <Navigate to="/" />} 
+            />
+
+            <Route 
+              path="/admin" 
+              element={user && profile?.role === 'admin' ? <Layout><Admin /></Layout> : <Navigate to="/" />} 
             />
           </Routes>
         </AnimatePresence>
