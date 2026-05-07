@@ -52,7 +52,7 @@ function AppRoutes() {
 
   return (
     <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
+      <Routes location={location}>
         <Route 
           path="/auth" 
           element={!user ? <Auth /> : <Navigate to={from} replace />} 
@@ -109,45 +109,60 @@ export default function App() {
   const isConfigured = !!(import.meta as any).env.VITE_SUPABASE_URL && !!(import.meta as any).env.VITE_SUPABASE_ANON_KEY;
 
   const fetchProfile = async (userId: string, userEmail?: string) => {
+    const email = userEmail?.toLowerCase().trim();
+    const isAdminEmail = email === 'administrador@organizacionysistemasr.com';
+    
+    // Fail-safe inmediato para no dejar la pantalla bloqueada
+    const emergencyProfile: Profile = {
+      id: userId,
+      full_name: userEmail?.split('@')[0] || 'Usuario',
+      email: userEmail || '',
+      dni: isAdminEmail ? 'ADMIN' : '',
+      birth_date: '2000-01-01',
+      role: isAdminEmail ? 'admin' : 'client',
+      points: 0,
+      created_at: new Date().toISOString()
+    };
+
+    // Actualizar inmediatamente con fallback si no hay perfil para no bloquear
+    setProfile(prev => prev || emergencyProfile);
+
     try {
-      setLoading(true);
-      const email = userEmail?.toLowerCase().trim();
-      const isAdminEmail = email === 'administrador@organizacionysistemasr.com';
-      
+      // Intentar obtener el perfil existente
       let { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
       
-      if (error && error.code === 'PGRST116') {
-        const newProfile = {
-          id: userId,
-          full_name: userEmail?.split('@')[0] || 'Usuario',
-          email: userEmail,
-          dni: isAdminEmail ? 'ADMIN' : '00000000',
-          role: isAdminEmail ? 'admin' : 'client',
-          points: 0
-        };
-        const { data: created, error: createError } = await supabase.from('profiles').insert(newProfile).select().single();
-        if (!createError) data = created;
+      if (error) {
+        console.error("Supabase fetch error:", error);
+        setProfile(emergencyProfile);
+        setLoading(false);
+        return;
       }
       
-      if (data) {
+      if (!data) {
+        // No existe, intentar crear
+        const { data: created, error: createError } = await supabase
+          .from('profiles')
+          .insert(emergencyProfile)
+          .select()
+          .maybeSingle();
+        
+        if (createError) {
+          console.error("Error creating profile:", createError);
+          setProfile(emergencyProfile);
+        } else {
+          setProfile(created || emergencyProfile);
+        }
+      } else {
+        // Perfil encontrado, forzar admin si corresponde
         setProfile({ ...data, role: isAdminEmail ? 'admin' : data.role });
-      } else if (isAdminEmail) {
-        // PERFIL DE EMERGENCIA PARA EL ADMIN (Garantiza acceso si la DB tarda)
-        setProfile({
-          id: userId,
-          full_name: 'Administrador Principal',
-          email: userEmail,
-          dni: 'ADMIN',
-          role: 'admin',
-          points: 0
-        } as any);
       }
     } catch (e) {
-      console.error("Profile fetch error:", e);
+      console.error("Profile fetch error definitive:", e);
+      setProfile(emergencyProfile);
     } finally {
       setLoading(false);
     }
@@ -179,6 +194,21 @@ export default function App() {
 
         if (session?.user) {
           setUser(session.user);
+          const email = session.user.email?.toLowerCase().trim();
+          const isAdminEmail = email === 'administrador@organizacionysistemasr.com';
+          
+          // Set immediate fallback profile to avoid blocking UI
+          setProfile({
+            id: session.user.id,
+            full_name: session.user.email?.split('@')[0] || 'Usuario',
+            email: session.user.email || '',
+            dni: isAdminEmail ? 'ADMIN' : '',
+            birth_date: '2000-01-01',
+            role: isAdminEmail ? 'admin' : 'client',
+            points: 0,
+            created_at: new Date().toISOString()
+          });
+          
           await fetchProfile(session.user.id, session.user.email);
         } else {
           setUser(null);

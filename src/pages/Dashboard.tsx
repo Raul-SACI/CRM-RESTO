@@ -59,14 +59,30 @@ export function Dashboard() {
 
   if (!profile) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-center">
+      <div className="flex flex-col items-center justify-center py-20 text-center min-h-[60vh]">
         <motion.div 
           animate={{ rotate: 360 }}
           transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
           className="w-10 h-10 border-2 border-love border-t-transparent rounded-full mb-6"
         />
         <h2 className="text-xl font-bold mb-2 uppercase tracking-tighter">Sincronizando Perfil</h2>
-        <p className="text-ivory/40 text-[10px] uppercase tracking-widest">Espera un momento...</p>
+        <p className="text-ivory/40 text-[10px] uppercase tracking-widest mb-8">Espera un momento...</p>
+        
+        <div className="flex flex-col gap-4 w-full max-w-xs">
+          <button 
+            onClick={() => window.location.reload()}
+            className="w-full bg-white/5 hover:bg-white/10 text-white py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest transition-all border border-white/5"
+          >
+            Reintentar Carga
+          </button>
+          
+          <button 
+            onClick={() => supabase.auth.signOut()}
+            className="w-full text-love/60 hover:text-love py-2 font-bold text-[10px] uppercase tracking-widest transition-all"
+          >
+            Cerrar Sesión
+          </button>
+        </div>
       </div>
     );
   }

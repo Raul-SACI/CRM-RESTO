@@ -52,39 +52,53 @@ export function Waiter() {
   }, [showScanner, searchParams]);
 
   useEffect(() => {
-    // Solo buscamos si el DNI tiene una longitud razonable
-    if (dni && dni.length >= 4) {
-      // Limpieza preventiva si el usuario pega la URL manualmente
-      let finalDni = dni;
-      if (finalDni.includes('dni=')) {
-        finalDni = finalDni.split('dni=')[1].split('&')[0];
-        setDni(finalDni);
-        return;
-      }
-      searchClient();
+    // Solo buscamos automáticamente si el DNI tiene una longitud razonable (ej. 7 o más para DNI argentino)
+    // No disparamos si tiene espacios o caracteres no válidos
+    if (dni && dni.length >= 7 && /^\d+$/.test(dni)) {
+      const timer = setTimeout(() => {
+        searchClient();
+      }, 700); // 700ms de debounce
+      return () => clearTimeout(timer);
     }
   }, [dni]);
 
   const searchClient = async (dniToSearch?: string) => {
     const searchDni = (dniToSearch || dni).trim();
-    if (!searchDni || searchDni.includes('http')) return; 
+    if (!searchDni || searchDni.length < 3) return; 
     
     setSearching(true);
     setClient(null);
     setStatus(null);
     
+    // Safety timeout to prevent UI hanging
+    const safetyTimeout = setTimeout(() => {
+      setSearching(false);
+      setStatus({ type: 'error', message: 'Tiempo de espera agotado. Reintenta.' });
+    }, 10000);
+    
     try {
-      // Intentamos buscar por DNI o ID de Supabase
-      // Usamos el filtro de forma más robusta
-      const { data, error } = await supabase
+      // 1. Buscamos por DNI exacto
+      console.log("Searching by DNI:", searchDni);
+      let { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .or(`dni.eq."${searchDni}",id.eq."${searchDni}"`)
+        .eq('dni', searchDni)
         .maybeSingle();
       
-      if (error) {
-        console.error("Supabase search error:", error);
-        throw error;
+      clearTimeout(safetyTimeout);
+      if (error) throw error;
+
+      // 2. Si no hay por DNI, probamos por ID (por si escanea el ID de Supabase)
+      if (!data) {
+        console.log("Not found by DNI, trying by ID...");
+        const { data: dataById, error: errorById } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', searchDni)
+          .maybeSingle();
+        
+        if (errorById) throw errorById;
+        data = dataById;
       }
       
       if (data) {
@@ -92,18 +106,17 @@ export function Waiter() {
         setStatus(null);
       } else {
         setClient(null);
-        if (dniToSearch || (searchDni && searchDni.length >= 7)) {
-          setStatus({ type: 'error', message: 'Cliente no registrado' });
-        }
+        setStatus({ type: 'error', message: 'Cliente no registrado en la base' });
       }
     } catch (err: any) {
-      console.error("Search error trace:", err);
+      console.error("Critical Search Error:", err);
       setClient(null);
       setStatus({ 
         type: 'error', 
-        message: 'Error de conexión. Reintenta.'
+        message: err.message || 'Error de conexión con el servidor.'
       });
     } finally {
+      clearTimeout(safetyTimeout);
       setSearching(false);
     }
   };
@@ -228,7 +241,12 @@ export function Waiter() {
                     className="w-full bg-slate-100 border-none rounded-xl md:rounded-2xl py-3 md:py-5 pl-11 md:pl-14 pr-4 text-xl md:text-2xl font-black outline-none focus:ring-2 focus:ring-love transition-all text-black placeholder:text-slate-200"
                     value={dni}
                     onChange={(e) => setDni(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && searchClient(dni)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        searchClient(dni);
+                      }
+                    }}
                   />
                   {searching && (
                     <motion.div 
@@ -283,9 +301,9 @@ export function Waiter() {
                       <span className="absolute left-4 md:left-6 top-1/2 -translate-y-1/2 text-xl md:text-2xl font-black text-slate-300">$</span>
                       <input
                         type="number"
-                        placeholder="Monto ARS"
+                        placeholder="Importe Consumido (Ej. 15000)"
                         required
-                        min="1000"
+                        min="100"
                         autoFocus
                         className="w-full bg-slate-100 border-none rounded-xl md:rounded-2xl py-4 md:py-8 pl-10 md:pl-12 pr-4 md:pr-6 text-3xl md:text-5xl font-black outline-none focus:ring-4 focus:ring-love/10 transition-all text-black text-center"
                         value={amount}
@@ -296,7 +314,7 @@ export function Waiter() {
 
                   <div className="bg-love/5 rounded-[1.5rem] md:rounded-[2rem] p-4 md:p-6 text-love border-2 border-love/10 flex justify-between items-center group">
                     <div>
-                      <p className="text-[9px] md:text-[10px] font-black uppercase tracking-widest opacity-60 mb-1">Puntos hoy</p>
+                      <p className="text-[9px] md:text-[10px] font-black uppercase tracking-widest opacity-60 mb-1">Puntos a Asignar</p>
                       <p className="text-4xl md:text-5xl font-black italic">
                         +{amount ? Math.floor(parseFloat(amount) / 1000) : 0}
                       </p>
@@ -309,7 +327,7 @@ export function Waiter() {
                     disabled={loading || !amount}
                     className="w-full bg-love text-white rounded-[1.5rem] md:rounded-[2rem] py-4 md:py-6 font-black text-[10px] md:text-xs uppercase tracking-[0.2em] md:tracking-[0.3em] shadow-xl shadow-love/20 active:scale-[0.98] transition-all disabled:opacity-20"
                   >
-                    {loading ? 'Fidelizando...' : 'confirmar y Cargar'}
+                    {loading ? 'Procesando Carga...' : 'Cargar Puntos al Cliente'}
                   </button>
                 </motion.form>
               ) : (
