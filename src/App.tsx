@@ -39,19 +39,35 @@ export default function App() {
   // Verificación de configuración
   const isConfigured = !!(import.meta as any).env.VITE_SUPABASE_URL && !!(import.meta as any).env.VITE_SUPABASE_ANON_KEY;
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (userId: string, userEmail?: string) => {
     try {
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
       
-      if (!error) {
-        setProfile(data);
+      // Si el perfil no existe, lo creamos
+      if (error && error.code === 'PGRST116') {
+        const newProfile = {
+          id: userId,
+          full_name: userEmail?.split('@')[0] || 'Admin',
+          email: userEmail,
+          dni: '00000000',
+          role: userEmail === 'administrador@organizacionysistemasr.com' ? 'admin' : 'client',
+          points: 0
+        };
+        const { data: created, error: createError } = await supabase.from('profiles').insert(newProfile).select().single();
+        if (!createError) data = created;
+      }
+      
+      if (data) {
+        // Doble verificación de seguridad para el admin
+        const finalRole = (userEmail === 'administrador@organizacionysistemasr.com') ? 'admin' : data.role;
+        setProfile({ ...data, role: finalRole });
       }
     } catch (e) {
-      console.error("Error fetching profile", e);
+      console.error("Error fetching/creating profile", e);
     }
   };
 
@@ -64,7 +80,7 @@ export default function App() {
     // Check active session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
-      if (session?.user) fetchProfile(session.user.id);
+      if (session?.user) fetchProfile(session.user.id, session.user.email);
       setLoading(false);
     }).catch(() => setLoading(false));
 
@@ -72,7 +88,7 @@ export default function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchProfile(session.user.id);
+        fetchProfile(session.user.id, session.user.email);
       } else {
         setProfile(null);
       }

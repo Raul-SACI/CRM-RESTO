@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/src/App';
-import { QRCodeSVG } from 'qrcode.react';
+import QRCode from 'react-qr-code';
 import { motion } from 'motion/react';
 import { CreditCard, Award, TrendingUp, History } from 'lucide-react';
 import { supabase } from '@/src/lib/supabase';
@@ -58,16 +58,15 @@ export function Dashboard() {
 
       {/* QR Code Card - Square Bento */}
       <div className="md:col-span-3 bg-white rounded-3xl p-6 shadow-bento flex flex-col items-center justify-center text-center order-2 md:order-2">
-        <div className="bg-white p-2 rounded-2xl mb-4 border-2 border-slate-100 shadow-sm">
-          <QRCodeSVG 
-            value={profile.dni} 
-            size={140}
-            fgColor="#1a1a1a"
-            bgColor="#FFFFFF"
-            includeMargin={true}
+        <div className="bg-white p-4 rounded-2xl mb-4 border-2 border-slate-100 shadow-sm flex items-center justify-center">
+          <QRCode 
+            value={profile.dni || profile.id} 
+            size={120}
+            style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+            viewBox={`0 0 256 256`}
           />
         </div>
-        <p className="text-[10px] uppercase font-bold text-love tracking-tighter">ID Cliente: {profile.dni}</p>
+        <p className="text-[10px] uppercase font-bold text-love tracking-tighter">ID Cliente: {profile.dni || 'PENDIENTE'}</p>
         <p className="text-black font-bold mt-1 text-sm">{profile.full_name}</p>
       </div>
 
