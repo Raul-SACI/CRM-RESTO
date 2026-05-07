@@ -75,23 +75,33 @@ export function Waiter() {
     
     try {
       // Intentamos buscar por DNI exacto o ID de Supabase
+      // Simplificamos la query eliminando comillas que pueden causar errores en el parseo
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .or(`dni.eq."${searchDni}",id.eq."${searchDni}"`)
+        .or(`dni.eq.${searchDni},id.eq.${searchDni}`)
         .maybeSingle();
       
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase error:", error);
+        throw error;
+      }
       
       if (data) {
         setClient(data);
       } else {
-        // No mostramos error inmediato mientras escribe, solo si la búsqueda es intencional
-        if (dniToSearch) setStatus({ type: 'error', message: 'Cliente no registrado' });
+        // Solo mostramos error si el usuario terminó de escribir o es una búsqueda manual
+        if (dniToSearch || (dni && dni.length >= 7)) {
+          setStatus({ type: 'error', message: 'Cliente no registrado' });
+        }
       }
     } catch (err: any) {
-      console.error("Search error:", err);
-      setStatus({ type: 'error', message: 'Error de conexión' });
+      console.error("Search error trace:", err);
+      // Mostramos un mensaje más descriptivo del error para ayudar al usuario
+      setStatus({ 
+        type: 'error', 
+        message: err.message?.includes('JWT') ? 'Sesión expirada' : 'Error al buscar cliente'
+      });
     } finally {
       setSearching(false);
     }
@@ -191,18 +201,18 @@ export function Waiter() {
           initial={{ y: -10, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           className={cn(
-            "p-5 rounded-2xl flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest mb-6",
+            "p-4 rounded-xl flex items-center gap-3 text-[9px] font-black uppercase tracking-widest mb-4",
             status.type === 'success' ? "bg-green-500/10 text-green-500 border border-green-500/20" : "bg-love/10 text-love border border-love/20"
           )}
         >
-          {status.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+          {status.type === 'success' ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
           {status.message}
         </motion.div>
       )}
 
-      <div className="bg-white rounded-[2.5rem] p-8 text-black shadow-2xl flex flex-col justify-between border-b-8 border-slate-200">
+      <div className="bg-white rounded-[2rem] p-6 md:p-8 text-black shadow-2xl flex flex-col justify-between border-b-8 border-slate-200">
         <div className="mb-2">
-          <h2 className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-300 mb-8 flex items-center gap-2">
+          <h2 className="text-[8px] md:text-[9px] font-black uppercase tracking-[0.3em] text-slate-300 mb-6 md:mb-8 flex items-center gap-2">
             <div className="w-1.5 h-1.5 rounded-full bg-love"></div>
             Identificación de Cliente
           </h2>
@@ -257,20 +267,20 @@ export function Waiter() {
                     </div>
                   </div>
 
-                  <div className="bg-love/5 rounded-[2rem] p-6 text-love border-2 border-love/10 flex justify-between items-center group">
+                  <div className="bg-love/5 rounded-[1.5rem] md:rounded-[2rem] p-4 md:p-6 text-love border-2 border-love/10 flex justify-between items-center group">
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-1">Puntos hoy</p>
-                      <p className="text-5xl font-black italic">
+                      <p className="text-[9px] md:text-[10px] font-black uppercase tracking-widest opacity-60 mb-1">Puntos hoy</p>
+                      <p className="text-4xl md:text-5xl font-black italic">
                         +{amount ? Math.floor(parseFloat(amount) / 1000) : 0}
                       </p>
                     </div>
-                    <Receipt size={64} className="opacity-10 group-hover:scale-110 transition-transform" />
+                    <Receipt size={48} className="opacity-10 group-hover:scale-110 transition-transform md:size-16" />
                   </div>
 
                   <button
                     type="submit"
                     disabled={loading || !amount}
-                    className="w-full bg-love text-white rounded-[2rem] py-6 font-black text-xs uppercase tracking-[0.3em] shadow-xl shadow-love/20 active:scale-[0.98] transition-all disabled:opacity-20"
+                    className="w-full bg-love text-white rounded-[1.5rem] md:rounded-[2rem] py-4 md:py-6 font-black text-[10px] md:text-xs uppercase tracking-[0.2em] md:tracking-[0.3em] shadow-xl shadow-love/20 active:scale-[0.98] transition-all disabled:opacity-20"
                   >
                     {loading ? 'Fidelizando...' : 'confirmar y Cargar'}
                   </button>
