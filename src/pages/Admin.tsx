@@ -106,8 +106,16 @@ export function Admin() {
   };
 
   const updateUserRole = async (userId: string, newRole: string) => {
-    await supabase.from('profiles').update({ role: newRole }).eq('id', userId);
-    fetchData();
+    const roleNames: Record<string, string> = {
+      'admin': 'Administrador',
+      'waiter': 'Staff/Mozo',
+      'client': 'Cliente'
+    };
+    
+    if (confirm(`¿Cambiar el rol de este usuario a ${roleNames[newRole]}?`)) {
+      await supabase.from('profiles').update({ role: newRole }).eq('id', userId);
+      fetchData();
+    }
   };
 
   return (
@@ -154,6 +162,7 @@ export function Admin() {
                       <th className="px-6 py-4">DNI</th>
                       <th className="px-6 py-4">Cumpleaños</th>
                       <th className="px-6 py-4 text-right">Puntos</th>
+                      <th className="px-6 py-4 text-right">Acciones</th>
                     </tr>
                   </thead>
                   <tbody className="text-sm font-medium">
@@ -172,6 +181,14 @@ export function Admin() {
                         </td>
                         <td className="px-6 py-4 text-right">
                           <span className="text-love font-black italic text-lg">{client.points}</span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <button 
+                            onClick={() => updateUserRole(client.id, 'waiter')}
+                            className="text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded bg-white/5 hover:bg-love transition-all"
+                          >
+                            Hacer Staff
+                          </button>
                         </td>
                       </tr>
                     ))}
