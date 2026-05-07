@@ -163,8 +163,18 @@ export default function App() {
     let isMounted = true;
 
     const initializeAuth = async () => {
+      // Timeout fallback for loading state
+      const timeout = setTimeout(() => {
+        if (loading) {
+          console.warn("Auth initialization taking too long, forcing load state...");
+          setLoading(false);
+        }
+      }, 5000);
+
       try {
         const { data: { session } } = await supabase.auth.getSession();
+        clearTimeout(timeout);
+        
         if (!isMounted) return;
 
         if (session?.user) {
@@ -176,6 +186,7 @@ export default function App() {
         }
       } catch (error) {
         console.error("Auth initialization error:", error);
+        clearTimeout(timeout);
         if (isMounted) setLoading(false);
       }
     };

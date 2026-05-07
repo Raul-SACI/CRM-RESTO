@@ -90,14 +90,18 @@ export function Waiter() {
       if (data) {
         setClient(data);
         setStatus(null);
-      } else if (dniToSearch || (dni && dni.length >= 7)) {
-        setStatus({ type: 'error', message: 'Cliente no registrado' });
+      } else {
+        setClient(null);
+        if (dniToSearch || (searchDni && searchDni.length >= 7)) {
+          setStatus({ type: 'error', message: 'Cliente no registrado' });
+        }
       }
     } catch (err: any) {
       console.error("Search error trace:", err);
+      setClient(null);
       setStatus({ 
         type: 'error', 
-        message: 'Error al buscar cliente. Verifica la conexión.'
+        message: 'Error de conexión. Reintenta.'
       });
     } finally {
       setSearching(false);
@@ -254,14 +258,23 @@ export function Waiter() {
                   onSubmit={handleSubmit}
                   className="space-y-8 pt-8 border-t-2 border-dashed border-slate-100"
                 >
+                  {/* ... client info ... */}
                   <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-2xl border border-slate-100">
                     <div className="w-12 h-12 bg-black text-white rounded-xl flex items-center justify-center font-black text-xl uppercase">
                       {client.full_name[0]}
                     </div>
-                    <div>
+                    <div className="flex-1">
                       <p className="font-black text-base uppercase tracking-tight leading-none mb-1">{client.full_name}</p>
-                      <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest">Saldo: <span className="text-love italic">{client.points} PTS</span></p>
+                      <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest text-wrap">DNI: {client.dni}</p>
+                      <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest">Saldo: <span className="text-love italic">{client.points.toLocaleString()} PTS</span></p>
                     </div>
+                    <button 
+                      type="button"
+                      onClick={() => { setClient(null); setDni(''); setStatus(null); }}
+                      className="p-2 text-slate-300 hover:text-love transition-colors"
+                    >
+                      <X size={20} />
+                    </button>
                   </div>
 
                   <div className="space-y-2">
@@ -300,15 +313,31 @@ export function Waiter() {
                   </button>
                 </motion.form>
               ) : (
-                !searching && !status && (
+                <div className="flex flex-col items-center">
                   <motion.div 
+                    key="no-client"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="text-center py-16"
+                    className="text-center py-12 md:py-16"
                   >
-                    <p className="text-[9px] uppercase font-black tracking-[0.4em] text-slate-200">Identifica un Cliente</p>
+                    <p className="text-[9px] uppercase font-black tracking-[0.4em] text-slate-200">
+                      {searching ? 'Buscando Cliente...' : (status ? status.message : 'Identifica un Cliente')}
+                    </p>
                   </motion.div>
-                )
+                  {!searching && !client && (
+                     <button
+                      onClick={() => {
+                        if (waiterProfile) {
+                          setDni(waiterProfile.dni || waiterProfile.id);
+                          searchClient(waiterProfile.dni || waiterProfile.id);
+                        }
+                      }}
+                      className="text-[8px] font-black uppercase tracking-widest text-slate-300 hover:text-love transition-colors"
+                    >
+                      Autocargar (Probar con mi perfil)
+                    </button>
+                  )}
+                </div>
               )}
             </AnimatePresence>
           </div>

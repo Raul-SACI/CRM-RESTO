@@ -15,8 +15,9 @@ export function Dashboard() {
 
   useEffect(() => {
     if (profile) {
-      setEditForm({ fullName: profile.full_name, dni: profile.dni });
+      setEditForm({ fullName: profile.full_name, dni: profile.dni || '' });
       
+      let isMounted = true;
       const fetchTransactions = async () => {
         const { data, error } = await supabase
           .from('transactions')
@@ -25,11 +26,12 @@ export function Dashboard() {
           .order('created_at', { ascending: false })
           .limit(5);
         
-        if (!error) setTransactions(data);
-        setLoading(false);
+        if (isMounted && !error) setTransactions(data);
+        if (isMounted) setLoading(false);
       };
 
       fetchTransactions();
+      return () => { isMounted = false; };
     }
   }, [profile]);
 
@@ -85,15 +87,17 @@ export function Dashboard() {
             <span className="text-lg md:text-xl font-bold uppercase tracking-tighter">puntos</span>
           </div>
         </div>
-        <div className="relative mt-8 pt-6 border-t border-white/10 flex justify-between items-center text-[10px] uppercase tracking-widest font-bold opacity-80">
-          <span className="flex items-center gap-2">
-            <Award size={14} />
-            Cliente Preferred
-          </span>
-          <span>DNI: {profile.dni}</span>
+        <div className="relative mt-8 pt-6 border-t border-white/10 flex flex-wrap gap-4 justify-between items-center text-[10px] uppercase tracking-widest font-bold opacity-80">
+          <div className="flex items-center gap-4">
+            <span className="flex items-center gap-2">
+              <Award size={14} />
+              Cliente Preferred
+            </span>
+            <span className="text-white/40">DNI: {profile.dni || 'No asignado'}</span>
+          </div>
           <button 
             onClick={() => setIsEditing(true)}
-            className="bg-white/10 hover:bg-white/20 px-3 py-1 rounded-lg transition-colors"
+            className="bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl transition-all border border-white/10 active:scale-95"
           >
             Editar Perfil
           </button>
