@@ -4,7 +4,7 @@
  */
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/src/lib/supabase';
 import { Profile } from '@/src/types';
 import { Auth } from '@/src/pages/Auth';
@@ -30,6 +30,75 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export const useAuth = () => useContext(AuthContext);
+
+function AppRoutes() {
+  const { user, profile, loading } = useAuth();
+  const location = useLocation();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-bar-black flex items-center justify-center">
+        <motion.div 
+          animate={{ rotate: 360 }}
+          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+          className="w-12 h-12 border-2 border-love border-t-transparent rounded-full"
+        />
+      </div>
+    );
+  }
+
+  const stateFrom = (location.state as any)?.from;
+  const from = stateFrom ? (stateFrom.pathname + (stateFrom.search || "")) : "/";
+
+  return (
+    <AnimatePresence mode="wait">
+      <Routes location={location} key={location.pathname}>
+        <Route 
+          path="/auth" 
+          element={!user ? <Auth /> : <Navigate to={from} replace />} 
+        />
+        
+        <Route 
+          path="/" 
+          element={user ? <Layout><Dashboard /></Layout> : <Navigate to="/auth" state={{ from: location }} replace />} 
+        />
+        
+        <Route 
+          path="/rewards" 
+          element={user ? <Layout><Rewards /></Layout> : <Navigate to="/auth" state={{ from: location }} replace />} 
+        />
+        
+        <Route 
+          path="/waiter" 
+          element={
+            user ? (
+              profile?.role === 'waiter' || profile?.role === 'admin' 
+                ? <Layout><Waiter /></Layout> 
+                : <Navigate to="/" replace />
+            ) : (
+              <Navigate to="/auth" state={{ from: location }} replace />
+            )
+          } 
+        />
+
+        <Route 
+          path="/admin" 
+          element={
+            user ? (
+              profile?.role === 'admin' 
+                ? <Layout><Admin /></Layout> 
+                : <Navigate to="/" replace />
+            ) : (
+              <Navigate to="/auth" state={{ from: location }} replace />
+            )
+          } 
+        />
+
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </AnimatePresence>
+  );
+}
 
 export default function App() {
   const [user, setUser] = useState<any | null>(null);
@@ -153,34 +222,7 @@ export default function App() {
   return (
     <AuthContext.Provider value={{ user, profile, loading, refreshProfile }}>
       <HashRouter>
-        <AnimatePresence mode="wait">
-          <Routes>
-            <Route 
-              path="/auth" 
-              element={!user ? <Auth /> : <Navigate to="/" />} 
-            />
-            
-            <Route 
-              path="/" 
-              element={user ? <Layout><Dashboard /></Layout> : <Navigate to="/auth" />} 
-            />
-            
-            <Route 
-              path="/rewards" 
-              element={user ? <Layout><Rewards /></Layout> : <Navigate to="/auth" />} 
-            />
-            
-            <Route 
-              path="/waiter" 
-              element={user && (profile?.role === 'waiter' || profile?.role === 'admin') ? <Layout><Waiter /></Layout> : <Navigate to="/" />} 
-            />
-
-            <Route 
-              path="/admin" 
-              element={user && profile?.role === 'admin' ? <Layout><Admin /></Layout> : <Navigate to="/" />} 
-            />
-          </Routes>
-        </AnimatePresence>
+        <AppRoutes />
       </HashRouter>
     </AuthContext.Provider>
   );

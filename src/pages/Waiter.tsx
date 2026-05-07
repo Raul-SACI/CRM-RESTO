@@ -65,23 +65,33 @@ export function Waiter() {
     }
   }, [dni]);
 
-  const searchClient = async () => {
-    if (!dni || dni.includes('http')) return; // No buscamos si parece una URL incompleta todavía
+  const searchClient = async (dniToSearch?: string) => {
+    const searchDni = (dniToSearch || dni).trim();
+    if (!searchDni || searchDni.includes('http')) return; 
+    
     setSearching(true);
     setClient(null);
     setStatus(null);
     
     try {
+      // Intentamos buscar por DNI exacto o ID de Supabase
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .or(`dni.eq.${dni},id.eq.${dni}`)
-        .single();
+        .or(`dni.eq."${searchDni}",id.eq."${searchDni}"`)
+        .maybeSingle();
       
-      if (error) throw new Error('Cliente no encontrado');
-      setClient(data);
+      if (error) throw error;
+      
+      if (data) {
+        setClient(data);
+      } else {
+        // No mostramos error inmediato mientras escribe, solo si la búsqueda es intencional
+        if (dniToSearch) setStatus({ type: 'error', message: 'Cliente no registrado' });
+      }
     } catch (err: any) {
-      setStatus({ type: 'error', message: err.message });
+      console.error("Search error:", err);
+      setStatus({ type: 'error', message: 'Error de conexión' });
     } finally {
       setSearching(false);
     }

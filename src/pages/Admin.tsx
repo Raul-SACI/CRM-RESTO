@@ -113,8 +113,17 @@ export function Admin() {
     };
     
     if (confirm(`¿Cambiar el rol de este usuario a ${roleNames[newRole]}?`)) {
-      await supabase.from('profiles').update({ role: newRole }).eq('id', userId);
-      fetchData();
+      setLoading(true);
+      try {
+        const { error } = await supabase.from('profiles').update({ role: newRole }).eq('id', userId);
+        if (error) throw error;
+        alert('¡Rol actualizado con éxito! Recargando datos...');
+        await fetchData();
+      } catch (err: any) {
+        alert('Error al actualizar rol: ' + err.message);
+      } finally {
+        setLoading(false);
+      }
     }
   };
 

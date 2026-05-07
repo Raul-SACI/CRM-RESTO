@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/src/App';
 import QRCode from 'react-qr-code';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { CreditCard, Award, TrendingUp, History } from 'lucide-react';
 import { supabase } from '@/src/lib/supabase';
 import { Transaction } from '@/src/types';
@@ -10,26 +10,64 @@ export function Dashboard() {
   const { profile } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({ fullName: '', dni: '' });
 
   useEffect(() => {
-    const fetchTransactions = async () => {
-      if (!profile) return;
+    if (profile) {
+      setEditForm({ fullName: profile.full_name, dni: profile.dni });
       
-      const { data, error } = await supabase
-        .from('transactions')
-        .select('*')
-        .eq('client_id', profile.id)
-        .order('created_at', { ascending: false })
-        .limit(5);
-      
-      if (!error) setTransactions(data);
-      setLoading(false);
-    };
+      const fetchTransactions = async () => {
+        const { data, error } = await supabase
+          .from('transactions')
+          .select('*')
+          .eq('client_id', profile.id)
+          .order('created_at', { ascending: false })
+          .limit(5);
+        
+        if (!error) setTransactions(data);
+        setLoading(false);
+      };
 
-    fetchTransactions();
+      fetchTransactions();
+    }
   }, [profile]);
 
-  if (!profile) return null;
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!profile) return;
+    
+    setLoading(true);
+    const { error } = await supabase
+      .from('profiles')
+      .update({ 
+        full_name: editForm.fullName, 
+        dni: editForm.dni 
+      })
+      .eq('id', profile.id);
+    
+    if (error) {
+      alert("Error al actualizar: " + error.message);
+      setLoading(false);
+    } else {
+      setIsEditing(false);
+      window.location.reload(); 
+    }
+  };
+
+  if (!profile) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <motion.div 
+          animate={{ rotate: 360 }}
+          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+          className="w-10 h-10 border-2 border-love border-t-transparent rounded-full mb-6"
+        />
+        <h2 className="text-xl font-bold mb-2 uppercase tracking-tighter">Sincronizando Perfil</h2>
+        <p className="text-ivory/40 text-[10px] uppercase tracking-widest">Espera un momento...</p>
+      </div>
+    );
+  }
 
   return (
     <motion.div 
@@ -53,7 +91,70 @@ export function Dashboard() {
             Cliente Preferred
           </span>
           <span>DNI: {profile.dni}</span>
+          <button 
+            onClick={() => setIsEditing(true)}
+            className="bg-white/10 hover:bg-white/20 px-3 py-1 rounded-lg transition-colors"
+          >
+            Editar Perfil
+          </button>
         </div>
+
+        {/* Modal Editar Perfil */}
+        <AnimatePresence>
+          {isEditing && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-center justify-center p-6"
+            >
+              <motion.div 
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                className="bg-ash border border-white/10 p-8 rounded-[2rem] w-full max-w-sm shadow-2xl"
+              >
+                <h3 className="text-xl font-bold mb-6 uppercase tracking-tight italic">Completar <span className="text-love">Mis Datos</span></h3>
+                <form onSubmit={handleUpdateProfile} className="space-y-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Nombre Completo</label>
+                    <input 
+                      required
+                      placeholder="Tu nombre" 
+                      className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-love" 
+                      value={editForm.fullName} 
+                      onChange={e => setEditForm({...editForm, fullName: e.target.value})} 
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">DNI (Para el QR)</label>
+                    <input 
+                      required
+                      placeholder="Tu DNI" 
+                      className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm outline-none focus:border-love" 
+                      value={editForm.dni} 
+                      onChange={e => setEditForm({...editForm, dni: e.target.value})} 
+                    />
+                  </div>
+                  <div className="flex gap-2 pt-4">
+                    <button 
+                      type="button" 
+                      onClick={() => setIsEditing(false)}
+                      className="flex-1 bg-white/5 text-white/40 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-white/10"
+                    >
+                      Cancelar
+                    </button>
+                    <button 
+                      type="submit" 
+                      className="flex-[2] bg-love text-white py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-love/20"
+                    >
+                      Guardar Cambios
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* QR Code Card - Square Bento */}
