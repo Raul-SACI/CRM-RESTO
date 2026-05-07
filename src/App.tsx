@@ -4,7 +4,7 @@
  */
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { supabase } from '@/src/lib/supabase';
 import { Profile } from '@/src/types';
 import { Auth } from '@/src/pages/Auth';
@@ -152,7 +152,7 @@ export default function App() {
 
   return (
     <AuthContext.Provider value={{ user, profile, loading, refreshProfile }}>
-      <BrowserRouter>
+      <HashRouter>
         <AnimatePresence mode="wait">
           <Routes>
             <Route 
@@ -181,7 +181,7 @@ export default function App() {
             />
           </Routes>
         </AnimatePresence>
-      </BrowserRouter>
+      </HashRouter>
     </AuthContext.Provider>
   );
 }

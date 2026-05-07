@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/src/lib/supabase';
 import { useAuth } from '@/src/App';
 import { motion, AnimatePresence } from 'motion/react';
@@ -9,6 +10,7 @@ import { Html5QrcodeScanner } from 'html5-qrcode';
 
 export function Waiter() {
   const { profile: waiterProfile } = useAuth();
+  const [searchParams] = useSearchParams();
   const [dni, setDni] = useState('');
   const [amount, setAmount] = useState('');
   const [client, setClient] = useState<Profile | null>(null);
@@ -18,8 +20,7 @@ export function Waiter() {
   const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const dniParam = params.get('dni');
+    const dniParam = searchParams.get('dni');
     if (dniParam) {
       setDni(dniParam);
     }
