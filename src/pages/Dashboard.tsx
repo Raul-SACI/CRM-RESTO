@@ -41,10 +41,10 @@ export function Dashboard() {
       <div className="md:col-span-9 bg-love rounded-3xl p-8 flex flex-col justify-between border-4 border-black/20 relative overflow-hidden group shadow-bento order-1">
         <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-white/10 rounded-full blur-3xl group-hover:scale-110 transition-transform duration-700" />
         <div className="relative">
-          <h2 className="text-sm uppercase font-bold tracking-widest opacity-80 mb-2">Saldo Actual Fidelidad</h2>
+          <h2 className="text-xs md:text-sm uppercase font-bold tracking-widest opacity-80 mb-2">Saldo Actual Fidelidad</h2>
           <div className="flex items-baseline gap-2">
-            <span className="text-7xl font-black italic">{profile.points.toLocaleString()}</span>
-            <span className="text-xl font-bold uppercase tracking-tighter">puntos</span>
+            <span className="text-5xl md:text-7xl font-black italic">{profile.points.toLocaleString()}</span>
+            <span className="text-lg md:text-xl font-bold uppercase tracking-tighter">puntos</span>
           </div>
         </div>
         <div className="relative mt-8 pt-6 border-t border-white/10 flex justify-between items-center text-[10px] uppercase tracking-widest font-bold opacity-80">
