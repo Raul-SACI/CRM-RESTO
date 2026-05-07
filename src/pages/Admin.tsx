@@ -39,24 +39,34 @@ export function Admin() {
 
   const fetchData = async () => {
     setLoading(true);
+    
+    // Timeout de seguridad para no bloquear la UI si Supabase demora
+    const fetchTimeout = setTimeout(() => {
+      setLoading(false);
+    }, 8000);
+
     try {
-      const timestamp = new Date().getTime(); // Antipolución de caché
       if (activeTab === 'clients') {
-        const { data } = await supabase.from('profiles').select('*').eq('role', 'client').order('points', { ascending: false });
+        const { data, error } = await supabase.from('profiles').select('*').eq('role', 'client').order('points', { ascending: false });
+        if (error) throw error;
         if (data) setClients(data);
       } else if (activeTab === 'prizes') {
-        const { data } = await supabase.from('catalogo_premios').select('*').order('points_cost', { ascending: true });
+        const { data, error } = await supabase.from('catalogo_premios').select('*').order('points_cost', { ascending: true });
+        if (error) throw error;
         if (data) setPrizes(data);
       } else if (activeTab === 'staff') {
-        const { data } = await supabase.from('profiles').select('*').in('role', ['waiter', 'admin']).order('role', { ascending: false });
+        const { data, error } = await supabase.from('profiles').select('*').in('role', ['waiter', 'admin']).order('role', { ascending: false });
+        if (error) throw error;
         if (data) setStaff(data);
       } else if (activeTab === 'history') {
-        const { data } = await supabase.from('transactions').select('*, profiles(full_name)').order('created_at', { ascending: false }).limit(50);
+        const { data, error } = await supabase.from('transactions').select('*, profiles(full_name)').order('created_at', { ascending: false }).limit(50);
+        if (error) throw error;
         if (data) setAllTransactions(data);
       }
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      console.error("Fetch error in Admin:", e);
     } finally {
+      clearTimeout(fetchTimeout);
       setLoading(false);
     }
   };

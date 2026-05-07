@@ -178,27 +178,25 @@ export default function App() {
     let isMounted = true;
 
     const initializeAuth = async () => {
-      // Timeout fallback for loading state
-      const timeout = setTimeout(() => {
-        if (loading) {
-          console.warn("Auth initialization taking too long, forcing load state...");
-          setLoading(false);
-        }
+      // Forzar desbloqueo de la interfaz después de 5 segundos
+      const forceUnlock = setTimeout(() => {
+        setLoading(false);
       }, 5000);
 
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        clearTimeout(timeout);
         
-        if (!isMounted) return;
+        if (!isMounted) {
+          clearTimeout(forceUnlock);
+          return;
+        }
 
         if (session?.user) {
           setUser(session.user);
           const email = session.user.email?.toLowerCase().trim();
           const isAdminEmail = email === 'administrador@organizacionysistemasr.com';
           
-          // Set immediate fallback profile to avoid blocking UI
-          setProfile({
+          const emergencyProfile: Profile = {
             id: session.user.id,
             full_name: session.user.email?.split('@')[0] || 'Usuario',
             email: session.user.email || '',
@@ -207,16 +205,17 @@ export default function App() {
             role: isAdminEmail ? 'admin' : 'client',
             points: 0,
             created_at: new Date().toISOString()
-          });
+          };
           
+          setProfile(emergencyProfile);
           await fetchProfile(session.user.id, session.user.email);
         } else {
           setUser(null);
-          setLoading(false);
         }
       } catch (error) {
         console.error("Auth initialization error:", error);
-        clearTimeout(timeout);
+      } finally {
+        clearTimeout(forceUnlock);
         if (isMounted) setLoading(false);
       }
     };
