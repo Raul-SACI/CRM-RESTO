@@ -41,13 +41,14 @@ export default function App() {
 
   const fetchProfile = async (userId: string, userEmail?: string) => {
     try {
+      console.log("Fetching profile for:", userEmail);
       let { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
       
-      // Si el perfil no existe, lo creamos
+      // Si el perfil no existe, intentamos crearlo
       if (error && error.code === 'PGRST116') {
         const newProfile = {
           id: userId,
@@ -63,11 +64,29 @@ export default function App() {
       
       if (data) {
         // Doble verificación de seguridad para el admin
-        const finalRole = (userEmail === 'administrador@organizacionysistemasr.com') ? 'admin' : data.role;
+        const isAdminEmail = userEmail?.toLowerCase().trim() === 'administrador@organizacionysistemasr.com';
+        const finalRole = isAdminEmail ? 'admin' : data.role;
+        console.log("Profile found. Final role:", finalRole);
         setProfile({ ...data, role: finalRole });
+      } else if (userEmail?.toLowerCase().trim() === 'administrador@organizacionysistemasr.com') {
+        // PERFIL VIRTUAL SI FALLA LA DB PERO EL EMAIL ES EL DEL ADMIN
+        console.log("DB profile missing but email matches admin. Setting virtual admin.");
+        setProfile({
+          id: userId,
+          full_name: 'Administrador Principal',
+          email: userEmail,
+          dni: 'ADMIN',
+          role: 'admin',
+          points: 999999,
+          created_at: new Date().toISOString()
+        } as any);
+      } else {
+        console.log("No profile found and not admin email:", userEmail);
       }
     } catch (e) {
       console.error("Error fetching/creating profile", e);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -79,27 +98,32 @@ export default function App() {
 
     // Check active session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) fetchProfile(session.user.id, session.user.email);
-      setLoading(false);
+      if (session?.user) {
+        setUser(session.user);
+        fetchProfile(session.user.id, session.user.email);
+      } else {
+        setUser(null);
+        setLoading(false);
+      }
     }).catch(() => setLoading(false));
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
       if (session?.user) {
+        setUser(session.user);
         fetchProfile(session.user.id, session.user.email);
       } else {
+        setUser(null);
         setProfile(null);
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
   }, [isConfigured]);
 
   const refreshProfile = async () => {
-    if (user) await fetchProfile(user.id);
+    if (user) await fetchProfile(user.id, user.email);
   };
 
   if (!isConfigured) {

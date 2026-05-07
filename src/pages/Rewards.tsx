@@ -49,7 +49,7 @@ export function Rewards() {
         </div>
         <div className="text-right">
           <p className="text-[9px] uppercase tracking-[0.2em] font-bold text-slate-500 mb-0.5">Saldo</p>
-          <p className="text-xl font-black italic text-love">{profile?.points.toLocaleString()} <span className="text-[10px] font-bold not-italic text-ivory/40">PTS</span></p>
+          <p className="text-xl font-black italic text-love">{(profile?.points ?? 0).toLocaleString()} <span className="text-[10px] font-bold not-italic text-ivory/40">PTS</span></p>
         </div>
       </div>
 
