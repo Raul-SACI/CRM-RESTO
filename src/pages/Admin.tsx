@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '@/src/lib/supabase';
 import { Profile, Prize, Transaction } from '@/src/types';
 import { motion } from 'motion/react';
-import { Users, Gift, Settings, Search, Plus, Trash2, Calendar, Award, History, DollarSign } from 'lucide-react';
+import { Users, Gift, Settings, Search, Plus, Trash2, Calendar, Award, History, DollarSign, Upload, Image as ImageIcon } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 
 export function Admin() {
@@ -13,6 +13,25 @@ export function Admin() {
   const [staff, setStaff] = useState<Profile[]>([]);
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [newPrize, setNewPrize] = useState({ title: '', description: '', points_cost: 0, image_url: '' });
+  const [uploading, setUploading] = useState(false);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert("La imagen es muy pesada (máx 2MB)");
+      return;
+    }
+
+    setUploading(true);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setNewPrize({ ...newPrize, image_url: reader.result as string });
+      setUploading(false);
+    };
+    reader.readAsDataURL(file);
+  };
 
   useEffect(() => {
     fetchData();
@@ -144,8 +163,47 @@ export function Admin() {
                   <input placeholder="Título del premio" className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs outline-none focus:border-love" value={newPrize.title} onChange={e => setNewPrize({...newPrize, title: e.target.value})} required />
                   <textarea placeholder="Descripción del beneficio" className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs outline-none focus:border-love h-24" value={newPrize.description} onChange={e => setNewPrize({...newPrize, description: e.target.value})} required />
                   <input type="number" placeholder="Costo en puntos" className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs outline-none focus:border-love" value={newPrize.points_cost || ''} onChange={e => setNewPrize({...newPrize, points_cost: parseInt(e.target.value)})} required />
-                  <input placeholder="URL Imagen (Unsplash, etc)" className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs outline-none focus:border-love" value={newPrize.image_url} onChange={e => setNewPrize({...newPrize, image_url: e.target.value})} required />
-                  <button type="submit" className="w-full bg-love text-white py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-love/20 active:scale-[0.98] transition-all">
+                  
+                  <div className="space-y-2">
+                    <label className="block text-[9px] font-black uppercase tracking-widest text-slate-500 pl-1">Imagen del premio</label>
+                    <div className="relative group">
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        onChange={handleFileChange} 
+                        className="hidden" 
+                        id="prize-image" 
+                      />
+                      <label 
+                        htmlFor="prize-image"
+                        className={cn(
+                          "w-full aspect-video rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden relative bg-black/20",
+                          newPrize.image_url ? "border-love/30" : "border-white/10 hover:border-love/50"
+                        )}
+                      >
+                        {newPrize.image_url ? (
+                          <>
+                            <img src={newPrize.image_url} className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white">
+                              <Upload size={20} className="mb-1" />
+                              <span className="text-[8px] font-black uppercase tracking-widest">Cambiar Imagen</span>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className={cn("flex flex-col items-center transition-all", uploading ? "animate-pulse" : "")}>
+                              <ImageIcon size={24} className="text-slate-600 mb-2" />
+                              <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">
+                                {uploading ? 'Procesando...' : 'Subir Imagen (Máx 2MB)'}
+                              </span>
+                            </div>
+                          </>
+                        )}
+                      </label>
+                    </div>
+                  </div>
+
+                  <button type="submit" disabled={uploading || !newPrize.image_url} className="w-full bg-love text-white py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-love/20 active:scale-[0.98] transition-all disabled:opacity-20">
                     Publicar Premio
                   </button>
                 </form>
