@@ -18,6 +18,12 @@ export function Waiter() {
   const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const dniParam = params.get('dni');
+    if (dniParam) {
+      setDni(dniParam);
+    }
+    
     let scanner: any = null;
     if (showScanner) {
       setTimeout(() => {

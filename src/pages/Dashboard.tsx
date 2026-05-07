@@ -60,7 +60,7 @@ export function Dashboard() {
       <div className="md:col-span-3 bg-white rounded-3xl p-6 shadow-bento flex flex-col items-center justify-center text-center order-2 md:order-2">
         <div className="bg-white p-4 rounded-2xl mb-4 border-2 border-slate-100 shadow-sm flex items-center justify-center">
           <QRCode 
-            value={profile.dni || profile.id} 
+            value={`${window.location.origin}/waiter?dni=${profile.dni || profile.id}`} 
             size={120}
             style={{ height: "auto", maxWidth: "100%", width: "100%" }}
             viewBox={`0 0 256 256`}
