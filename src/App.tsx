@@ -41,21 +41,23 @@ export default function App() {
 
   const fetchProfile = async (userId: string, userEmail?: string) => {
     try {
-      console.log("Fetching profile for:", userEmail);
+      setLoading(true);
+      const email = userEmail?.toLowerCase().trim();
+      const isAdminEmail = email === 'administrador@organizacionysistemasr.com';
+      
       let { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
       
-      // Si el perfil no existe, intentamos crearlo
       if (error && error.code === 'PGRST116') {
         const newProfile = {
           id: userId,
-          full_name: userEmail?.split('@')[0] || 'Admin',
+          full_name: userEmail?.split('@')[0] || 'Usuario',
           email: userEmail,
-          dni: '00000000',
-          role: userEmail === 'administrador@organizacionysistemasr.com' ? 'admin' : 'client',
+          dni: isAdminEmail ? 'ADMIN' : '00000000',
+          role: isAdminEmail ? 'admin' : 'client',
           points: 0
         };
         const { data: created, error: createError } = await supabase.from('profiles').insert(newProfile).select().single();
@@ -63,28 +65,20 @@ export default function App() {
       }
       
       if (data) {
-        // Doble verificación de seguridad para el admin
-        const isAdminEmail = userEmail?.toLowerCase().trim() === 'administrador@organizacionysistemasr.com';
-        const finalRole = isAdminEmail ? 'admin' : data.role;
-        console.log("Profile found. Final role:", finalRole);
-        setProfile({ ...data, role: finalRole });
-      } else if (userEmail?.toLowerCase().trim() === 'administrador@organizacionysistemasr.com') {
-        // PERFIL VIRTUAL SI FALLA LA DB PERO EL EMAIL ES EL DEL ADMIN
-        console.log("DB profile missing but email matches admin. Setting virtual admin.");
+        setProfile({ ...data, role: isAdminEmail ? 'admin' : data.role });
+      } else if (isAdminEmail) {
+        // PERFIL DE EMERGENCIA PARA EL ADMIN (Garantiza acceso si la DB tarda)
         setProfile({
           id: userId,
           full_name: 'Administrador Principal',
           email: userEmail,
           dni: 'ADMIN',
           role: 'admin',
-          points: 999999,
-          created_at: new Date().toISOString()
+          points: 0
         } as any);
-      } else {
-        console.log("No profile found and not admin email:", userEmail);
       }
     } catch (e) {
-      console.error("Error fetching/creating profile", e);
+      console.error("Profile fetch error:", e);
     } finally {
       setLoading(false);
     }

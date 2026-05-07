@@ -52,7 +52,7 @@ export function Waiter() {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('dni', dni)
+        .or(`dni.eq.${dni},id.eq.${dni}`)
         .single();
       
       if (error) throw new Error('Cliente no encontrado');

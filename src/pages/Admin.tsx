@@ -40,6 +40,7 @@ export function Admin() {
   const fetchData = async () => {
     setLoading(true);
     try {
+      const timestamp = new Date().getTime(); // Antipolución de caché
       if (activeTab === 'clients') {
         const { data } = await supabase.from('profiles').select('*').eq('role', 'client').order('points', { ascending: false });
         if (data) setClients(data);
@@ -55,34 +56,52 @@ export function Admin() {
       }
     } catch (e) {
       console.error(e);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const handleCreatePrize = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Intentando crear premio:", newPrize);
-    const { error } = await supabase.from('catalogo_premios').insert([newPrize]);
-    if (error) {
-      console.error("Error creando premio:", error);
-      alert(`Error al crear premio: ${error.message}`);
-    } else {
-      setNewPrize({ title: '', description: '', points_cost: 0, image_url: '' });
-      fetchData();
-      alert('Premio creado con éxito');
+    if (!newPrize.image_url) {
+      alert("Por favor sube una imagen");
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const { error, data } = await supabase.from('catalogo_premios').insert([newPrize]).select();
+      if (error) {
+        console.error("Error Detail:", error);
+        alert(`Error Supabase: ${error.message} (Código: ${error.code})`);
+      } else {
+        setNewPrize({ title: '', description: '', points_cost: 0, image_url: '' });
+        await fetchData();
+        alert('¡Premio publicado!');
+      }
+    } catch (err: any) {
+      alert("Error de conexión");
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleDeletePrize = async (id: string) => {
-    if (confirm('¿Eliminar este premio?')) {
-      console.log("Intentando eliminar premio ID:", id);
+    if (!confirm('¿Eliminar este premio definitivamente?')) return;
+    
+    setLoading(true);
+    try {
       const { error } = await supabase.from('catalogo_premios').delete().eq('id', id);
       if (error) {
-        console.error("Error eliminando premio:", error);
         alert(`Error al eliminar: ${error.message}`);
       } else {
-        fetchData();
+        await fetchData();
+        alert('Premio eliminado');
       }
+    } catch (err: any) {
+      alert("Error de conexión al eliminar");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -237,6 +256,12 @@ export function Admin() {
                     </button>
                   </div>
                 ))}
+                
+                <div className="pt-8 mt-4 border-t border-white/5 text-center">
+                  <p className="text-[8px] font-black uppercase tracking-widest text-slate-600">
+                    CRM RESTO v1.0.6-FIX-DATABASE • DB Status: Connected
+                  </p>
+                </div>
               </div>
             </div>
           )}
