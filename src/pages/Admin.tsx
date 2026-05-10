@@ -244,7 +244,8 @@ export function Admin() {
           // Si no hay datos filtrados, mostramos todos los que no sean explícitamente staff
           const filtered = data.filter((p: any) => {
             const role = String(p.role || '').toLowerCase();
-            return role !== 'waiter' && role !== 'admin';
+            // Ser inclusivos: si no tiene rol o es 'client', se muestra aquí
+            return role === 'client' || (role !== 'waiter' && role !== 'admin');
           });
           setClients(filtered);
           localStorage.setItem(cacheKey, JSON.stringify(filtered));
@@ -269,26 +270,28 @@ export function Admin() {
           .from('transactions')
           .select(`
             *,
-            profiles!transactions_client_id_fkey (
+            profiles:client_id (
               full_name
             )
           `)
           .order('created_at', { ascending: false })
           .limit(50);
         
-        let finalData = data;
         if (error) {
-          // Fallback if specific relationship name fails
+          console.warn("Retrying history fetch without profiles join due to:", error.message);
           const { data: fallbackData, error: fallbackError } = await supabase
             .from('transactions')
-            .select('*, profiles(full_name)')
+            .select('*')
             .order('created_at', { ascending: false })
             .limit(50);
+          
           if (fallbackError) throw fallbackError;
-          finalData = fallbackData;
+          setAllTransactions(fallbackData || []);
+          localStorage.setItem(cacheKey, JSON.stringify(fallbackData || []));
+        } else {
+          setAllTransactions(data || []);
+          localStorage.setItem(cacheKey, JSON.stringify(data || []));
         }
-        setAllTransactions(finalData || []);
-        localStorage.setItem(cacheKey, JSON.stringify(finalData || []));
       }
     } catch (e: any) {
       console.error("Fetch error in Admin:", e);
