@@ -182,7 +182,7 @@ export function Dashboard() {
     }
   };
 
-  if (!profile) {
+  if (!profile || (loading && !adminStats && profile.role === 'admin')) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center min-h-[60vh]">
         <motion.div 
@@ -190,7 +190,9 @@ export function Dashboard() {
           transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
           className="w-10 h-10 border-2 border-love border-t-transparent rounded-full mb-6"
         />
-        <h2 className="text-xl font-bold mb-2 uppercase tracking-tighter text-ink">Sincronizando Perfil</h2>
+        <h2 className="text-xl font-bold mb-2 uppercase tracking-tighter text-ink">
+          {profile?.role === 'admin' ? 'Cargando Dashboard Administrativo' : 'Sincronizando Perfil'}
+        </h2>
         <p className="text-slate-400 text-[10px] uppercase tracking-widest mb-8">Espera un momento...</p>
         
         <div className="flex flex-col gap-4 w-full max-w-xs">
@@ -212,7 +214,8 @@ export function Dashboard() {
     );
   }
 
-  if (profile.role === 'admin' && adminStats) {
+  if (profile.role === 'admin') {
+    if (!adminStats) return null; // Safety fallthrough
     return (
       <motion.div 
         initial={{ opacity: 0, y: 10 }}
