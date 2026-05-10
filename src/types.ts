@@ -15,6 +15,7 @@ export interface Transaction {
   waiter_id: string;
   amount: number;
   points_earned: number;
+  branch?: string;
   description: string;
   created_at: string;
 }

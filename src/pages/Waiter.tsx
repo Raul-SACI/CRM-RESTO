@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Search, Receipt, PlusCircle, CheckCircle2, AlertCircle, QrCode, X } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { Profile } from '@/src/types';
+import { BRANCHES } from '@/src/constants';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 
 export function Waiter() {
@@ -13,6 +14,7 @@ export function Waiter() {
   const [searchParams] = useSearchParams();
   const [dni, setDni] = useState('');
   const [amount, setAmount] = useState('');
+  const [selectedBranch, setSelectedBranch] = useState(BRANCHES[0]);
   const [client, setClient] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(false);
   const [searching, setSearching] = useState(false);
@@ -138,22 +140,43 @@ export function Waiter() {
     }
 
     try {
+      console.log("Starting transaction for client:", client.id, "by waiter:", waiterProfile.id);
+      
       const { error: txError } = await supabase.from('transactions').insert({
         client_id: client.id,
         waiter_id: waiterProfile.id,
         amount: amountNum,
         points_earned: pointsToAdd,
-        description: `Consumo Resto - $${amountNum.toLocaleString('es-AR')}`
+        branch: selectedBranch,
+        description: `Consumo ${selectedBranch} - $${amountNum.toLocaleString('es-AR')}`
       });
 
-      if (txError) throw txError;
+      if (txError) {
+        console.error("DEBUG - Transaction Error:", txError);
+        // Manejo específico de RLS
+        if (txError.code === '42501') {
+          throw new Error('Permiso Denegado (RLS): El sistema no permite que este Mozo guarde transacciones en la base de datos.');
+        }
+        throw new Error(`Error en transacción: ${txError.message || txError.code}`);
+      }
+
+      console.log("Transaction saved, now updating profile points...");
 
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ points: client.points + pointsToAdd })
+        .update({ points: (client.points || 0) + pointsToAdd })
         .eq('id', client.id);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error("DEBUG - Profile Update Error:", updateError);
+        // Manejo específico de RLS
+        if (updateError.code === '42501' || updateError.message?.includes('RLS')) {
+          throw new Error('Permiso Denegado (RLS): Los mozos no tienen permiso para actualizar el saldo directo de los clientes. Revisa las políticas de Supabase.');
+        }
+        throw new Error(`Error actualizando saldo: ${updateError.message || updateError.code}`);
+      }
+
+      console.log("Points updated successfully!");
 
       setStatus({ 
         type: 'success', 
@@ -164,7 +187,11 @@ export function Waiter() {
       setDni('');
       setAmount('');
     } catch (err: any) {
-      setStatus({ type: 'error', message: 'Error procesando carga' });
+      console.error("DEBUG - Full Submit Error Trace:", err);
+      setStatus({ 
+        type: 'error', 
+        message: err.message || 'Error desconocido al procesar la carga.' 
+      });
     } finally {
       setLoading(false);
     }
@@ -293,6 +320,27 @@ export function Waiter() {
                     >
                       <X size={20} />
                     </button>
+                  </div>
+
+                  <div className="space-y-4 pt-4 border-t-2 border-dashed border-slate-100">
+                    <label className="block text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Sucursal de Carga</label>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                      {BRANCHES.map(branch => (
+                        <button
+                          key={branch}
+                          type="button"
+                          onClick={() => setSelectedBranch(branch)}
+                          className={cn(
+                            "py-3 px-2 rounded-xl text-[8px] md:text-[9px] font-black uppercase tracking-widest transition-all border-2",
+                            selectedBranch === branch 
+                              ? "bg-love border-love text-white shadow-lg shadow-love/20" 
+                              : "bg-slate-50 border-slate-100 text-slate-400 hover:border-slate-200"
+                          )}
+                        >
+                          {branch}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
                   <div className="space-y-2">

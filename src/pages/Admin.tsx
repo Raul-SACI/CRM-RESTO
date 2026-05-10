@@ -367,6 +367,7 @@ export function Admin() {
                   <thead>
                     <tr className="text-[9px] uppercase text-slate-500 border-b border-white/5">
                       <th className="px-6 py-4">Fecha</th>
+                      <th className="px-6 py-4">Sucursal</th>
                       <th className="px-6 py-4">Cliente</th>
                       <th className="px-6 py-4">Carga</th>
                       <th className="px-6 py-4 text-right">Puntos</th>
@@ -376,6 +377,7 @@ export function Admin() {
                     {allTransactions.map(tx => (
                       <tr key={tx.id} className="border-b border-white/5 hover:bg-white/5">
                         <td className="px-6 py-3">{new Date(tx.created_at).toLocaleString('es-AR')}</td>
+                        <td className="px-6 py-3 bg-white/5 font-black text-white/60 uppercase">{tx.branch || '—'}</td>
                         <td className="px-6 py-3 uppercase">{(tx as any).profiles?.full_name}</td>
                         <td className="px-6 py-3 italic">{tx.description}</td>
                         <td className="px-6 py-3 text-right">
