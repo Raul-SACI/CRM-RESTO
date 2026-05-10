@@ -11,6 +11,9 @@ export function Rewards() {
   const [prizes, setPrizes] = useState<Prize[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [redeeming, setRedeeming] = useState<string | null>(null);
+  const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+
   useEffect(() => {
     const fetchPrizes = async () => {
       // 1. Cargar desde caché para velocidad instantánea
@@ -51,11 +54,59 @@ export function Rewards() {
     fetchPrizes();
   }, []);
 
+  const handleRedeem = async (prize: Prize) => {
+    if (!profile) return;
+    if (profile.points < prize.points_cost) {
+      alert("No tienes puntos suficientes");
+      return;
+    }
+
+    if (!confirm(`¿Canjear ${prize.title} por ${prize.points_cost} puntos?`)) return;
+
+    setRedeeming(prize.id);
+    setStatus(null);
+
+    try {
+      // 1. Registrar la transacción de canje
+      const { error: txError } = await supabase.from('transactions').insert({
+        client_id: profile.id,
+        waiter_id: profile.id, // En canje personal, el 'waiter' es el mismo usuario o sistema
+        amount: 0,
+        points_earned: -prize.points_cost,
+        description: `CANJE: ${prize.title}`,
+        branch: 'Canje Online'
+      });
+
+      if (txError) throw txError;
+
+      // 2. Descontar puntos del perfil
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ points: profile.points - prize.points_cost })
+        .eq('id', profile.id);
+
+      if (updateError) throw updateError;
+
+      setStatus({ type: 'success', message: '¡Canje exitoso! Muestra este mensaje en el local.' });
+      
+      // Forzar recarga de perfil (esto disparará el refresh en App.tsx si usa onAuthStateChanged o similar)
+      window.dispatchEvent(new Event('visibilitychange')); 
+      
+      // Scroll to top to see status
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err: any) {
+      console.error("Redemption error:", err);
+      setStatus({ type: 'error', message: 'Error procesando canje: ' + (err.message || 'Intenta nuevamente') });
+    } finally {
+      setRedeeming(null);
+    }
+  };
+
   // Mock data if database is empty for demo purposes
   const displayPrizes = prizes.length > 0 ? prizes : [
-    { id: '1', title: 'Cóctel de Bienvenida', description: 'Cualquier cóctel de nuestra carta de autor.', points_cost: 500, image_url: 'https://images.unsplash.com/photo-1536935338788-846bb9981813?auto=format&fit=crop&q=80&w=400' },
-    { id: '2', title: 'Tabla de Quesos Selectos', description: 'Selección de quesos regionales con miel de higos.', points_cost: 1500, image_url: 'https://images.unsplash.com/photo-1631515243349-e0cb75fb8d3a?auto=format&fit=crop&q=80&w=400' },
-    { id: '3', title: 'Cena para Dos', description: 'Menú de 3 pasos con maridaje incluido.', points_cost: 5000, image_url: 'https://images.unsplash.com/photo-1559339352-11d035aa65de?auto=format&fit=crop&q=80&w=400' },
+    { id: '1', title: 'Cóctel de Bienvenida', description: 'Cualquier cóctel de nuestra carta de autor.', points_cost: 500, image_url: 'https://images.unsplash.com/photo-1536935338788-846bb9981813?auto=format&fit=crop&q=80&w=400', is_active: true },
+    { id: '2', title: 'Tabla de Quesos Selectos', description: 'Selección de quesos regionales con miel de higos.', points_cost: 1500, image_url: 'https://images.unsplash.com/photo-1631515243349-e0cb75fb8d3a?auto=format&fit=crop&q=80&w=400', is_active: true },
+    { id: '3', title: 'Cena para Dos', description: 'Menú de 3 pasos con maridaje incluido.', points_cost: 5000, image_url: 'https://images.unsplash.com/photo-1559339352-11d035aa65de?auto=format&fit=crop&q=80&w=400', is_active: true },
   ];
 
   return (
@@ -77,6 +128,22 @@ export function Rewards() {
           <p className="text-xl font-black italic text-love">{(profile?.points ?? 0).toLocaleString()} <span className="text-[10px] font-bold not-italic text-ivory/40">PTS</span></p>
         </div>
       </div>
+
+      <AnimatePresence>
+        {status && (
+          <motion.div 
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className={cn(
+              "p-6 rounded-3xl mb-8 border transition-all text-center",
+              status.type === 'success' ? "bg-green-500/10 border-green-500 text-green-500" : "bg-love/10 border-love text-love"
+            )}
+          >
+            <p className="font-black uppercase tracking-widest text-[10px]">{status.message}</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {loading ? (
@@ -114,7 +181,8 @@ export function Rewards() {
                 
                 <div className="mt-6">
                   <button 
-                    disabled={!profile || profile.points < prize.points_cost}
+                    disabled={!profile || profile.points < prize.points_cost || redeeming === prize.id}
+                    onClick={() => handleRedeem(prize)}
                     className={cn(
                       "w-full py-4 rounded-2xl text-[10px] uppercase tracking-[0.2em] font-black flex items-center justify-center gap-2 transition-all active:scale-[0.98]",
                       profile && profile.points >= prize.points_cost 
@@ -122,8 +190,8 @@ export function Rewards() {
                         : "bg-white/5 text-slate-500 cursor-not-allowed border border-white/5"
                     )}
                   >
-                    {profile && profile.points >= prize.points_cost ? 'Canjear Ahora' : 'Faltan Puntos'}
-                    <ChevronRight size={14} className={cn(profile && profile.points >= prize.points_cost ? "text-ivory" : "text-slate-700")} />
+                    {redeeming === prize.id ? 'Procesando...' : (profile && profile.points >= prize.points_cost ? 'Canjear Ahora' : 'Faltan Puntos')}
+                    {redeeming !== prize.id && <ChevronRight size={14} className={cn(profile && profile.points >= prize.points_cost ? "text-ivory" : "text-slate-700")} />}
                   </button>
                   
                   {profile && profile.points < prize.points_cost && (

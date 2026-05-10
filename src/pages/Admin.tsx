@@ -100,7 +100,7 @@ export function Admin() {
     
     setLoading(true);
     try {
-      const { error, data } = await supabase.from('catalogo_premios').insert([newPrize]).select();
+      const { error, data } = await supabase.from('catalogo_premios').insert([{ ...newPrize, is_active: true }]).select();
       if (error) {
         console.error("Error Detail:", error);
         alert(`Error Supabase: ${error.message} (Código: ${error.code})`);

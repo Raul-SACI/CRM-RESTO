@@ -56,14 +56,14 @@ export function Layout({ children }: LayoutProps) {
             </NavLink>
           )}
 
-          {profile?.role === 'admin' && (
+      {profile?.role === 'admin' && (
             <NavLink to="/admin" className={({ isActive }) => `px-3 md:px-4 py-1.5 md:py-2 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-tighter transition-all shrink-0 ${isActive ? 'bg-love text-ivory' : 'bg-black/30 border border-white/10 text-ivory/60 hover:text-ivory'}`}>
               Admin
             </NavLink>
           )}
           
-          <button onClick={handleLogout} className="ml-1 md:ml-2 text-ivory/40 hover:text-love transition-colors shrink-0">
-            <LogOut size={16} />
+          <button onClick={handleLogout} className="ml-1 md:ml-2 p-2 text-ivory/40 hover:text-love transition-all hover:bg-love/10 rounded-lg shrink-0" title="Cerrar Sesión">
+            <LogOut size={20} />
           </button>
         </nav>
       </header>
