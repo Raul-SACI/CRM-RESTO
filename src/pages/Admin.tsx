@@ -19,7 +19,7 @@ export function Admin() {
   const [updatingSettings, setUpdatingSettings] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [importing, setImporting] = useState(false);
-  const [newClient, setNewClient] = useState({ fullName: '', email: '', dni: '', birthDate: '' });
+  const [newClient, setNewClient] = useState({ fullName: '', email: '', dni: '', birthDate: '', password: '' });
 
   const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -65,21 +65,54 @@ export function Admin() {
 
   const handleManualAdd = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!newClient.email || !newClient.password) {
+      alert("Email y Contraseña son obligatorios para crear la cuenta de usuario.");
+      return;
+    }
+
     setLoading(true);
     try {
-      const { error } = await supabase.from('profiles').insert([{
-        full_name: newClient.fullName,
+      // 1. Create Supabase Auth User
+      // Nota: En Supabase, signUp creará el usuario en auth.users y el trigger 
+      // debería crear el perfil. Por seguridad, recomendamos tener "Confirm Email" desactivado 
+      // si se desea que el acceso sea inmediato.
+      const { data: authData, error: authError } = await supabase.auth.signUp({
         email: newClient.email,
-        dni: newClient.dni,
-        birth_date: newClient.birthDate,
-        role: 'client',
-        points: 0
-      }]);
+        password: newClient.password,
+        options: {
+          data: {
+            full_name: newClient.fullName,
+            dni: newClient.dni
+          }
+        }
+      });
 
-      if (error) throw error;
+      if (authError) throw authError;
+
+      // 2. Intentar actualizar o insertar el perfil manual para asegurar consistencia
+      // Usamos un pequeño delay para dejar al trigger actuar o intentamos insert directo
+      const userId = authData.user?.id;
+      if (userId) {
+        // Intentamos un upsert para cubrir ambos casos (trigger rápido o lento)
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: userId,
+            full_name: newClient.fullName,
+            email: newClient.email,
+            dni: newClient.dni,
+            birth_date: newClient.birthDate,
+            role: 'client',
+            points: 0
+          }, { onConflict: 'id' });
+
+        if (profileError) {
+          console.warn("Error profile upsert:", profileError);
+        }
+      }
       
-      alert('Cliente agregado con éxito');
-      setNewClient({ fullName: '', email: '', dni: '', birthDate: '' });
+      alert('¡Cliente y usuario creados con éxito! El cliente ya puede iniciar sesión con su email y contraseña.');
+      setNewClient({ fullName: '', email: '', dni: '', birthDate: '', password: '' });
       setShowAddModal(false);
       fetchData(true);
     } catch (err: any) {
@@ -108,9 +141,10 @@ export function Admin() {
   };
 
   useEffect(() => {
-    fetchData();
     if (activeTab === 'settings') {
       fetchSettings();
+    } else {
+      fetchData();
     }
   }, [activeTab]);
 
@@ -120,9 +154,10 @@ export function Admin() {
       const { data, error } = await supabase
         .from('settings')
         .select('*')
-        .single();
+        .limit(1)
+        .maybeSingle();
       
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         throw error;
       }
 
@@ -139,8 +174,12 @@ export function Admin() {
         if (insertError) throw insertError;
         setSettings(newData);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error fetching settings:", err);
+      // Fallback if table doesn't exist or other error
+      if (!settings) {
+        setSettings({ id: 'fallback', points_conversion_rate: 1000, updated_at: new Date().toISOString() });
+      }
     } finally {
       setLoading(false);
     }
@@ -595,53 +634,59 @@ export function Admin() {
             </div>
           )}
 
-          {activeTab === 'settings' && settings && (
+          {activeTab === 'settings' && (
             <div className="max-w-2xl mx-auto">
-              <div className="bg-white rounded-[2rem] p-8 border border-slate-100 shadow-xl shadow-slate-200/50">
-                <div className="flex items-center gap-3 mb-8">
-                  <div className="w-12 h-12 bg-love/10 rounded-2xl flex items-center justify-center text-love">
-                    <Settings size={24} />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-black uppercase tracking-tighter text-ink">Configuración del <span className="text-love">Sistema</span></h3>
-                    <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mt-1">Personaliza las reglas de lealtad</p>
-                  </div>
+              {!settings ? (
+                <div className="py-12 text-center text-slate-400 font-bold uppercase text-[10px] tracking-widest">
+                  Cargando configuración...
                 </div>
-
-                <form onSubmit={handleUpdateSettings} className="space-y-8">
-                  <div className="space-y-3">
-                    <label className="block text-xs font-black uppercase tracking-widest text-slate-500 pl-1">Tasa de Conversión de Puntos</label>
-                    <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 flex items-center justify-between group transition-all hover:border-love/30">
-                      <div className="flex-1">
-                        <div className="flex items-baseline gap-2">
-                          <span className="text-2xl font-black text-ink">$</span>
-                          <input 
-                            type="number" 
-                            className="bg-transparent text-4xl font-black text-love outline-none w-full border-b-2 border-transparent focus:border-love transition-all"
-                            value={settings.points_conversion_rate}
-                            onChange={e => setSettings({...settings, points_conversion_rate: parseInt(e.target.value) || 0})}
-                          />
-                        </div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">equivale a 1 punto</p>
-                      </div>
-                      <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center border border-slate-200 shadow-sm text-love">
-                        <Award size={32} />
-                      </div>
+              ) : (
+                <div className="bg-white rounded-[2rem] p-8 border border-slate-100 shadow-xl shadow-slate-200/50">
+                  <div className="flex items-center gap-3 mb-8">
+                    <div className="w-12 h-12 bg-love/10 rounded-2xl flex items-center justify-center text-love">
+                      <Settings size={24} />
                     </div>
-                    <p className="text-[10px] text-slate-400 font-medium px-2 leading-relaxed">
-                      Este valor define cuántos pesos argentinos debe consumir el cliente para sumar 1 punto. Por ejemplo, si pones 1000, un consumo de $10.000 sumará 10 puntos.
-                    </p>
+                    <div>
+                      <h3 className="text-xl font-black uppercase tracking-tighter text-ink">Configuración del <span className="text-love">Sistema</span></h3>
+                      <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mt-1">Personaliza las reglas de lealtad</p>
+                    </div>
                   </div>
 
-                  <button 
-                    type="submit" 
-                    disabled={updatingSettings}
-                    className="w-full bg-ink text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-xl shadow-ink/20 hover:bg-black transition-all active:scale-[0.98] disabled:opacity-50"
-                  >
-                    {updatingSettings ? 'Guardando...' : 'Guardar Cambios'}
-                  </button>
-                </form>
-              </div>
+                  <form onSubmit={handleUpdateSettings} className="space-y-8">
+                    <div className="space-y-3">
+                      <label className="block text-xs font-black uppercase tracking-widest text-slate-500 pl-1">Tasa de Conversión de Puntos</label>
+                      <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 flex items-center justify-between group transition-all hover:border-love/30">
+                        <div className="flex-1">
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-2xl font-black text-ink">$</span>
+                            <input 
+                              type="number" 
+                              className="bg-transparent text-4xl font-black text-love outline-none w-full border-b-2 border-transparent focus:border-love transition-all"
+                              value={settings.points_conversion_rate}
+                              onChange={e => setSettings({...settings, points_conversion_rate: parseInt(e.target.value) || 0})}
+                            />
+                          </div>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">equivale a 1 punto</p>
+                        </div>
+                        <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center border border-slate-200 shadow-sm text-love">
+                          <Award size={32} />
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-slate-400 font-medium px-2 leading-relaxed">
+                        Este valor define cuántos pesos argentinos debe consumir el cliente para sumar 1 punto. Por ejemplo, si pones 1000, un consumo de $10.000 sumará 10 puntos.
+                      </p>
+                    </div>
+
+                    <button 
+                      type="submit" 
+                      disabled={updatingSettings}
+                      className="w-full bg-ink text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-xl shadow-ink/20 hover:bg-black transition-all active:scale-[0.98] disabled:opacity-50"
+                    >
+                      {updatingSettings ? 'Guardando...' : 'Guardar Cambios'}
+                    </button>
+                  </form>
+                </div>
+              )}
             </div>
           )}
         </>
@@ -702,15 +747,29 @@ export function Admin() {
                     />
                   </div>
                 </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Email (Opcional)</label>
-                  <input 
-                    type="email"
-                    placeholder="cliente@ejemplo.com" 
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-love text-ink" 
-                    value={newClient.email} 
-                    onChange={e => setNewClient({...newClient, email: e.target.value})} 
-                  />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Email</label>
+                    <input 
+                      type="email"
+                      required
+                      placeholder="cliente@ejemplo.com" 
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-love text-ink" 
+                      value={newClient.email} 
+                      onChange={e => setNewClient({...newClient, email: e.target.value})} 
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Contraseña</label>
+                    <input 
+                      type="password"
+                      required
+                      placeholder="Min. 6 carac." 
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-love text-ink" 
+                      value={newClient.password} 
+                      onChange={e => setNewClient({...newClient, password: e.target.value})} 
+                    />
+                  </div>
                 </div>
                 <button 
                   type="submit" 
