@@ -41,29 +41,32 @@ ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.catalogo_premios ENABLE ROW LEVEL SECURITY;
 
--- Políticas para Profiles
-CREATE POLICY "Los usuarios pueden ver su propio perfil" 
-  ON public.profiles FOR SELECT USING (auth.uid() = id);
+-- 4. Políticas para Profiles (RESETEO Y CORRECCIÓN DE RECURSIÓN)
+DROP POLICY IF EXISTS "Los usuarios pueden ver su propio perfil" ON public.profiles;
+DROP POLICY IF EXISTS "Los mozos pueden ver todos los perfiles" ON public.profiles;
+DROP POLICY IF EXISTS "Los mozos pueden actualizar puntos de clientes" ON public.profiles;
 
--- NOTA: Esta política puede causar recursión infinita si no se maneja bien.
--- La solución recomendada en Supabase es usar una función SECURITY DEFINER
--- para chequear el rol sin disparar RLS de nuevo.
+CREATE POLICY "Users can view their own profile" 
+  ON public.profiles FOR SELECT 
+  USING (auth.uid() = id);
 
 CREATE OR REPLACE FUNCTION public.check_is_staff()
 RETURNS BOOLEAN AS $$
 BEGIN
   RETURN EXISTS (
     SELECT 1 FROM public.profiles 
-    WHERE id = auth.uid() AND role IN ('waiter', 'admin')
+    WHERE id = (SELECT auth.uid()) AND role IN ('waiter', 'admin')
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-CREATE POLICY "Los mozos pueden ver todos los perfiles" 
-  ON public.profiles FOR SELECT USING (public.check_is_staff());
+CREATE POLICY "Staff can view all profiles" 
+  ON public.profiles FOR SELECT 
+  USING (public.check_is_staff());
 
-CREATE POLICY "Los mozos pueden actualizar puntos de clientes"
-  ON public.profiles FOR UPDATE USING (public.check_is_staff());
+CREATE POLICY "Staff can update points"
+  ON public.profiles FOR UPDATE 
+  USING (public.check_is_staff());
 
 -- Políticas para Transactions
 CREATE POLICY "Los usuarios pueden ver sus transacciones" 

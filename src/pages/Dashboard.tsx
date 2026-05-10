@@ -77,21 +77,25 @@ export function Dashboard() {
           }
 
           // 2. Fetch fresco en paralelo
-          const profilesQuery = supabase.from('profiles').select('id, full_name, birth_date, points, role');
-          
           const [
             clientsCountRes, 
             leaderboardRes, 
             redemptionsRes, 
             allClientsRes
           ] = await Promise.all([
-            supabase.from('profiles').select('*', { count: 'exact', head: true }),
+            supabase.from('profiles').select('*', { count: 'exact', head: true }).limit(1),
             supabase.from('profiles').select('*').order('points', { ascending: false }).limit(20),
             supabase.from('transactions').select('*', { count: 'exact', head: true }).ilike('description', '%CANJE%').gte('created_at', oneWeekAgo.toISOString()),
-            profilesQuery
+            supabase.from('profiles').select('id, full_name, birth_date, points, role')
           ]);
 
-          if (allClientsRes.error) throw allClientsRes.error;
+          if (allClientsRes.error) {
+            console.error("Dashboard error:", allClientsRes.error);
+            // Si hay error de recursión, no fallamos del todo para no romper el dashboard del cliente
+            if (!isMounted) return;
+            setLoading(false);
+            return;
+          }
 
           const redemptionsCount = redemptionsRes.count || 0;
           let allClients = allClientsRes.data || [];

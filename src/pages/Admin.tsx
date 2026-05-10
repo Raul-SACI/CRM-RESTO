@@ -239,12 +239,18 @@ export function Admin() {
       if (activeTab === 'clients') {
         // Broaden query to ensure we catch all potential clients
         const { data, error } = await supabase.from('profiles').select('*').order('points', { ascending: false });
-        if (error) throw error;
+        
+        if (error) {
+          if (error.message.includes('recursion')) {
+            alert("Error de seguridad en Supabase. Por favor, corre el script SQL en tu panel de Supabase.");
+          }
+          throw error;
+        }
+
         if (data) {
           // Si no hay datos filtrados, mostramos todos los que no sean explícitamente staff
           const filtered = data.filter((p: any) => {
             const role = String(p.role || '').toLowerCase();
-            // Ser inclusivos: si no tiene rol o es 'client', se muestra aquí
             return role === 'client' || (role !== 'waiter' && role !== 'admin');
           });
           setClients(filtered);
@@ -266,16 +272,16 @@ export function Admin() {
         setStaff(filtered);
         localStorage.setItem(cacheKey, JSON.stringify(filtered));
       } else if (activeTab === 'history') {
-        const { data, error } = await supabase
-          .from('transactions')
-          .select(`
-            *,
-            profiles!client_id (
-              full_name
-            )
-          `)
-          .order('created_at', { ascending: false })
-          .limit(50);
+          const { data, error } = await supabase
+            .from('transactions')
+            .select(`
+              *,
+              profiles!client_id (
+                full_name
+              )
+            `)
+            .order('created_at', { ascending: false })
+            .limit(50);
         
         if (error) {
           console.warn("Retrying history fetch without profiles join due to:", error.message);
