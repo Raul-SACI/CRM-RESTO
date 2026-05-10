@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/src/lib/supabase';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { Prize } from '@/src/types';
 import { Gift, Sparkles, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/src/App';

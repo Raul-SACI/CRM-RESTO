@@ -2,9 +2,17 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/src/App';
 import QRCode from 'react-qr-code';
 import { motion, AnimatePresence } from 'motion/react';
-import { CreditCard, Award, TrendingUp, History } from 'lucide-react';
+import { 
+  CreditCard, Award, TrendingUp, History, Users, 
+  Gift, Calendar, ChevronRight, BarChart3, PieChart
+} from 'lucide-react';
 import { supabase } from '@/src/lib/supabase';
-import { Transaction, SystemSettings } from '@/src/types';
+import { Transaction, SystemSettings, Profile } from '@/src/types';
+import { cn } from '@/src/lib/utils';
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, 
+  Tooltip, ResponsiveContainer, Cell, PieChart as RePieChart, Pie 
+} from 'recharts';
 
 export function Dashboard() {
   const { profile } = useAuth();
@@ -14,13 +22,22 @@ export function Dashboard() {
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({ fullName: '', dni: '' });
 
+  // Admin Stats
+  const [adminStats, setAdminStats] = useState<{
+    totalClients: number;
+    upcomingBirthdays: Profile[];
+    weeklyRedemptions: number;
+    leaderboard: Profile[];
+    ageData: { range: string; count: number }[];
+  } | null>(null);
+
   useEffect(() => {
     if (profile) {
       setEditForm({ fullName: profile.full_name, dni: profile.dni || '' });
       
       let isMounted = true;
-      const fetchTransactions = async () => {
-        // Cargar desde caché primero
+      
+      const fetchClientData = async () => {
         const cached = localStorage.getItem(`tx_cache_${profile.id}`);
         if (cached && isMounted) {
           try {
@@ -41,7 +58,82 @@ export function Dashboard() {
           setTransactions(data);
           localStorage.setItem(`tx_cache_${profile.id}`, JSON.stringify(data));
         }
-        if (isMounted) setLoading(false);
+      };
+
+      const fetchAdminStats = async () => {
+        try {
+          // 1. Total Clients
+          const { count: clientsCount } = await supabase
+            .from('profiles')
+            .select('*', { count: 'exact', head: true })
+            .eq('role', 'client');
+
+          // 2. Leaderboard
+          const { data: leaderboard } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('role', 'client')
+            .order('points', { ascending: false })
+            .limit(5);
+
+          // 3. Upcoming Birthdays (Current month)
+          const today = new Date();
+          const currentMonth = (today.getMonth() + 1).toString().padStart(2, '0');
+          const { data: birthdays } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('role', 'client')
+            .filter('birth_date', 'ilike', `%-${currentMonth}-%`)
+            .limit(10);
+
+          // 4. Weekly Redemptions
+          const oneWeekAgo = new Date();
+          oneWeekAgo.setDate(today.getDate() - 7);
+          const { count: redemptionsCount } = await supabase
+            .from('transactions')
+            .select('*', { count: 'exact', head: true })
+            .ilike('description', '%CANJE%')
+            .gte('created_at', oneWeekAgo.toISOString());
+
+          // 5. Age Distribution (Approximation)
+          const { data: allClients } = await supabase
+            .from('profiles')
+            .select('birth_date')
+            .eq('role', 'client');
+
+          const ageGroups: Record<string, number> = {
+            '18-25': 0,
+            '26-35': 0,
+            '36-45': 0,
+            '46-60': 0,
+            '60+': 0
+          };
+
+          allClients?.forEach(p => {
+            if (!p.birth_date) return;
+            const birthYear = new Date(p.birth_date).getFullYear();
+            const age = today.getFullYear() - birthYear;
+            if (age < 26) ageGroups['18-25']++;
+            else if (age < 36) ageGroups['26-35']++;
+            else if (age < 46) ageGroups['36-45']++;
+            else if (age < 61) ageGroups['46-60']++;
+            else ageGroups['60+']++;
+          });
+
+          const ageChartData = Object.entries(ageGroups).map(([range, count]) => ({ range, count }));
+
+          if (isMounted) {
+            setAdminStats({
+              totalClients: clientsCount || 0,
+              upcomingBirthdays: birthdays || [],
+              weeklyRedemptions: redemptionsCount || 0,
+              leaderboard: leaderboard || [],
+              ageData: ageChartData
+            });
+          }
+        } catch (err) {
+          console.error("Admin stats error:", err);
+        }
       };
 
       const fetchSettings = async () => {
@@ -56,7 +148,13 @@ export function Dashboard() {
         }
       };
 
-      fetchTransactions();
+      if (profile.role === 'admin') {
+        fetchAdminStats().finally(() => { if (isMounted) setLoading(false); });
+      } else {
+        fetchClientData();
+        setLoading(false);
+      }
+      
       fetchSettings();
       return () => { isMounted = false; };
     }
@@ -111,6 +209,122 @@ export function Dashboard() {
           </button>
         </div>
       </div>
+    );
+  }
+
+  if (profile.role === 'admin' && adminStats) {
+    return (
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="space-y-6 pb-20"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50 flex flex-col justify-between">
+            <div className="flex items-center justify-between mb-4">
+              <Users className="text-love" size={24} />
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total Clientes</span>
+            </div>
+            <div>
+              <p className="text-4xl font-black italic text-ink">{adminStats.totalClients}</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight mt-1">Usuarios Registrados</p>
+            </div>
+          </div>
+
+          <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50 flex flex-col justify-between">
+            <div className="flex items-center justify-between mb-4">
+              <Gift className="text-love" size={24} />
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Canjes / Semana</span>
+            </div>
+            <div>
+              <p className="text-4xl font-black italic text-ink">{adminStats.weeklyRedemptions}</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight mt-1">Premios Retirados</p>
+            </div>
+          </div>
+
+          <div className="bg-ink p-6 rounded-3xl shadow-xl shadow-slate-200/50 flex flex-col justify-between text-white md:col-span-2">
+            <div className="flex items-center justify-between mb-4">
+              <Calendar className="text-white/40" size={24} />
+              <span className="text-[10px] font-black uppercase tracking-widest text-white/40">Próximos Cumpleaños</span>
+            </div>
+            <div className="flex gap-2 overflow-x-auto pb-2 -mx-2 px-2 scrollbar-hide">
+              {adminStats.upcomingBirthdays.length === 0 ? (
+                <p className="text-xs text-white/30 italic font-medium">No hay cumpleaños este mes</p>
+              ) : (
+                adminStats.upcomingBirthdays.map(b => (
+                  <div key={b.id} className="bg-white/10 p-3 rounded-2xl shrink-0 min-w-[120px] border border-white/5">
+                    <p className="text-[10px] font-black uppercase truncate">{b.full_name}</p>
+                    <p className="text-[9px] text-love font-bold mt-1 uppercase tracking-widest">
+                       {new Date(b.birth_date!).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+          <div className="md:col-span-8 bg-white p-8 rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/50">
+            <div className="flex items-center justify-between mb-8">
+              <h3 className="text-sm font-black uppercase tracking-widest text-ink flex items-center gap-2">
+                <PieChart size={18} className="text-love" />
+                Distribución por Edades
+              </h3>
+            </div>
+            <div className="h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={adminStats.ageData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                  <XAxis dataKey="range" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }} />
+                  <YAxis hide />
+                  <Tooltip 
+                    cursor={{ fill: 'transparent' }}
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '10px', textTransform: 'uppercase', fontWeight: 700 }}
+                  />
+                  <Bar dataKey="count" radius={[8, 8, 0, 0]}>
+                    {adminStats.ageData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#ef4444' : '#0f172a'} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="md:col-span-4 bg-white p-8 rounded-[2rem] border border-slate-100 shadow-xl shadow-slate-200/50">
+            <h3 className="text-sm font-black uppercase tracking-widest text-ink mb-8 flex items-center gap-2">
+              <TrendingUp size={18} className="text-love" />
+              Top Clientes
+            </h3>
+            <div className="space-y-4">
+              {adminStats.leaderboard.map((c, i) => (
+                <div key={c.id} className="flex items-center gap-4 group">
+                  <div className={cn(
+                    "w-8 h-8 rounded-full flex items-center justify-center font-black italic text-xs",
+                    i === 0 ? "bg-love text-white" : "bg-slate-100 text-slate-500"
+                  )}>
+                    {i + 1}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] font-black uppercase text-ink truncate tracking-tight">{c.full_name}</p>
+                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">{c.dni || 'S/D'}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-love font-black italic text-sm">{c.points}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button 
+              onClick={() => window.location.href = '#/admin'}
+              className="w-full mt-8 bg-slate-50 text-slate-400 py-4 rounded-2xl font-black text-[9px] uppercase tracking-[0.2em] hover:bg-slate-100 hover:text-ink transition-all border border-slate-100"
+            >
+              Ver Todos los Clientes
+            </button>
+          </div>
+        </div>
+      </motion.div>
     );
   }
 

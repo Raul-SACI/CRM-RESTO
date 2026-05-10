@@ -130,7 +130,27 @@ export function Admin() {
       } else if (activeTab === 'staff') {
         result = await supabase.from('profiles').select('*').in('role', ['waiter', 'admin']).order('role', { ascending: false });
       } else if (activeTab === 'history') {
-        result = await supabase.from('transactions').select('*, profiles(full_name)').order('created_at', { ascending: false }).limit(50);
+        const { data, error } = await supabase
+          .from('transactions')
+          .select(`
+            *,
+            profiles!transactions_client_id_fkey (
+              full_name
+            )
+          `)
+          .order('created_at', { ascending: false })
+          .limit(50);
+        
+        if (error) {
+          // Fallback if specific relationship name fails
+          result = await supabase
+            .from('transactions')
+            .select('*, profiles(full_name)')
+            .order('created_at', { ascending: false })
+            .limit(50);
+        } else {
+          result = { data, error };
+        }
       }
 
       if (result?.error) throw result.error;
@@ -434,11 +454,24 @@ export function Admin() {
                     </tr>
                   </thead>
                   <tbody className="text-[10px] font-medium text-ink/80">
-                    {allTransactions.map(tx => (
+                    {allTransactions.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="px-6 py-12 text-center text-slate-400 italic">
+                          No se encontraron movimientos registrados en el salón.
+                        </td>
+                      </tr>
+                    ) : (
+                      allTransactions.map(tx => (
                       <tr key={tx.id} className="border-b border-slate-100 hover:bg-slate-50">
                         <td className="px-6 py-3">{new Date(tx.created_at).toLocaleString('es-AR')}</td>
                         <td className="px-6 py-3 bg-slate-50 font-black text-slate-400 uppercase">{tx.branch || '—'}</td>
-                        <td className="px-6 py-3 uppercase font-black text-ink">{(tx as any).profiles?.full_name}</td>
+                        <td className="px-6 py-3 uppercase font-black text-ink">
+                          {(() => {
+                            const p = (tx as any).profiles;
+                            if (Array.isArray(p)) return p[0]?.full_name || 'Desconocido';
+                            return p?.full_name || 'Desconocido';
+                          })()}
+                        </td>
                         <td className="px-6 py-3 italic text-slate-500">{tx.description}</td>
                         <td className="px-6 py-3 text-right">
                           <p className="text-love font-black italic">+{tx.points_earned}</p>
