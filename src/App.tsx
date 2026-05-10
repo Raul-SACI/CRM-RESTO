@@ -146,14 +146,14 @@ export default function App() {
         .maybeSingle();
 
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout')), 5000)
+        setTimeout(() => reject(new Error('Timeout')), 15000)
       );
 
       const result: any = await Promise.race([profilePromise, timeoutPromise]);
       let { data, error } = result;
       
       if (error) {
-        console.error("Supabase fetch error:", error);
+        console.warn("Supabase fetch warning (retrying later):", error);
         return;
       }
       
@@ -165,10 +165,16 @@ export default function App() {
       
       if (!data) {
         // Si no existe, intentar crear en segundo plano
-        await supabase.from('profiles').insert(emergencyProfile);
+        supabase.from('profiles').insert(emergencyProfile).then(({ error: insErr }) => {
+          if (insErr) console.error("Error creating new profile:", insErr);
+        });
       }
-    } catch (e) {
-      console.error("Profile fetch error definitive:", e);
+    } catch (e: any) {
+      if (e.message === 'Timeout') {
+        console.warn("Profile fetch timed out, using fallback data.");
+      } else {
+        console.error("Profile fetch error definitive:", e);
+      }
     }
   };
 
