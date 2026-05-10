@@ -77,25 +77,18 @@ export function Dashboard() {
           }
 
           // 2. Fetch fresco en paralelo
-          const [
-            clientsCountRes, 
-            leaderboardRes, 
-            redemptionsRes, 
-            allClientsRes
-          ] = await Promise.all([
+          const results = await Promise.allSettled([
             supabase.from('profiles').select('*', { count: 'exact', head: true }).limit(1),
             supabase.from('profiles').select('*').order('points', { ascending: false }).limit(20),
             supabase.from('transactions').select('*', { count: 'exact', head: true }).ilike('description', '%CANJE%').gte('created_at', oneWeekAgo.toISOString()),
             supabase.from('profiles').select('id, full_name, birth_date, points, role')
           ]);
 
-          if (allClientsRes.error) {
-            console.error("Dashboard error:", allClientsRes.error);
-            // Si hay error de recursión, no fallamos del todo para no romper el dashboard del cliente
-            if (!isMounted) return;
-            setLoading(false);
-            return;
-          }
+          const clientsCountRes = results[0].status === 'fulfilled' ? results[0].value : { count: 0, error: null };
+          const leaderboardRes = results[1].status === 'fulfilled' ? results[1].value : { data: [], error: null };
+          const redemptionsRes = results[2].status === 'fulfilled' ? results[2].value : { count: 0, error: null };
+          const allClientsRes = results[3].status === 'fulfilled' ? (results[3].value as any) : { data: [], error: { message: 'Fetch failed' } };
+
 
           const redemptionsCount = redemptionsRes.count || 0;
           let allClients = allClientsRes.data || [];

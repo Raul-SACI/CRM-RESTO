@@ -237,34 +237,35 @@ export function Admin() {
     try {
       let result: any = null;
       if (activeTab === 'clients') {
-        // Broaden query to ensure we catch all potential clients
-        const { data, error } = await supabase.from('profiles').select('*').order('points', { ascending: false });
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .order('points', { ascending: false });
         
         if (error) {
           if (error.message.includes('recursion')) {
-            alert("Error de seguridad en Supabase. Por favor, corre el script SQL en tu panel de Supabase.");
+            console.error("Recursive policy detected. Falling back to local data.");
+            // Don't alert here to avoid spamming the user, we try to fetch as much as we can
           }
           throw error;
         }
 
         if (data) {
-          // Si no hay datos filtrados, mostramos todos los que no sean explícitamente staff
           const filtered = data.filter((p: any) => {
             const role = String(p.role || '').toLowerCase();
-            return role === 'client' || (role !== 'waiter' && role !== 'admin');
+            return role === 'client' || role === '' || (!role && role !== 'admin' && role !== 'waiter');
           });
           setClients(filtered);
           localStorage.setItem(cacheKey, JSON.stringify(filtered));
         }
-      } else if (activeTab === 'prizes') {
-        const { data, error } = await supabase.from('catalogo_premios').select('*').order('points_cost', { ascending: true });
-        if (error) throw error;
-        setPrizes(data || []);
-        localStorage.setItem(cacheKey, JSON.stringify(data || []));
       } else if (activeTab === 'staff') {
-        const { data, error } = await supabase.from('profiles').select('*').order('role', { ascending: false });
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .order('role', { ascending: false });
+        
         if (error) throw error;
-        // Staff filter
+        
         const filtered = (data || []).filter((p: any) => {
           const role = String(p.role || '').toLowerCase();
           return role === 'waiter' || role === 'admin';
@@ -272,32 +273,18 @@ export function Admin() {
         setStaff(filtered);
         localStorage.setItem(cacheKey, JSON.stringify(filtered));
       } else if (activeTab === 'history') {
-          const { data, error } = await supabase
-            .from('transactions')
-            .select(`
-              *,
-              profiles!client_id (
-                full_name
-              )
-            `)
-            .order('created_at', { ascending: false })
-            .limit(50);
+        // En lugar de un join complejo que puede fallar por RLS, traemos los datos planos
+        // y los relacionaremos en el frontend si es necesario.
+        const { data, error } = await supabase
+          .from('transactions')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(100);
         
-        if (error) {
-          console.warn("Retrying history fetch without profiles join due to:", error.message);
-          const { data: fallbackData, error: fallbackError } = await supabase
-            .from('transactions')
-            .select('*')
-            .order('created_at', { ascending: false })
-            .limit(50);
-          
-          if (fallbackError) throw fallbackError;
-          setAllTransactions(fallbackData || []);
-          localStorage.setItem(cacheKey, JSON.stringify(fallbackData || []));
-        } else {
-          setAllTransactions(data || []);
-          localStorage.setItem(cacheKey, JSON.stringify(data || []));
-        }
+        if (error) throw error;
+        
+        setAllTransactions(data || []);
+        localStorage.setItem(cacheKey, JSON.stringify(data || []));
       }
     } catch (e: any) {
       console.error("Fetch error in Admin:", e);
