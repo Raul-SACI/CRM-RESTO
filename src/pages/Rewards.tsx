@@ -115,17 +115,17 @@ export function Rewards() {
       animate={{ opacity: 1 }}
       className="space-y-8 pb-12"
     >
-      <div className="flex items-center gap-3 mb-8 bg-ash p-6 rounded-3xl border border-white/5 shadow-bento justify-between">
+      <div className="flex items-center gap-3 mb-8 bg-white p-6 rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50 justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-love rounded-lg flex items-center justify-center font-bold text-xl uppercase shadow-lg shadow-love/30">P</div>
+          <div className="w-10 h-10 bg-love rounded-lg flex items-center justify-center font-bold text-xl uppercase shadow-lg shadow-love/30 text-white">P</div>
           <div>
-            <h2 className="text-lg font-bold tracking-tight uppercase leading-none">Premios <span className="text-love">& Regalos</span></h2>
-            <p className="text-[10px] uppercase tracking-widest text-slate-400 mt-1">Canjea tus puntos acumulados</p>
+            <h2 className="text-lg font-black tracking-tighter uppercase leading-none text-ink">Premios <span className="text-love">& Regalos</span></h2>
+            <p className="text-[10px] uppercase tracking-widest text-slate-400 mt-1 font-bold">Canjea tus puntos acumulados</p>
           </div>
         </div>
         <div className="text-right">
-          <p className="text-[9px] uppercase tracking-[0.2em] font-bold text-slate-500 mb-0.5">Saldo</p>
-          <p className="text-xl font-black italic text-love">{(profile?.points ?? 0).toLocaleString()} <span className="text-[10px] font-bold not-italic text-ivory/40">PTS</span></p>
+          <p className="text-[9px] uppercase tracking-[0.2em] font-black text-slate-400 mb-0.5">Saldo</p>
+          <p className="text-xl font-black italic text-love">{(profile?.points ?? 0).toLocaleString()} <span className="text-[10px] font-bold not-italic text-slate-400">PTS</span></p>
         </div>
       </div>
 
@@ -147,7 +147,7 @@ export function Rewards() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {loading ? (
-          <div className="col-span-full text-center py-12 text-ivory/10 animate-pulse uppercase tracking-widest text-xs font-bold">Explorando posibilidades...</div>
+          <div className="col-span-full text-center py-12 text-slate-200 animate-pulse uppercase tracking-[0.2em] text-[10px] font-black italic">Explorando posibilidades...</div>
         ) : (
           displayPrizes.map((prize, index) => (
             <motion.div
@@ -155,7 +155,7 @@ export function Rewards() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="bg-ash border border-white/5 rounded-3xl overflow-hidden group hover:border-love/30 transition-all flex flex-col shadow-bento"
+              className="bg-white border border-slate-100 rounded-3xl overflow-hidden group hover:border-love/30 transition-all flex flex-col shadow-xl shadow-slate-200/50"
             >
               <div className="relative h-40 shrink-0">
                 <img 
@@ -163,9 +163,9 @@ export function Rewards() {
                   alt={prize.title}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-ash via-transparent to-transparent opacity-80" />
+                <div className="absolute inset-0 bg-gradient-to-t from-white/80 via-transparent to-transparent opacity-60" />
                 <div className="absolute top-4 right-4">
-                  <div className="bg-black/80 backdrop-blur-md text-ivory text-[9px] font-black uppercase tracking-widest py-1.5 px-3 rounded-lg border border-white/10 shadow-xl">
+                  <div className="bg-white/90 backdrop-blur-md text-love text-[9px] font-black uppercase tracking-widest py-1.5 px-3 rounded-lg border border-slate-100 shadow-xl shadow-love/10">
                     {prize.points_cost} Puntos
                   </div>
                 </div>
@@ -173,8 +173,8 @@ export function Rewards() {
               
               <div className="p-6 flex-1 flex flex-col justify-between">
                 <div>
-                  <h3 className="font-bold text-lg uppercase tracking-tight mb-2 leading-none">{prize.title}</h3>
-                  <p className="text-slate-400 text-xs font-medium leading-relaxed line-clamp-2">
+                  <h3 className="font-black text-lg uppercase tracking-tighter mb-2 leading-none text-ink">{prize.title}</h3>
+                  <p className="text-slate-500 text-xs font-medium leading-relaxed line-clamp-2">
                     {prize.description}
                   </p>
                 </div>
@@ -186,16 +186,16 @@ export function Rewards() {
                     className={cn(
                       "w-full py-4 rounded-2xl text-[10px] uppercase tracking-[0.2em] font-black flex items-center justify-center gap-2 transition-all active:scale-[0.98]",
                       profile && profile.points >= prize.points_cost 
-                        ? "bg-love text-ivory shadow-lg shadow-love/20 hover:opacity-90" 
-                        : "bg-white/5 text-slate-500 cursor-not-allowed border border-white/5"
+                        ? "bg-love text-white shadow-red hover:opacity-90" 
+                        : "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
                     )}
                   >
                     {redeeming === prize.id ? 'Procesando...' : (profile && profile.points >= prize.points_cost ? 'Canjear Ahora' : 'Faltan Puntos')}
-                    {redeeming !== prize.id && <ChevronRight size={14} className={cn(profile && profile.points >= prize.points_cost ? "text-ivory" : "text-slate-700")} />}
+                    {redeeming !== prize.id && <ChevronRight size={14} className={cn(profile && profile.points >= prize.points_cost ? "text-white" : "text-slate-300")} />}
                   </button>
                   
                   {profile && profile.points < prize.points_cost && (
-                    <div className="w-full bg-white/5 h-1 md:h-1.5 mt-4 rounded-full overflow-hidden border border-white/5">
+                    <div className="w-full bg-slate-50 h-1 md:h-1.5 mt-4 rounded-full overflow-hidden border border-slate-100">
                       <motion.div 
                         initial={{ width: 0 }}
                         animate={{ width: `${(profile.points / prize.points_cost) * 100}%` }}

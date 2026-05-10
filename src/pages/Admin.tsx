@@ -159,20 +159,20 @@ export function Admin() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-ash p-6 rounded-3xl border border-white/5 shadow-bento">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50">
         <div>
-          <h2 className="text-2xl font-black uppercase tracking-tight italic">Gestión <span className="text-love">Resto</span></h2>
-          <p className="text-[10px] uppercase tracking-[0.2em] text-slate-500 font-bold">Panel Central Administrativo</p>
+          <h2 className="text-2xl font-black uppercase tracking-tighter italic text-ink">Gestión <span className="text-love">Resto</span></h2>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-black">Panel Central Administrativo</p>
         </div>
         
-        <div className="flex flex-wrap p-1 bg-black/40 rounded-xl border border-white/5 overflow-x-auto">
+        <div className="flex flex-wrap p-1 bg-slate-100 rounded-xl border border-slate-200 overflow-x-auto">
           {['clients', 'prizes', 'staff', 'history'].map((tab) => (
             <button 
               key={tab}
               onClick={() => setActiveTab(tab as any)}
               className={cn(
                 "px-4 py-2 rounded-lg text-[10px] font-bold uppercase transition-all whitespace-nowrap", 
-                activeTab === tab ? "bg-love text-white" : "text-white/40 hover:text-white"
+                activeTab === tab ? "bg-love text-white shadow-lg shadow-love/20" : "text-slate-400 hover:text-ink"
               )}
             >
               {tab === 'clients' ? 'Clientes' : tab === 'prizes' ? 'Premios' : tab === 'staff' ? 'Staff' : 'Movimientos'}
@@ -182,13 +182,13 @@ export function Admin() {
       </div>
 
       {loading ? (
-        <div className="py-20 text-center animate-pulse text-ivory/20 uppercase font-black tracking-widest">Cargando datos...</div>
+        <div className="py-20 text-center animate-pulse text-slate-200 uppercase font-black tracking-widest text-[10px] italic">Cargando datos...</div>
       ) : (
         <>
           {activeTab === 'clients' && (
-            <div className="bg-ash rounded-3xl border border-white/5 overflow-hidden shadow-bento">
-              <div className="p-6 border-b border-white/5 bg-white/5">
-                <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+            <div className="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-xl shadow-slate-200/50">
+              <div className="p-6 border-b border-slate-100 bg-slate-50">
+                <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-ink">
                   <Users size={16} className="text-love" />
                   Base de Clientes ({clients.length})
                 </h3>
@@ -196,7 +196,7 @@ export function Admin() {
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead>
-                    <tr className="text-[9px] uppercase tracking-widest text-slate-500 border-b border-white/5">
+                    <tr className="text-[9px] uppercase tracking-widest text-slate-400 border-b border-slate-100">
                       <th className="px-6 py-4">Nombre</th>
                       <th className="px-6 py-4">DNI</th>
                       <th className="px-6 py-4">Cumpleaños</th>
@@ -206,14 +206,14 @@ export function Admin() {
                   </thead>
                   <tbody className="text-sm font-medium">
                     {clients.map(client => (
-                      <tr key={client.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                      <tr key={client.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors text-ink">
                         <td className="px-6 py-4">
                           <p className="font-bold">{client.full_name}</p>
-                          <p className="text-[10px] text-slate-500 italic font-mono">{client.email}</p>
+                          <p className="text-[10px] text-slate-400 italic font-mono">{client.email}</p>
                         </td>
-                        <td className="px-6 py-4 font-mono text-xs">{client.dni}</td>
+                        <td className="px-6 py-4 font-mono text-xs text-slate-500">{client.dni}</td>
                         <td className="px-6 py-4">
-                          <div className="flex items-center gap-2 text-xs">
+                          <div className="flex items-center gap-2 text-xs text-slate-500">
                             <Calendar size={12} className="text-love" />
                             {client.birth_date}
                           </div>
@@ -224,7 +224,7 @@ export function Admin() {
                         <td className="px-6 py-4 text-right">
                           <button 
                             onClick={() => updateUserRole(client.id, 'waiter')}
-                            className="text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded bg-white/5 hover:bg-love transition-all"
+                            className="text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded bg-slate-100 text-slate-500 hover:bg-love hover:text-white transition-all shadow-sm"
                           >
                             Hacer Staff
                           </button>
@@ -239,18 +239,18 @@ export function Admin() {
 
           {activeTab === 'prizes' && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="md:col-span-1 bg-ash rounded-3xl p-6 border border-white/5 shadow-bento h-fit">
-                <h3 className="text-xs font-black uppercase tracking-widest mb-6 flex items-center gap-2">
+              <div className="md:col-span-1 bg-white rounded-3xl p-6 border border-slate-100 shadow-xl shadow-slate-200/50 h-fit">
+                <h3 className="text-xs font-black uppercase tracking-widest mb-6 flex items-center gap-2 text-ink">
                   <Plus size={16} className="text-love" />
                   Nuevo Premio
                 </h3>
                 <form onSubmit={handleCreatePrize} className="space-y-4">
-                  <input placeholder="Título del premio" className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs outline-none focus:border-love" value={newPrize.title} onChange={e => setNewPrize({...newPrize, title: e.target.value})} required />
-                  <textarea placeholder="Descripción del beneficio" className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs outline-none focus:border-love h-24" value={newPrize.description} onChange={e => setNewPrize({...newPrize, description: e.target.value})} required />
-                  <input type="number" placeholder="Costo en puntos" className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-xs outline-none focus:border-love" value={newPrize.points_cost || ''} onChange={e => setNewPrize({...newPrize, points_cost: parseInt(e.target.value)})} required />
+                  <input placeholder="Título del premio" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs outline-none focus:border-love text-ink" value={newPrize.title} onChange={e => setNewPrize({...newPrize, title: e.target.value})} required />
+                  <textarea placeholder="Descripción del beneficio" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs outline-none focus:border-love h-24 text-ink" value={newPrize.description} onChange={e => setNewPrize({...newPrize, description: e.target.value})} required />
+                  <input type="number" placeholder="Costo en puntos" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs outline-none focus:border-love text-ink" value={newPrize.points_cost || ''} onChange={e => setNewPrize({...newPrize, points_cost: parseInt(e.target.value)})} required />
                   
                   <div className="space-y-2">
-                    <label className="block text-[9px] font-black uppercase tracking-widest text-slate-500 pl-1">Imagen del premio</label>
+                    <label className="block text-[9px] font-black uppercase tracking-widest text-slate-400 pl-1">Imagen del premio</label>
                     <div className="relative group">
                       <input 
                         type="file" 
@@ -262,14 +262,14 @@ export function Admin() {
                       <label 
                         htmlFor="prize-image"
                         className={cn(
-                          "w-full aspect-video rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden relative bg-black/20",
-                          newPrize.image_url ? "border-love/30" : "border-white/10 hover:border-love/50"
+                          "w-full aspect-video rounded-xl border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden relative bg-slate-50",
+                          newPrize.image_url ? "border-love/30" : "border-slate-200 hover:border-love/50"
                         )}
                       >
                         {newPrize.image_url ? (
                           <>
                             <img src={newPrize.image_url} className="w-full h-full object-cover" />
-                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white">
+                            <div className="absolute inset-0 bg-ink/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white">
                               <Upload size={20} className="mb-1" />
                               <span className="text-[8px] font-black uppercase tracking-widest">Cambiar Imagen</span>
                             </div>
@@ -277,8 +277,8 @@ export function Admin() {
                         ) : (
                           <>
                             <div className={cn("flex flex-col items-center transition-all", uploading ? "animate-pulse" : "")}>
-                              <ImageIcon size={24} className="text-slate-600 mb-2" />
-                              <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">
+                              <ImageIcon size={24} className="text-slate-300 mb-2" />
+                              <span className="text-[8px] font-black uppercase tracking-widest text-slate-400">
                                 {uploading ? 'Procesando...' : 'Subir Imagen (Máx 2MB)'}
                               </span>
                             </div>
@@ -288,33 +288,33 @@ export function Admin() {
                     </div>
                   </div>
 
-                  <button type="submit" disabled={uploading || !newPrize.image_url} className="w-full bg-love text-white py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-love/20 active:scale-[0.98] transition-all disabled:opacity-20">
+                  <button type="submit" disabled={uploading || !newPrize.image_url} className="w-full bg-love text-white py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest shadow-red active:scale-[0.98] transition-all disabled:opacity-20">
                     Publicar Premio
                   </button>
                 </form>
               </div>
               <div className="md:col-span-2 space-y-4">
                 {prizes.length === 0 && (
-                  <div className="bg-ash p-12 rounded-3xl border border-dashed border-white/10 text-center">
-                    <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">No hay premios cargados</p>
-                    <p className="text-[10px] text-slate-600 max-w-xs mx-auto">Si no puedes agregar, asegúrate de haber ejecutado el SQL de permisos en la consola de Supabase.</p>
+                  <div className="bg-white p-12 rounded-3xl border border-dashed border-slate-200 text-center shadow-xl shadow-slate-200/50">
+                    <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 italic">No hay premios cargados</p>
+                    <p className="text-[10px] text-slate-300 max-w-xs mx-auto font-bold uppercase tracking-tight">Si no puedes agregar, consulta con soporte técnico de Supabase.</p>
                   </div>
                 )}
                 {prizes.map(prize => (
-                  <div key={prize.id} className="bg-ash p-4 rounded-2xl border border-white/5 flex items-center gap-4 group transition-all">
+                  <div key={prize.id} className="bg-white p-4 rounded-2xl border border-slate-100 flex items-center gap-4 group transition-all shadow-xl shadow-slate-200/50">
                     <img src={prize.image_url} className="w-16 h-16 rounded-xl object-cover shrink-0" />
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-sm uppercase tracking-tight">{prize.title}</h4>
-                      <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">{prize.points_cost} Puntos</p>
+                      <h4 className="font-black text-sm uppercase tracking-tighter text-ink">{prize.title}</h4>
+                      <p className="text-[10px] text-love font-black uppercase tracking-widest italic">{prize.points_cost} Puntos</p>
                     </div>
-                    <button onClick={() => handleDeletePrize(prize.id)} className="p-3 text-slate-600 hover:text-love transition-colors">
+                    <button onClick={() => handleDeletePrize(prize.id)} className="p-3 text-slate-300 hover:text-love transition-colors">
                       <Trash2 size={18} />
                     </button>
                   </div>
                 ))}
                 
-                <div className="pt-8 mt-4 border-t border-white/5 text-center">
-                  <p className="text-[8px] font-black uppercase tracking-widest text-slate-600">
+                <div className="pt-8 mt-4 border-t border-slate-100 text-center">
+                  <p className="text-[8px] font-black uppercase tracking-widest text-slate-300">
                     CRM RESTO v1.0.6-FIX-DATABASE • DB Status: Connected
                   </p>
                 </div>
@@ -323,41 +323,41 @@ export function Admin() {
           )}
 
           {activeTab === 'staff' && (
-            <div className="bg-ash rounded-3xl border border-white/5 overflow-hidden shadow-bento">
-              <div className="p-6 border-b border-white/5 bg-white/5">
-                <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+            <div className="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-xl shadow-slate-200/50">
+              <div className="p-6 border-b border-slate-100 bg-slate-50">
+                <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-ink">
                   <Award size={16} className="text-love" />
                   Roles de Staff
                 </h3>
               </div>
               <div className="p-6 space-y-4">
                 {staff.map(member => (
-                  <div key={member.id} className="bg-black/20 p-4 rounded-xl border border-white/5 flex items-center justify-between">
+                  <div key={member.id} className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex items-center justify-between">
                     <div>
-                      <p className="font-bold">{member.full_name}</p>
-                      <p className="text-[10px] text-slate-500 font-mono uppercase italic leading-none mt-1">{member.role}</p>
+                      <p className="font-black uppercase tracking-tight text-ink">{member.full_name}</p>
+                      <p className="text-[10px] text-slate-400 font-black uppercase italic leading-none mt-1 tracking-widest">{member.role}</p>
                     </div>
                     <div className="flex gap-2">
-                      <button onClick={() => updateUserRole(member.id, member.role === 'admin' ? 'waiter' : 'admin')} className="text-[9px] font-bold uppercase tracking-widest px-3 py-1.5 rounded bg-white/5 hover:bg-love transition-all">
+                      <button onClick={() => updateUserRole(member.id, member.role === 'admin' ? 'waiter' : 'admin')} className="text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded bg-white text-slate-500 hover:bg-love hover:text-white transition-all border border-slate-200 shadow-sm">
                         {member.role === 'admin' ? 'Hacer Mozo' : 'Hacer Admin'}
                       </button>
-                      <button onClick={() => updateUserRole(member.id, 'client')} className="text-[9px] font-bold uppercase tracking-widest px-3 py-1.5 rounded bg-white/5 hover:text-love transition-all">
+                      <button onClick={() => updateUserRole(member.id, 'client')} className="text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded bg-white text-slate-400 hover:text-love transition-all border border-slate-200 shadow-sm">
                         Quitar Acceso
                       </button>
                     </div>
                   </div>
                 ))}
                 <div className="mt-8 p-4 bg-love/5 rounded-xl border border-love/10">
-                  <p className="text-[10px] text-love font-bold uppercase tracking-widest text-center">Para añadir staff: Pídeles que se registren como clientes y luego asciéndelos aquí.</p>
+                  <p className="text-[10px] text-love font-black uppercase tracking-widest text-center">Para añadir staff: Pídeles que se registren como clientes y luego asciéndelos aquí.</p>
                 </div>
               </div>
             </div>
           )}
 
           {activeTab === 'history' && (
-            <div className="bg-ash rounded-3xl border border-white/5 overflow-hidden shadow-bento">
-               <div className="p-6 border-b border-white/5 bg-white/5">
-                <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+            <div className="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-xl shadow-slate-200/50">
+               <div className="p-6 border-b border-slate-100 bg-slate-50">
+                <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-ink">
                   <History size={16} className="text-love" />
                   Historial del Salón (Últimos 50)
                 </h3>
@@ -365,7 +365,7 @@ export function Admin() {
               <div className="overflow-x-auto">
                 <table className="w-full text-left font-mono">
                   <thead>
-                    <tr className="text-[9px] uppercase text-slate-500 border-b border-white/5">
+                    <tr className="text-[9px] uppercase text-slate-400 border-b border-slate-100">
                       <th className="px-6 py-4">Fecha</th>
                       <th className="px-6 py-4">Sucursal</th>
                       <th className="px-6 py-4">Cliente</th>
@@ -373,16 +373,16 @@ export function Admin() {
                       <th className="px-6 py-4 text-right">Puntos</th>
                     </tr>
                   </thead>
-                  <tbody className="text-[10px] font-medium text-ivory/80">
+                  <tbody className="text-[10px] font-medium text-ink/80">
                     {allTransactions.map(tx => (
-                      <tr key={tx.id} className="border-b border-white/5 hover:bg-white/5">
+                      <tr key={tx.id} className="border-b border-slate-100 hover:bg-slate-50">
                         <td className="px-6 py-3">{new Date(tx.created_at).toLocaleString('es-AR')}</td>
-                        <td className="px-6 py-3 bg-white/5 font-black text-white/60 uppercase">{tx.branch || '—'}</td>
-                        <td className="px-6 py-3 uppercase">{(tx as any).profiles?.full_name}</td>
-                        <td className="px-6 py-3 italic">{tx.description}</td>
+                        <td className="px-6 py-3 bg-slate-50 font-black text-slate-400 uppercase">{tx.branch || '—'}</td>
+                        <td className="px-6 py-3 uppercase font-black text-ink">{(tx as any).profiles?.full_name}</td>
+                        <td className="px-6 py-3 italic text-slate-500">{tx.description}</td>
                         <td className="px-6 py-3 text-right">
                           <p className="text-love font-black italic">+{tx.points_earned}</p>
-                          {tx.amount > 0 && <p className="text-[8px] text-slate-500 opacity-60">${tx.amount.toLocaleString()}</p>}
+                          {tx.amount > 0 && <p className="text-[8px] text-slate-400 font-bold tracking-tight">${tx.amount.toLocaleString()}</p>}
                         </td>
                       </tr>
                     ))}

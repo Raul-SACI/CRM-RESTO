@@ -203,19 +203,19 @@ export function Waiter() {
       animate={{ opacity: 1, y: 0 }}
       className="max-w-xl mx-auto space-y-6 pt-4 px-2"
     >
-      <div className="flex items-center justify-between mb-4 bg-ash p-4 md:p-6 rounded-2xl md:rounded-3xl border border-white/5 shadow-bento">
+      <div className="flex items-center justify-between mb-4 bg-white p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 md:w-10 md:h-10 bg-love rounded-lg flex items-center justify-center font-bold text-lg md:text-xl uppercase shadow-lg shadow-love/30">M</div>
+          <div className="w-8 h-8 md:w-10 md:h-10 bg-love rounded-lg flex items-center justify-center font-bold text-lg md:text-xl uppercase shadow-lg shadow-love/30 text-white">M</div>
           <div>
-            <h2 className="text-base md:text-lg font-bold tracking-tight uppercase leading-none">Carga <span className="text-love">Mozo</span></h2>
-            <p className="text-[9px] md:text-[10px] uppercase tracking-widest text-slate-500 mt-1">Suma puntos a clientes</p>
+            <h2 className="text-base md:text-lg font-black tracking-tighter uppercase leading-none text-ink">Carga <span className="text-love">Mozo</span></h2>
+            <p className="text-[9px] md:text-[10px] uppercase tracking-widest text-slate-400 mt-1 font-bold">Suma puntos a clientes</p>
           </div>
         </div>
         <button 
           onClick={() => setShowScanner(!showScanner)}
           className={cn(
             "p-2 md:p-3 rounded-xl md:rounded-2xl transition-all border flex items-center gap-2 text-[8px] font-bold uppercase tracking-widest",
-            showScanner ? "bg-love border-love text-white" : "bg-white/5 border-white/10 text-white/60 hover:text-white"
+            showScanner ? "bg-love border-love text-white" : "bg-slate-100 border-slate-200 text-slate-400 hover:text-ink hover:bg-slate-200 shadow-sm"
           )}
         >
           {showScanner ? <X size={16} /> : <QrCode size={16} />}
@@ -251,9 +251,10 @@ export function Waiter() {
         </motion.div>
       )}
 
-      <div className="bg-white rounded-[2rem] p-6 md:p-8 text-black shadow-2xl flex flex-col justify-between border-b-8 border-slate-200">
-        <div className="mb-2">
-          <h2 className="text-[8px] md:text-[9px] font-black uppercase tracking-[0.3em] text-slate-300 mb-6 md:mb-8 flex items-center gap-2">
+      <div className="bg-white rounded-[2rem] p-6 md:p-8 text-ink shadow-xl shadow-slate-200/50 flex flex-col justify-between border-slate-100 border relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-love/5 rounded-full blur-3xl -mr-16 -mt-16" />
+        <div className="mb-2 relative">
+          <h2 className="text-[8px] md:text-[9px] font-black uppercase tracking-[0.3em] text-slate-400 mb-6 md:mb-8 flex items-center gap-2">
             <div className="w-1.5 h-1.5 rounded-full bg-love"></div>
             Identificación de Cliente
           </h2>
@@ -360,7 +361,7 @@ export function Waiter() {
                     </div>
                   </div>
 
-                  <div className="bg-love/5 rounded-[1.5rem] md:rounded-[2rem] p-4 md:p-6 text-love border-2 border-love/10 flex justify-between items-center group">
+                  <div className="bg-love/5 rounded-[1.5rem] md:rounded-[2rem] p-4 md:p-6 text-love border-2 border-love/5 flex justify-between items-center group">
                     <div>
                       <p className="text-[9px] md:text-[10px] font-black uppercase tracking-widest opacity-60 mb-1">Puntos a Asignar</p>
                       <p className="text-4xl md:text-5xl font-black italic">
@@ -373,7 +374,7 @@ export function Waiter() {
                   <button
                     type="submit"
                     disabled={loading || !amount}
-                    className="w-full bg-love text-white rounded-[1.5rem] md:rounded-[2rem] py-4 md:py-6 font-black text-[10px] md:text-xs uppercase tracking-[0.2em] md:tracking-[0.3em] shadow-xl shadow-love/20 active:scale-[0.98] transition-all disabled:opacity-20"
+                    className="w-full bg-love text-white rounded-[1.5rem] md:rounded-[2rem] py-4 md:py-6 font-black text-[10px] md:text-xs uppercase tracking-[0.2em] md:tracking-[0.3em] shadow-red active:scale-[0.98] transition-all disabled:opacity-20"
                   >
                     {loading ? 'Procesando Carga...' : 'Cargar Puntos al Cliente'}
                   </button>

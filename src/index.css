@@ -1,22 +1,25 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ash: #2F3131;
-  --color-love: #C41E3A;
-  --color-bar-black: #1a1a1a;
+  --color-ash: #27272a;
+  --color-love: #ef4444;
+  --color-bar-black: #18181b;
   --color-ivory: #ffffff;
+  --color-paper: #f8fafc;
+  --color-ink: #0f172a;
   --color-slate-600: #475569;
   --color-slate-400: #94a3b8;
   
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Playfair Display", Georgia, serif;
   
-  --shadow-bento: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+  --shadow-bento: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-red: 0 10px 15px -3px rgba(239, 68, 68, 0.2);
 }
 
 @layer base {
   body {
-    @apply bg-bar-black text-ivory antialiased selection:bg-love/30;
+    @apply bg-paper text-ink antialiased selection:bg-love/20;
     -webkit-tap-highlight-color: transparent;
   }
 }
