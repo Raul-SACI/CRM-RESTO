@@ -90,10 +90,8 @@ export function Admin() {
       if (authError) throw authError;
 
       // 2. Intentar actualizar o insertar el perfil manual para asegurar consistencia
-      // Usamos un pequeño delay para dejar al trigger actuar o intentamos insert directo
       const userId = authData.user?.id;
       if (userId) {
-        // Intentamos un upsert para cubrir ambos casos (trigger rápido o lento)
         const { error: profileError } = await supabase
           .from('profiles')
           .upsert({
@@ -107,16 +105,20 @@ export function Admin() {
           }, { onConflict: 'id' });
 
         if (profileError) {
-          console.warn("Error profile upsert:", profileError);
+          console.error("Profile upsert failed:", profileError);
+          // Si el upsert falló por RLS, informamos al usuario pero signUp ya ocurrió
+          alert(`Usuario de autenticación creado, pero su perfil no se pudo vincular (Error: ${profileError.message}). El cliente podría tener problemas para ver sus puntos hasta que un admin actualice su rol.`);
         }
       }
       
-      alert('¡Cliente y usuario creados con éxito! El cliente ya puede iniciar sesión con su email y contraseña.');
+      alert('¡Cliente y usuario creados con éxito! El cliente ya puede iniciar sesión.');
       setNewClient({ fullName: '', email: '', dni: '', birthDate: '', password: '' });
       setShowAddModal(false);
-      fetchData(true);
+      
+      // Delay de 1 segundo para asegurar que triggers de DB han terminado
+      setTimeout(() => fetchData(true), 1000);
     } catch (err: any) {
-      alert("Error: " + err.message);
+      alert("Error al crear usuario: " + err.message);
     } finally {
       setLoading(false);
     }
@@ -235,11 +237,33 @@ export function Admin() {
     try {
       let result: any = null;
       if (activeTab === 'clients') {
-        result = await supabase.from('profiles').select('*').or('role.eq.client,role.is.null').order('points', { ascending: false });
+        // Broaden query to ensure we catch all potential clients
+        const { data, error } = await supabase.from('profiles').select('*').order('points', { ascending: false });
+        if (error) throw error;
+        if (data) {
+          // Si no hay datos filtrados, mostramos todos los que no sean explícitamente staff
+          const filtered = data.filter((p: any) => {
+            const role = String(p.role || '').toLowerCase();
+            return role !== 'waiter' && role !== 'admin';
+          });
+          setClients(filtered);
+          localStorage.setItem(cacheKey, JSON.stringify(filtered));
+        }
       } else if (activeTab === 'prizes') {
-        result = await supabase.from('catalogo_premios').select('*').order('points_cost', { ascending: true });
+        const { data, error } = await supabase.from('catalogo_premios').select('*').order('points_cost', { ascending: true });
+        if (error) throw error;
+        setPrizes(data || []);
+        localStorage.setItem(cacheKey, JSON.stringify(data || []));
       } else if (activeTab === 'staff') {
-        result = await supabase.from('profiles').select('*').in('role', ['waiter', 'admin']).order('role', { ascending: false });
+        const { data, error } = await supabase.from('profiles').select('*').order('role', { ascending: false });
+        if (error) throw error;
+        // Staff filter
+        const filtered = (data || []).filter((p: any) => {
+          const role = String(p.role || '').toLowerCase();
+          return role === 'waiter' || role === 'admin';
+        });
+        setStaff(filtered);
+        localStorage.setItem(cacheKey, JSON.stringify(filtered));
       } else if (activeTab === 'history') {
         const { data, error } = await supabase
           .from('transactions')
@@ -252,30 +276,23 @@ export function Admin() {
           .order('created_at', { ascending: false })
           .limit(50);
         
+        let finalData = data;
         if (error) {
           // Fallback if specific relationship name fails
-          result = await supabase
+          const { data: fallbackData, error: fallbackError } = await supabase
             .from('transactions')
             .select('*, profiles(full_name)')
             .order('created_at', { ascending: false })
             .limit(50);
-        } else {
-          result = { data, error };
+          if (fallbackError) throw fallbackError;
+          finalData = fallbackData;
         }
-      }
-
-      if (result?.error) throw result.error;
-      if (result?.data) {
-        if (activeTab === 'clients') setClients(result.data);
-        else if (activeTab === 'prizes') setPrizes(result.data);
-        else if (activeTab === 'staff') setStaff(result.data);
-        else if (activeTab === 'history') setAllTransactions(result.data);
-        
-        // Guardar en caché
-        localStorage.setItem(cacheKey, JSON.stringify(result.data));
+        setAllTransactions(finalData || []);
+        localStorage.setItem(cacheKey, JSON.stringify(finalData || []));
       }
     } catch (e: any) {
       console.error("Fetch error in Admin:", e);
+      alert("Error al cargar datos: " + e.message);
     } finally {
       clearTimeout(fetchTimeout);
       setLoading(false);
@@ -433,32 +450,40 @@ export function Admin() {
                     </tr>
                   </thead>
                   <tbody className="text-sm font-medium">
-                    {clients.map(client => (
-                      <tr key={client.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors text-ink">
-                        <td className="px-6 py-4">
-                          <p className="font-bold">{client.full_name}</p>
-                          <p className="text-[10px] text-slate-400 italic font-mono">{client.email}</p>
-                        </td>
-                        <td className="px-6 py-4 font-mono text-xs text-slate-500">{client.dni}</td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2 text-xs text-slate-500">
-                            <Calendar size={12} className="text-love" />
-                            {client.birth_date}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <span className="text-love font-black italic text-lg">{client.points}</span>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <button 
-                            onClick={() => updateUserRole(client.id, 'waiter')}
-                            className="text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded bg-slate-100 text-slate-500 hover:bg-love hover:text-white transition-all shadow-sm"
-                          >
-                            Hacer Staff
-                          </button>
+                    {clients.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="px-6 py-12 text-center text-slate-400 italic">
+                          No se encontraron clientes registrados.
                         </td>
                       </tr>
-                    ))}
+                    ) : (
+                      clients.map(client => (
+                        <tr key={client.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors text-ink">
+                          <td className="px-6 py-4">
+                            <p className="font-bold">{client.full_name}</p>
+                            <p className="text-[10px] text-slate-400 italic font-mono">{client.email}</p>
+                          </td>
+                          <td className="px-6 py-4 font-mono text-xs text-slate-500">{client.dni}</td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-2 text-xs text-slate-500">
+                              <Calendar size={12} className="text-love" />
+                              {client.birth_date}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <span className="text-love font-black italic text-lg">{client.points}</span>
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            <button 
+                              onClick={() => updateUserRole(client.id, 'waiter')}
+                              className="text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded bg-slate-100 text-slate-500 hover:bg-love hover:text-white transition-all shadow-sm"
+                            >
+                              Hacer Staff
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
                   </tbody>
                 </table>
               </div>

@@ -83,16 +83,19 @@ export function Dashboard() {
             redemptionsRes, 
             allClientsRes
           ] = await Promise.all([
-            supabase.from('profiles').select('*', { count: 'exact', head: true }).or('role.eq.client,role.is.null'),
-            supabase.from('profiles').select('*').or('role.eq.client,role.is.null').order('points', { ascending: false }).limit(5),
+            supabase.from('profiles').select('*', { count: 'exact', head: true }),
+            supabase.from('profiles').select('*').order('points', { ascending: false }),
             supabase.from('transactions').select('*', { count: 'exact', head: true }).ilike('description', '%CANJE%').gte('created_at', oneWeekAgo.toISOString()),
-            supabase.from('profiles').select('full_name, birth_date, points, role').or('role.eq.client,role.is.null')
+            supabase.from('profiles').select('id, full_name, birth_date, points, role')
           ]);
 
-          const clientsCount = clientsCountRes.count || 0;
-          const leaderboard = leaderboardRes.data || [];
           const redemptionsCount = redemptionsRes.count || 0;
-          const allClients = allClientsRes.data || [];
+          let allClients = allClientsRes.data || [];
+          
+          // Filter in JS to strictly count clients (non-admins/waiters)
+          allClients = allClients.filter(p => p.role !== 'admin' && p.role !== 'waiter');
+          const clientsCount = allClients.length;
+          const leaderboard = allClients.sort((a, b) => b.points - a.points).slice(0, 5);
 
           // Procesar datos en JS
           const birthdays: Profile[] = [];
