@@ -4,11 +4,12 @@ import QRCode from 'react-qr-code';
 import { motion, AnimatePresence } from 'motion/react';
 import { CreditCard, Award, TrendingUp, History } from 'lucide-react';
 import { supabase } from '@/src/lib/supabase';
-import { Transaction } from '@/src/types';
+import { Transaction, SystemSettings } from '@/src/types';
 
 export function Dashboard() {
   const { profile } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [settings, setSettings] = useState<SystemSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({ fullName: '', dni: '' });
@@ -43,7 +44,20 @@ export function Dashboard() {
         if (isMounted) setLoading(false);
       };
 
+      const fetchSettings = async () => {
+        try {
+          const { data } = await supabase
+            .from('settings')
+            .select('*')
+            .single();
+          if (data && isMounted) setSettings(data);
+        } catch (err) {
+          console.error("Error fetching settings:", err);
+        }
+      };
+
       fetchTransactions();
+      fetchSettings();
       return () => { isMounted = false; };
     }
   }, [profile]);
@@ -247,7 +261,7 @@ export function Dashboard() {
             </div>
             <p className="text-ink text-sm font-bold mb-1">Tu perfil está verificado y activo.</p>
             <p className="text-slate-500 text-[11px] leading-relaxed font-medium">
-              Sumas 1 punto por cada $1.000 consumidos. Los puntos de cumpleaños (500 pts) se cargan automáticamente al iniciar sesión en tu fecha especial.
+              Sumas 1 punto por cada ${ (settings?.points_conversion_rate || 1000).toLocaleString('es-AR') } consumidos. Los puntos de cumpleaños (500 pts) se cargan automáticamente al iniciar sesión en tu fecha especial.
             </p>
           </div>
           <div className="mt-6 flex gap-3 text-[10px] uppercase font-bold tracking-widest">

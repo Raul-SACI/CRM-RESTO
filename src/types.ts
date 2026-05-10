@@ -20,6 +20,12 @@ export interface Transaction {
   created_at: string;
 }
 
+export interface SystemSettings {
+  id: string;
+  points_conversion_rate: number; // amount of money for 1 point
+  updated_at: string;
+}
+
 export interface Prize {
   id: string;
   title: string;

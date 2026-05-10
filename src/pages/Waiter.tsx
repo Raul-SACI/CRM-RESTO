@@ -5,7 +5,7 @@ import { useAuth } from '@/src/App';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, Receipt, PlusCircle, CheckCircle2, AlertCircle, QrCode, X } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
-import { Profile } from '@/src/types';
+import { Profile, SystemSettings } from '@/src/types';
 import { BRANCHES } from '@/src/constants';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 
@@ -16,6 +16,7 @@ export function Waiter() {
   const [amount, setAmount] = useState('');
   const [selectedBranch, setSelectedBranch] = useState(BRANCHES[0]);
   const [client, setClient] = useState<Profile | null>(null);
+  const [settings, setSettings] = useState<SystemSettings | null>(null);
   const [loading, setLoading] = useState(false);
   const [searching, setSearching] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
@@ -63,6 +64,32 @@ export function Waiter() {
       return () => clearTimeout(timer);
     }
   }, [dni]);
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('settings')
+        .select('*')
+        .single();
+      
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+
+      if (data) {
+        setSettings(data);
+      } else {
+        // Fallback or default
+        setSettings({ id: 'default', points_conversion_rate: 1000, updated_at: '' });
+      }
+    } catch (err) {
+      console.error("Error fetching settings:", err);
+    }
+  };
 
   const searchClient = async (dniToSearch?: string) => {
     const searchDni = (dniToSearch || dni).trim();
@@ -130,11 +157,12 @@ export function Waiter() {
     setLoading(true);
     setStatus(null);
 
+    const conversionRate = settings?.points_conversion_rate || 1000;
     const amountNum = parseFloat(amount);
-    const pointsToAdd = Math.floor(amountNum / 1000);
+    const pointsToAdd = Math.floor(amountNum / conversionRate);
 
     if (pointsToAdd <= 0) {
-      setStatus({ type: 'error', message: 'El monto debe ser al menos $1.000' });
+      setStatus({ type: 'error', message: `El monto debe ser al menos $${conversionRate.toLocaleString('es-AR')}` });
       setLoading(false);
       return;
     }
@@ -365,7 +393,7 @@ export function Waiter() {
                     <div>
                       <p className="text-[9px] md:text-[10px] font-black uppercase tracking-widest opacity-60 mb-1">Puntos a Asignar</p>
                       <p className="text-4xl md:text-5xl font-black italic">
-                        +{amount ? Math.floor(parseFloat(amount) / 1000) : 0}
+                        +{amount ? Math.floor(parseFloat(amount) / (settings?.points_conversion_rate || 1000)) : 0}
                       </p>
                     </div>
                     <Receipt size={48} className="opacity-10 group-hover:scale-110 transition-transform md:size-16" />

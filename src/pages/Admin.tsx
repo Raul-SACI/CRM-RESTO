@@ -1,19 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/src/lib/supabase';
-import { Profile, Prize, Transaction } from '@/src/types';
+import { Profile, Prize, Transaction, SystemSettings } from '@/src/types';
 import { motion } from 'motion/react';
 import { Users, Gift, Settings, Search, Plus, Trash2, Calendar, Award, History, DollarSign, Upload, Image as ImageIcon } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 
 export function Admin() {
-  const [activeTab, setActiveTab] = useState<'clients' | 'prizes' | 'staff' | 'history'>('clients');
+  const [activeTab, setActiveTab] = useState<'clients' | 'prizes' | 'staff' | 'history' | 'settings'>('clients');
   const [loading, setLoading] = useState(true);
   const [clients, setClients] = useState<Profile[]>([]);
   const [prizes, setPrizes] = useState<Prize[]>([]);
   const [staff, setStaff] = useState<Profile[]>([]);
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
+  const [settings, setSettings] = useState<SystemSettings | null>(null);
   const [newPrize, setNewPrize] = useState({ title: '', description: '', points_cost: 0, image_url: '' });
   const [uploading, setUploading] = useState(false);
+  const [updatingSettings, setUpdatingSettings] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -35,7 +37,65 @@ export function Admin() {
 
   useEffect(() => {
     fetchData();
+    if (activeTab === 'settings') {
+      fetchSettings();
+    }
   }, [activeTab]);
+
+  const fetchSettings = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('settings')
+        .select('*')
+        .single();
+      
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+
+      if (data) {
+        setSettings(data);
+      } else {
+        // Create default settings if not exists
+        const { data: newData, error: insertError } = await supabase
+          .from('settings')
+          .insert([{ points_conversion_rate: 1000 }])
+          .select()
+          .single();
+        
+        if (insertError) throw insertError;
+        setSettings(newData);
+      }
+    } catch (err) {
+      console.error("Error fetching settings:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!settings) return;
+
+    setUpdatingSettings(true);
+    try {
+      const { error } = await supabase
+        .from('settings')
+        .update({ 
+          points_conversion_rate: settings.points_conversion_rate,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', settings.id);
+
+      if (error) throw error;
+      alert("Configuración actualizada correctamente");
+    } catch (err: any) {
+      alert("Error actualizando configuración: " + err.message);
+    } finally {
+      setUpdatingSettings(false);
+    }
+  };
 
   const fetchData = async (forceRefresh = false) => {
     // 1. Cargar desde caché primero para respuesta instantánea
@@ -166,7 +226,7 @@ export function Admin() {
         </div>
         
         <div className="flex flex-wrap p-1 bg-slate-100 rounded-xl border border-slate-200 overflow-x-auto">
-          {['clients', 'prizes', 'staff', 'history'].map((tab) => (
+          {['clients', 'prizes', 'staff', 'history', 'settings'].map((tab) => (
             <button 
               key={tab}
               onClick={() => setActiveTab(tab as any)}
@@ -175,7 +235,7 @@ export function Admin() {
                 activeTab === tab ? "bg-love text-white shadow-lg shadow-love/20" : "text-slate-400 hover:text-ink"
               )}
             >
-              {tab === 'clients' ? 'Clientes' : tab === 'prizes' ? 'Premios' : tab === 'staff' ? 'Staff' : 'Movimientos'}
+              {tab === 'clients' ? 'Clientes' : tab === 'prizes' ? 'Premios' : tab === 'staff' ? 'Staff' : tab === 'history' ? 'Movimientos' : 'Ajustes'}
             </button>
           ))}
         </div>
@@ -388,6 +448,56 @@ export function Admin() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'settings' && settings && (
+            <div className="max-w-2xl mx-auto">
+              <div className="bg-white rounded-[2rem] p-8 border border-slate-100 shadow-xl shadow-slate-200/50">
+                <div className="flex items-center gap-3 mb-8">
+                  <div className="w-12 h-12 bg-love/10 rounded-2xl flex items-center justify-center text-love">
+                    <Settings size={24} />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black uppercase tracking-tighter text-ink">Configuración del <span className="text-love">Sistema</span></h3>
+                    <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mt-1">Personaliza las reglas de lealtad</p>
+                  </div>
+                </div>
+
+                <form onSubmit={handleUpdateSettings} className="space-y-8">
+                  <div className="space-y-3">
+                    <label className="block text-xs font-black uppercase tracking-widest text-slate-500 pl-1">Tasa de Conversión de Puntos</label>
+                    <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 flex items-center justify-between group transition-all hover:border-love/30">
+                      <div className="flex-1">
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-2xl font-black text-ink">$</span>
+                          <input 
+                            type="number" 
+                            className="bg-transparent text-4xl font-black text-love outline-none w-full border-b-2 border-transparent focus:border-love transition-all"
+                            value={settings.points_conversion_rate}
+                            onChange={e => setSettings({...settings, points_conversion_rate: parseInt(e.target.value) || 0})}
+                          />
+                        </div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">equivale a 1 punto</p>
+                      </div>
+                      <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center border border-slate-200 shadow-sm text-love">
+                        <Award size={32} />
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-slate-400 font-medium px-2 leading-relaxed">
+                      Este valor define cuántos pesos argentinos debe consumir el cliente para sumar 1 punto. Por ejemplo, si pones 1000, un consumo de $10.000 sumará 10 puntos.
+                    </p>
+                  </div>
+
+                  <button 
+                    type="submit" 
+                    disabled={updatingSettings}
+                    className="w-full bg-ink text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-xl shadow-ink/20 hover:bg-black transition-all active:scale-[0.98] disabled:opacity-50"
+                  >
+                    {updatingSettings ? 'Guardando...' : 'Guardar Cambios'}
+                  </button>
+                </form>
               </div>
             </div>
           )}
