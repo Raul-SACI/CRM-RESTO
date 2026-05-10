@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/src/lib/supabase';
 import { Profile, Prize, Transaction, SystemSettings } from '@/src/types';
-import { motion } from 'motion/react';
-import { Users, Gift, Settings, Search, Plus, Trash2, Calendar, Award, History, DollarSign, Upload, Image as ImageIcon } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Users, Gift, Settings, Search, Plus, Trash2, Calendar, Award, History, DollarSign, Upload, Image as ImageIcon, FileSpreadsheet, UserPlus, X } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
+import * as XLSX from 'xlsx';
 
 export function Admin() {
   const [activeTab, setActiveTab] = useState<'clients' | 'prizes' | 'staff' | 'history' | 'settings'>('clients');
@@ -16,6 +17,77 @@ export function Admin() {
   const [newPrize, setNewPrize] = useState({ title: '', description: '', points_cost: 0, image_url: '' });
   const [uploading, setUploading] = useState(false);
   const [updatingSettings, setUpdatingSettings] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [newClient, setNewClient] = useState({ fullName: '', email: '', dni: '', birthDate: '' });
+
+  const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setImporting(true);
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        const bstr = evt.target?.result;
+        const wb = XLSX.read(bstr, { type: 'binary' });
+        const wsname = wb.SheetNames[0];
+        const ws = wb.Sheets[wsname];
+        const data = XLSX.utils.sheet_to_json(ws) as any[];
+
+        const clientsToInsert = data.map(row => ({
+          full_name: row.Nombre || row['Nombre Completo'] || row.fullName || row.name,
+          email: row.Email || row.email || row.Correo,
+          dni: String(row.DNI || row.dni),
+          birth_date: row.FechaNacimiento || row['Fecha de Nacimiento'] || row.birthDate || row.birth_date,
+          role: 'client',
+          points: parseInt(row.Puntos || row.points) || 0
+        })).filter(c => c.dni && c.full_name);
+
+        if (clientsToInsert.length === 0) {
+          alert("No se encontraron datos válidos en el archivo. Asegúrate de tener columnas como 'Nombre', 'DNI', 'Email'.");
+          return;
+        }
+
+        const { error } = await supabase.from('profiles').upsert(clientsToInsert, { onConflict: 'dni' });
+        if (error) throw error;
+        
+        alert(`¡Se importaron ${clientsToInsert.length} clientes correctamente!`);
+        fetchData(true);
+      } catch (err: any) {
+        alert("Error al procesar Excel: " + err.message);
+      } finally {
+        setImporting(false);
+      }
+    };
+    reader.readAsBinaryString(file);
+  };
+
+  const handleManualAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const { error } = await supabase.from('profiles').insert([{
+        full_name: newClient.fullName,
+        email: newClient.email,
+        dni: newClient.dni,
+        birth_date: newClient.birthDate,
+        role: 'client',
+        points: 0
+      }]);
+
+      if (error) throw error;
+      
+      alert('Cliente agregado con éxito');
+      setNewClient({ fullName: '', email: '', dni: '', birthDate: '' });
+      setShowAddModal(false);
+      fetchData(true);
+    } catch (err: any) {
+      alert("Error: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -124,7 +196,7 @@ export function Admin() {
     try {
       let result: any = null;
       if (activeTab === 'clients') {
-        result = await supabase.from('profiles').select('*').eq('role', 'client').order('points', { ascending: false });
+        result = await supabase.from('profiles').select('*').or('role.eq.client,role.is.null').order('points', { ascending: false });
       } else if (activeTab === 'prizes') {
         result = await supabase.from('catalogo_premios').select('*').order('points_cost', { ascending: true });
       } else if (activeTab === 'staff') {
@@ -266,14 +338,51 @@ export function Admin() {
       ) : (
         <>
           {activeTab === 'clients' && (
-            <div className="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-xl shadow-slate-200/50">
-              <div className="p-6 border-b border-slate-100 bg-slate-50">
-                <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-ink">
-                  <Users size={16} className="text-love" />
-                  Base de Clientes ({clients.length})
-                </h3>
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <button 
+                  onClick={() => setShowAddModal(true)}
+                  className="bg-love text-white p-6 rounded-3xl flex items-center justify-between shadow-xl shadow-love/20 hover:scale-[1.02] transition-all"
+                >
+                  <div className="text-left">
+                    <p className="text-[10px] font-black uppercase tracking-widest opacity-80">Nuevo</p>
+                    <h4 className="text-xl font-black italic">Cliente Manual</h4>
+                  </div>
+                  <UserPlus size={32} />
+                </button>
+
+                <div className="relative group overflow-hidden bg-ink text-white p-6 rounded-3xl flex items-center justify-between shadow-xl shadow-ink/20 hover:scale-[1.02] transition-all cursor-pointer">
+                  <input 
+                    type="file" 
+                    accept=".xlsx, .xls, .csv" 
+                    onChange={handleImportExcel}
+                    className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                    disabled={importing}
+                  />
+                  <div className="text-left">
+                    <p className="text-[10px] font-black uppercase tracking-widest opacity-40">{importing ? 'Procesando...' : 'Carga Masiva'}</p>
+                    <h4 className="text-xl font-black italic">Importar Excel</h4>
+                  </div>
+                  <FileSpreadsheet size={32} />
+                </div>
+
+                <div className="bg-white p-6 rounded-3xl border border-slate-100 flex items-center justify-between shadow-xl shadow-slate-200/50">
+                  <div className="text-left">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total en Base</p>
+                    <h4 className="text-xl font-black italic text-ink">{clients.length} Clientes</h4>
+                  </div>
+                  <Users size={32} className="text-slate-200" />
+                </div>
               </div>
-              <div className="overflow-x-auto">
+
+              <div className="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-xl shadow-slate-200/50">
+                <div className="p-6 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+                  <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-ink">
+                    <Users size={16} className="text-love" />
+                    Base de Clientes
+                  </h3>
+                </div>
+                <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead>
                     <tr className="text-[9px] uppercase tracking-widest text-slate-400 border-b border-slate-100">
@@ -315,7 +424,8 @@ export function Admin() {
                 </table>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
           {activeTab === 'prizes' && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -536,6 +646,84 @@ export function Admin() {
           )}
         </>
       )}
+
+      {/* Manual Add Modal */}
+      <AnimatePresence>
+        {showAddModal && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="bg-white border border-slate-200 p-8 rounded-[2rem] w-full max-w-md shadow-2xl relative"
+            >
+              <button 
+                onClick={() => setShowAddModal(false)}
+                className="absolute top-6 right-6 text-slate-300 hover:text-love transition-colors"
+              >
+                <X size={24} />
+              </button>
+
+              <h3 className="text-xl font-black mb-6 uppercase tracking-tight italic text-ink">Nuevo <span className="text-love">Cliente</span></h3>
+              <form onSubmit={handleManualAdd} className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Nombre Completo</label>
+                  <input 
+                    required
+                    placeholder="Ej: Juan Pérez" 
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-love text-ink" 
+                    value={newClient.fullName} 
+                    onChange={e => setNewClient({...newClient, fullName: e.target.value})} 
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">DNI</label>
+                    <input 
+                      required
+                      placeholder="Sin puntos" 
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-love text-ink" 
+                      value={newClient.dni} 
+                      onChange={e => setNewClient({...newClient, dni: e.target.value})} 
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Fecha Nac.</label>
+                    <input 
+                      type="date"
+                      required
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-love text-ink" 
+                      value={newClient.birthDate} 
+                      onChange={e => setNewClient({...newClient, birthDate: e.target.value})} 
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Email (Opcional)</label>
+                  <input 
+                    type="email"
+                    placeholder="cliente@ejemplo.com" 
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-love text-ink" 
+                    value={newClient.email} 
+                    onChange={e => setNewClient({...newClient, email: e.target.value})} 
+                  />
+                </div>
+                <button 
+                  type="submit" 
+                  disabled={loading}
+                  className="w-full bg-love text-white py-4 rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-love/20 mt-4 disabled:opacity-50"
+                >
+                  {loading ? 'Agregando...' : 'Registrar Cliente'}
+                </button>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

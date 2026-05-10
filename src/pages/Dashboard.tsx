@@ -62,74 +62,72 @@ export function Dashboard() {
 
       const fetchAdminStats = async () => {
         try {
-          // 1. Total Clients
-          const { count: clientsCount } = await supabase
-            .from('profiles')
-            .select('*', { count: 'exact', head: true })
-            .eq('role', 'client');
-
-          // 2. Leaderboard
-          const { data: leaderboard } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('role', 'client')
-            .order('points', { ascending: false })
-            .limit(5);
-
-          // 3. Upcoming Birthdays (Current month)
           const today = new Date();
-          const currentMonth = (today.getMonth() + 1).toString().padStart(2, '0');
-          const { data: birthdays } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('role', 'client')
-            .filter('birth_date', 'ilike', `%-${currentMonth}-%`)
-            .limit(10);
-
-          // 4. Weekly Redemptions
+          const currentMonthNum = today.getMonth() + 1;
           const oneWeekAgo = new Date();
           oneWeekAgo.setDate(today.getDate() - 7);
-          const { count: redemptionsCount } = await supabase
-            .from('transactions')
-            .select('*', { count: 'exact', head: true })
-            .ilike('description', '%CANJE%')
-            .gte('created_at', oneWeekAgo.toISOString());
 
-          // 5. Age Distribution (Approximation)
-          const { data: allClients } = await supabase
-            .from('profiles')
-            .select('birth_date')
-            .eq('role', 'client');
+          // 1. Cargar desde caché primero
+          const cached = localStorage.getItem('admin_stats_cache');
+          if (cached && isMounted) {
+            try {
+              setAdminStats(JSON.parse(cached));
+              setLoading(false);
+            } catch (e) {}
+          }
 
+          // 2. Fetch fresco en paralelo
+          const [
+            clientsCountRes, 
+            leaderboardRes, 
+            redemptionsRes, 
+            allClientsRes
+          ] = await Promise.all([
+            supabase.from('profiles').select('*', { count: 'exact', head: true }).or('role.eq.client,role.is.null'),
+            supabase.from('profiles').select('*').or('role.eq.client,role.is.null').order('points', { ascending: false }).limit(5),
+            supabase.from('transactions').select('*', { count: 'exact', head: true }).ilike('description', '%CANJE%').gte('created_at', oneWeekAgo.toISOString()),
+            supabase.from('profiles').select('full_name, birth_date, points, role').or('role.eq.client,role.is.null')
+          ]);
+
+          const clientsCount = clientsCountRes.count || 0;
+          const leaderboard = leaderboardRes.data || [];
+          const redemptionsCount = redemptionsRes.count || 0;
+          const allClients = allClientsRes.data || [];
+
+          // Procesar datos en JS
+          const birthdays: Profile[] = [];
           const ageGroups: Record<string, number> = {
-            '18-25': 0,
-            '26-35': 0,
-            '36-45': 0,
-            '46-60': 0,
-            '60+': 0
+            '18-25': 0, '26-35': 0, '36-45': 0, '46-60': 0, '60+': 0
           };
 
-          allClients?.forEach(p => {
+          allClients.forEach(p => {
             if (!p.birth_date) return;
-            const birthYear = new Date(p.birth_date).getFullYear();
-            const age = today.getFullYear() - birthYear;
-            if (age < 26) ageGroups['18-25']++;
-            else if (age < 36) ageGroups['26-35']++;
-            else if (age < 46) ageGroups['36-45']++;
-            else if (age < 61) ageGroups['46-60']++;
-            else ageGroups['60+']++;
+            const bDate = new Date(p.birth_date);
+            if (!isNaN(bDate.getTime())) {
+              if (bDate.getMonth() + 1 === currentMonthNum) birthdays.push(p as any);
+              const age = today.getFullYear() - bDate.getFullYear();
+              if (age < 26) ageGroups['18-25']++;
+              else if (age < 36) ageGroups['26-35']++;
+              else if (age < 46) ageGroups['36-45']++;
+              else if (age < 61) ageGroups['46-60']++;
+              else ageGroups['60+']++;
+            }
           });
 
+          birthdays.sort((a, b) => new Date(a.birth_date!).getDate() - new Date(b.birth_date!).getDate());
           const ageChartData = Object.entries(ageGroups).map(([range, count]) => ({ range, count }));
 
+          const freshStats = {
+            totalClients: clientsCount,
+            upcomingBirthdays: birthdays.slice(0, 10),
+            weeklyRedemptions: redemptionsCount,
+            leaderboard: leaderboard,
+            ageData: ageChartData
+          };
+
           if (isMounted) {
-            setAdminStats({
-              totalClients: clientsCount || 0,
-              upcomingBirthdays: birthdays || [],
-              weeklyRedemptions: redemptionsCount || 0,
-              leaderboard: leaderboard || [],
-              ageData: ageChartData
-            });
+            setAdminStats(freshStats);
+            localStorage.setItem('admin_stats_cache', JSON.stringify(freshStats));
           }
         } catch (err) {
           console.error("Admin stats error:", err);
