@@ -77,6 +77,8 @@ export function Dashboard() {
           }
 
           // 2. Fetch fresco en paralelo
+          const profilesQuery = supabase.from('profiles').select('id, full_name, birth_date, points, role');
+          
           const [
             clientsCountRes, 
             leaderboardRes, 
@@ -84,10 +86,12 @@ export function Dashboard() {
             allClientsRes
           ] = await Promise.all([
             supabase.from('profiles').select('*', { count: 'exact', head: true }),
-            supabase.from('profiles').select('*').order('points', { ascending: false }),
+            supabase.from('profiles').select('*').order('points', { ascending: false }).limit(20),
             supabase.from('transactions').select('*', { count: 'exact', head: true }).ilike('description', '%CANJE%').gte('created_at', oneWeekAgo.toISOString()),
-            supabase.from('profiles').select('id, full_name, birth_date, points, role')
+            profilesQuery
           ]);
+
+          if (allClientsRes.error) throw allClientsRes.error;
 
           const redemptionsCount = redemptionsRes.count || 0;
           let allClients = allClientsRes.data || [];

@@ -270,7 +270,7 @@ export function Admin() {
           .from('transactions')
           .select(`
             *,
-            profiles:client_id (
+            profiles!client_id (
               full_name
             )
           `)

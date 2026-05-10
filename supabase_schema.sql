@@ -45,15 +45,25 @@ ALTER TABLE public.catalogo_premios ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Los usuarios pueden ver su propio perfil" 
   ON public.profiles FOR SELECT USING (auth.uid() = id);
 
-CREATE POLICY "Los mozos pueden ver todos los perfiles por DNI" 
-  ON public.profiles FOR SELECT USING (
-    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('waiter', 'admin'))
+-- NOTA: Esta política puede causar recursión infinita si no se maneja bien.
+-- La solución recomendada en Supabase es usar una función SECURITY DEFINER
+-- para chequear el rol sin disparar RLS de nuevo.
+
+CREATE OR REPLACE FUNCTION public.check_is_staff()
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.profiles 
+    WHERE id = auth.uid() AND role IN ('waiter', 'admin')
   );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE POLICY "Los mozos pueden ver todos los perfiles" 
+  ON public.profiles FOR SELECT USING (public.check_is_staff());
 
 CREATE POLICY "Los mozos pueden actualizar puntos de clientes"
-  ON public.profiles FOR UPDATE USING (
-    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('waiter', 'admin'))
-  );
+  ON public.profiles FOR UPDATE USING (public.check_is_staff());
 
 -- Políticas para Transactions
 CREATE POLICY "Los usuarios pueden ver sus transacciones" 
