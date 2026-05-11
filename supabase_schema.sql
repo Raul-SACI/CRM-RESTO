@@ -60,12 +60,24 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+CREATE POLICY "Users can update their own profile" 
+  ON public.profiles FOR UPDATE
+  USING (auth.uid() = id);
+
+CREATE POLICY "Staff can insert profiles"
+  ON public.profiles FOR INSERT
+  WITH CHECK (public.check_is_staff());
+
 CREATE POLICY "Staff can view all profiles" 
   ON public.profiles FOR SELECT 
   USING (public.check_is_staff());
 
-CREATE POLICY "Staff can update points"
+CREATE POLICY "Staff can update all profiles"
   ON public.profiles FOR UPDATE 
+  USING (public.check_is_staff());
+
+CREATE POLICY "Staff can delete profiles"
+  ON public.profiles FOR DELETE
   USING (public.check_is_staff());
 
 -- Políticas para Transactions
@@ -73,13 +85,38 @@ CREATE POLICY "Los usuarios pueden ver sus transacciones"
   ON public.transactions FOR SELECT USING (auth.uid() = client_id);
 
 CREATE POLICY "Los mozos pueden insertar transacciones" 
-  ON public.transactions FOR INSERT WITH CHECK (
-    EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND role IN ('waiter', 'admin'))
-  );
+  ON public.transactions FOR INSERT WITH CHECK (public.check_is_staff());
 
 -- Políticas para Catalogo
 CREATE POLICY "Todo el mundo puede ver los premios" 
   ON public.catalogo_premios FOR SELECT USING (true);
+
+CREATE POLICY "Staff can manage catalog"
+  ON public.catalogo_premios FOR ALL
+  USING (public.check_is_staff())
+  WITH CHECK (public.check_is_staff());
+
+-- 5. Trigger para creación automática de perfil al registrarse
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, full_name, email, dni, role, points)
+  VALUES (
+    NEW.id, 
+    COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.email), 
+    NEW.email, 
+    COALESCE(NEW.raw_user_meta_data->>'dni', 'TEMP-' || NEW.id),
+    'client',
+    0
+  )
+  ON CONFLICT (id) DO NOTHING;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- Lógica de Cumpleaños (Trigger Sugerido)
 -- Esta es una función que se podría llamar vía Edge Function o CRON Job cada día a las 00:00
