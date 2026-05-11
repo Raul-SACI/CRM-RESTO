@@ -25,9 +25,9 @@ export async function extractDataFromReceipt(base64Image: string): Promise<Extra
   const ai = getAI();
   const prompt = `
     Analiza este ticket de restaurante. Extrae los siguientes datos en formato JSON:
-    1. "amount": El monto total a pagar (solo el número). En el ticket suele estar después de "Total:". Si hay un total parcial o subtotal mayor, usa el monto que parezca ser el total de la cuenta.
-    2. "invoice_number": El número de pedido o ticket. Busca el número que aparece después de "Pedido:".
-    3. "items": Una lista de los nombres de los productos consumidos (ej: "RABAS", "Sand pollo").
+    1. "amount": El monto total FINAL a pagar (solo el número). Busca palabras como "TOTAL", "Total:", "Total a pagar", "Importe Total". Asegúrate de obtener el valor final después de cualquier descuento.
+    2. "invoice_number": El número de identificación del ticket o factura. Busca etiquetas como "Nro.:", "Pedido:", "Ticket Nro:", "Factura Nro:". Ejemplo: "B00999-00028504" o "306".
+    3. "items": Una lista de los nombres de los productos consumidos (ej: "BASTONES DE MOZZARELLA", "PIZZA 1/2 & 1/2", "RABAS"). Los items suelen estar bajo columnas como "DESCRIPCION" o "Detalle".
 
     Si no encuentras un dato, devuelve null para ese campo.
     Devuelve ÚNICAMENTE el objeto JSON. No incluyas explicaciones ni bloques de código.
