@@ -1,12 +1,19 @@
 import { GoogleGenAI } from "@google/genai";
 
-const getAI = () => {
-  const apiKey = typeof process !== 'undefined' && process.env?.GEMINI_API_KEY 
-    ? process.env.GEMINI_API_KEY 
-    : (import.meta as any).env?.VITE_GEMINI_API_KEY || "";
-  
-  return new GoogleGenAI({ apiKey });
-};
+let genAIInstance: any = null;
+
+function getAI() {
+  if (!genAIInstance) {
+    const apiKey = typeof process !== 'undefined' && process.env.GEMINI_API_KEY 
+      ? process.env.GEMINI_API_KEY 
+      : "";
+    if (!apiKey) {
+      console.warn("GEMINI_API_KEY no está configurada.");
+    }
+    genAIInstance = new GoogleGenAI({ apiKey });
+  }
+  return genAIInstance;
+}
 
 export interface ExtractedReceiptData {
   amount: number | null;
@@ -17,38 +24,62 @@ export interface ExtractedReceiptData {
 export async function extractDataFromReceipt(base64Image: string): Promise<ExtractedReceiptData> {
   const ai = getAI();
   const prompt = `
-    Analyze this restaurant receipt carefully. Extract the following information in JSON format:
-    1. "amount": The total amount to pay (as a number).
-    2. "invoice_number": The invoice or ticket number (usually found at the top, format like 0001-00001234).
-    3. "items": An array of strings representing the names of the items consumed.
+    Analiza este ticket de restaurante. Extrae los siguientes datos en formato JSON:
+    1. "amount": El monto total a pagar (solo el número). En el ticket suele estar después de "Total:". Si hay un total parcial o subtotal mayor, usa el monto que parezca ser el total de la cuenta.
+    2. "invoice_number": El número de pedido o ticket. Busca el número que aparece después de "Pedido:".
+    3. "items": Una lista de los nombres de los productos consumidos (ej: "RABAS", "Sand pollo").
 
-    If a value is not clearly found, return null for that field.
-    Only return the JSON object, nothing else.
+    Si no encuentras un dato, devuelve null para ese campo.
+    Devuelve ÚNICAMENTE el objeto JSON. No incluyas explicaciones ni bloques de código.
   `;
 
-  // Remove data:image/jpeg;base64, prefix if present
-  const base64Data = base64Image.split(",")[1] || base64Image;
+  // Remove data:image/XXXX;base64, prefix
+  const base64Data = base64Image.includes(",") ? base64Image.split(",")[1] : base64Image;
 
   try {
-    const response = await ai.models.generateContent({
+    const result = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
-      contents: [
-        prompt,
-        {
-          inlineData: {
-            data: base64Data,
-            mimeType: "image/jpeg",
+      contents: {
+        parts: [
+          { text: prompt },
+          {
+            inlineData: {
+              data: base64Data,
+              mimeType: "image/jpeg",
+            },
           },
-        },
-      ],
+        ],
+      },
+      config: {
+        responseMimeType: "application/json",
+      }
     });
 
-    const responseText = response.text || "";
-    // Clean potential markdown code blocks
+    const responseText = result.text || "";
+    console.log("Raw Gemini Response:", responseText);
+    
     const cleanedJson = responseText.replace(/```json|```/g, "").trim();
     return JSON.parse(cleanedJson) as ExtractedReceiptData;
-  } catch (error) {
-    console.error("Error extracting receipt data:", error);
-    throw new Error("No se pudo procesar la imagen del ticket. Intente manualmente.");
+  } catch (error: any) {
+    console.error("Gemini Extraction Error:", error);
+    
+    // Fallback if structured output fails, try without MimeType config
+    try {
+      const fallbackResult = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: {
+          parts: [
+            { text: prompt + " (Devuelve solo el JSON puro)" },
+            { inlineData: { data: base64Data, mimeType: "image/jpeg" } }
+          ]
+        }
+      });
+      const fallbackText = fallbackResult.text || "";
+      const cleaned = fallbackText.replace(/```json|```/g, "").trim();
+      return JSON.parse(cleaned) as ExtractedReceiptData;
+    } catch (innerError) {
+      console.error("Gemini Fallback Error:", innerError);
+      throw new Error("No se pudo procesar la imagen del ticket automáticamente. Asegúrate de que los datos (Total, Pedido e Items) sean visibles e inténtalo de nuevo o cárgalos manualmente.");
+    }
   }
 }
