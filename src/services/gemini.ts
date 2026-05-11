@@ -1,7 +1,12 @@
 import { GoogleGenAI } from "@google/genai";
 
-const genAI = new GoogleGenAI(process.env.GEMINI_API_KEY || "");
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const getAI = () => {
+  const apiKey = typeof process !== 'undefined' && process.env?.GEMINI_API_KEY 
+    ? process.env.GEMINI_API_KEY 
+    : (import.meta as any).env?.VITE_GEMINI_API_KEY || "";
+  
+  return new GoogleGenAI({ apiKey });
+};
 
 export interface ExtractedReceiptData {
   amount: number | null;
@@ -10,6 +15,7 @@ export interface ExtractedReceiptData {
 }
 
 export async function extractDataFromReceipt(base64Image: string): Promise<ExtractedReceiptData> {
+  const ai = getAI();
   const prompt = `
     Analyze this restaurant receipt carefully. Extract the following information in JSON format:
     1. "amount": The total amount to pay (as a number).
@@ -24,17 +30,20 @@ export async function extractDataFromReceipt(base64Image: string): Promise<Extra
   const base64Data = base64Image.split(",")[1] || base64Image;
 
   try {
-    const result = await model.generateContent([
-      prompt,
-      {
-        inlineData: {
-          data: base64Data,
-          mimeType: "image/jpeg",
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: [
+        prompt,
+        {
+          inlineData: {
+            data: base64Data,
+            mimeType: "image/jpeg",
+          },
         },
-      },
-    ]);
+      ],
+    });
 
-    const responseText = result.response.text();
+    const responseText = response.text || "";
     // Clean potential markdown code blocks
     const cleanedJson = responseText.replace(/```json|```/g, "").trim();
     return JSON.parse(cleanedJson) as ExtractedReceiptData;
