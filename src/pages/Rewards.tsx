@@ -7,12 +7,14 @@ import { useAuth } from '@/src/App';
 import { cn } from '@/src/lib/utils';
 
 export function Rewards() {
-  const { profile } = useAuth();
+  const { profile, refreshProfile } = useAuth();
   const [prizes, setPrizes] = useState<Prize[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [redeeming, setRedeeming] = useState<string | null>(null);
   const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [lastPrize, setLastPrize] = useState<Prize | null>(null);
 
   useEffect(() => {
     const fetchPrizes = async () => {
@@ -87,10 +89,12 @@ export function Rewards() {
 
       if (updateError) throw updateError;
 
-      setStatus({ type: 'success', message: '¡Canje exitoso! Muestra este mensaje en el local.' });
+      setLastPrize(prize);
+      setShowSuccess(true);
+      setStatus({ type: 'success', message: `¡Canje exitoso! Canjeaste ${prize.title}` });
       
-      // Forzar recarga de perfil (esto disparará el refresh en App.tsx si usa onAuthStateChanged o similar)
-      window.dispatchEvent(new Event('visibilitychange')); 
+      // Forzar recarga de perfil
+      await refreshProfile();
       
       // Scroll to top to see status
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -130,7 +134,48 @@ export function Rewards() {
       </div>
 
       <AnimatePresence>
-        {status && (
+        {showSuccess && lastPrize && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-ink/80 backdrop-blur-md z-[100] flex items-center justify-center p-6"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="bg-white border border-slate-200 p-8 rounded-[2.5rem] w-full max-w-sm shadow-2xl text-center relative overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-love via-pink-400 to-love" />
+              <div className="w-20 h-20 bg-love/10 rounded-full flex items-center justify-center mx-auto mb-6 text-love">
+                <Sparkles size={40} />
+              </div>
+              
+              <h3 className="text-2xl font-black mb-2 uppercase tracking-tight italic text-ink">¡Felicidades!</h3>
+              <p className="text-slate-500 text-xs font-medium mb-6 px-4">
+                Canjeaste <span className="text-love font-black italic">{lastPrize.points_cost} puntos</span> por <br/>
+                <span className="text-ink font-black uppercase text-sm">"{lastPrize.title}"</span>
+              </p>
+              
+              <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 mb-8">
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Código de Canje</p>
+                <p className="text-xl font-mono font-black text-ink">{Math.random().toString(36).substring(2, 10).toUpperCase()}</p>
+                <p className="text-[9px] font-bold text-love mt-2 uppercase">Muestra esta pantalla al personal</p>
+              </div>
+
+              <button 
+                onClick={() => setShowSuccess(false)}
+                className="w-full bg-ink text-white py-4 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-ink/20 active:scale-95 transition-all"
+              >
+                Entendido
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {status && !showSuccess && (
           <motion.div 
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}

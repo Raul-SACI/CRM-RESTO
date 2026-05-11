@@ -20,6 +20,7 @@ export function Dashboard() {
   const [settings, setSettings] = useState<SystemSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
+  const [activeHistoryTab, setActiveHistoryTab] = useState<'all' | 'canjes'>('all');
   const [editForm, setEditForm] = useState({ fullName: '', dni: '' });
 
   // Admin Stats
@@ -440,34 +441,73 @@ export function Dashboard() {
       {/* Recent Activity Card - Side Bento */}
       <div className="md:col-span-4 bg-white rounded-3xl p-6 border border-slate-100 shadow-xl shadow-slate-200/50 order-3">
         <div className="flex items-center justify-between mb-6">
-          <h3 className="uppercase tracking-widest text-[10px] font-bold text-slate-400">Actividad</h3>
+          <div className="flex gap-4">
+            <button 
+              onClick={() => setActiveHistoryTab('all')}
+              className={cn(
+                "uppercase tracking-widest text-[10px] font-black transition-all",
+                activeHistoryTab === 'all' ? "text-ink border-b-2 border-love pb-1" : "text-slate-400"
+              )}
+            >
+              Cargas
+            </button>
+            <button 
+              onClick={() => setActiveHistoryTab('canjes')}
+              className={cn(
+                "uppercase tracking-widest text-[10px] font-black transition-all",
+                activeHistoryTab === 'canjes' ? "text-ink border-b-2 border-love pb-1" : "text-slate-400"
+              )}
+            >
+              Canjes
+            </button>
+          </div>
           <History size={14} className="text-slate-500" />
         </div>
         
         <div className="space-y-3">
           {loading ? (
             <div className="text-center py-8 text-slate-200 animate-pulse uppercase tracking-[0.2em] text-[10px] font-black">Cargando...</div>
-          ) : transactions.length === 0 ? (
-            <div className="text-center text-slate-400 text-[10px] font-bold uppercase py-4">Sin movimientos</div>
-          ) : (
-            transactions.map((tx) => (
+          ) : (() => {
+            const filteredTx = transactions.filter(tx => 
+              activeHistoryTab === 'all' ? tx.points_earned > 0 : tx.points_earned < 0
+            );
+            
+            if (filteredTx.length === 0) {
+              return <div className="text-center text-slate-400 text-[10px] font-bold uppercase py-12 italic border-2 border-dashed border-slate-50 rounded-2xl">Sin {activeHistoryTab === 'all' ? 'cargas' : 'canjes'}</div>;
+            }
+
+            return filteredTx.map((tx) => (
               <div 
                 key={tx.id}
-                className="bg-slate-50 p-3 rounded-xl flex justify-between items-center border border-slate-100"
+                className="bg-slate-50 p-4 rounded-2xl flex justify-between items-center border border-slate-100 group hover:border-love/20 transition-all"
               >
                 <div className="min-w-0">
-                  <p className="text-[11px] font-black uppercase text-ink truncate opacity-90 tracking-tight">{tx.description}</p>
-                  <p className="text-[9px] text-slate-500 uppercase font-bold tracking-widest mt-0.5">
-                    {new Date(tx.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })}
+                  <p className="text-[11px] font-black uppercase text-ink truncate tracking-tight">{tx.description}</p>
+                  <p className="text-[9px] text-slate-400 uppercase font-black tracking-widest mt-1">
+                    {new Date(tx.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })} • {tx.branch}
                   </p>
                 </div>
-                <div className="text-right ml-2 shrink-0">
-                  <p className="text-love font-black italic text-sm">+{tx.points_earned}</p>
+                <div className="text-right ml-4 shrink-0">
+                  <p className={cn(
+                    "font-black italic text-base",
+                    tx.points_earned > 0 ? "text-green-500" : "text-love"
+                  )}>
+                    {tx.points_earned > 0 ? '+' : ''}{tx.points_earned}
+                  </p>
                 </div>
               </div>
-            ))
-          )}
+            ));
+          })()}
         </div>
+        
+        {transactions.length > 0 && (
+          <button 
+            className="w-full mt-6 py-3 text-[9px] font-black uppercase tracking-[0.2rem] text-slate-400 border-t border-slate-50 hover:text-love transition-colors"
+            onClick={() => window.location.href = '#/rewards'}
+          >
+            Ir a Premios <ChevronRight size={10} className="inline ml-1" />
+          </button>
+        )}
       </div>
 
       {/* Info Card - Square Bento */}
