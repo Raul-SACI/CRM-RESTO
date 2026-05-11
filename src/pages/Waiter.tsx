@@ -155,6 +155,11 @@ export function Waiter() {
     e.preventDefault();
     if (!client || !amount || !waiterProfile) return;
     
+    if (!invoiceNumber.trim()) {
+      setStatus({ type: 'error', message: 'El número de factura es obligatorio.' });
+      return;
+    }
+
     setLoading(true);
     setStatus(null);
 
@@ -393,10 +398,11 @@ export function Waiter() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="block text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Número de Factura (Opcional)</label>
+                    <label className="block text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Número de Factura <span className="text-love">*</span></label>
                     <input
+                      required
                       placeholder="Ej: 0001-00004567"
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-love text-ink font-bold"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-love text-ink font-bold transition-all"
                       value={invoiceNumber}
                       onChange={(e) => setInvoiceNumber(e.target.value)}
                     />
