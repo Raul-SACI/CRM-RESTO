@@ -404,6 +404,7 @@ export function Admin() {
         'Cliente': profile?.full_name || 'Desconocido',
         'DNI': profile?.dni || '—',
         'Detalle': tx.description,
+        'Código': tx.redemption_code || '—',
         'Monto ($)': tx.amount,
         'Puntos Sumados': tx.points_earned
       };
@@ -721,13 +722,14 @@ export function Admin() {
                       <th className="px-6 py-4">Cliente</th>
                       <th className="px-6 py-4">DNI</th>
                       <th className="px-6 py-4">Carga</th>
+                      <th className="px-6 py-4">Código</th>
                       <th className="px-6 py-4 text-right">Puntos</th>
                     </tr>
                   </thead>
                   <tbody className="text-[10px] font-medium text-ink/80">
                     {allTransactions.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-6 py-12 text-center text-slate-400 italic">
+                        <td colSpan={7} className="px-6 py-12 text-center text-slate-400 italic">
                           No se encontraron movimientos registrados en el salón.
                         </td>
                       </tr>
@@ -751,6 +753,13 @@ export function Admin() {
                           })()}
                         </td>
                         <td className="px-6 py-3 italic text-slate-500">{tx.description}</td>
+                        <td className="px-6 py-3 font-mono font-black text-ink">
+                          {tx.redemption_code ? (
+                            <span className="bg-slate-100 px-2 py-1 rounded text-[9px] border border-slate-200">
+                              {tx.redemption_code}
+                            </span>
+                          ) : '—'}
+                        </td>
                         <td className="px-6 py-3 text-right">
                           <p className="text-love font-black italic">+{tx.points_earned}</p>
                           {tx.amount > 0 && <p className="text-[8px] text-slate-400 font-bold tracking-tight">${tx.amount.toLocaleString()}</p>}

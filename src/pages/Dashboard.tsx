@@ -486,6 +486,14 @@ export function Dashboard() {
                   <p className="text-[9px] text-slate-400 uppercase font-black tracking-widest mt-1">
                     {new Date(tx.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })} • {tx.branch}
                   </p>
+                  {tx.redemption_code && (
+                    <div className="mt-2 flex items-center gap-2">
+                       <span className="text-[8px] font-black uppercase text-slate-300">Código:</span>
+                       <span className="bg-ink text-white px-2 py-0.5 rounded-md font-mono text-[9px] font-black italic tracking-widest">
+                         {tx.redemption_code}
+                       </span>
+                    </div>
+                  )}
                 </div>
                 <div className="text-right ml-4 shrink-0">
                   <p className={cn(

@@ -15,6 +15,7 @@ export function Rewards() {
   const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [lastPrize, setLastPrize] = useState<Prize | null>(null);
+  const [generatedCode, setGeneratedCode] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchPrizes = async () => {
@@ -67,6 +68,8 @@ export function Rewards() {
 
     setRedeeming(prize.id);
     setStatus(null);
+    
+    const redemptionCode = Math.random().toString(36).substring(2, 10).toUpperCase();
 
     try {
       // 1. Registrar la transacción de canje
@@ -76,7 +79,8 @@ export function Rewards() {
         amount: 0,
         points_earned: -prize.points_cost,
         description: `CANJE: ${prize.title}`,
-        branch: 'Canje Online'
+        branch: 'Canje Online',
+        redemption_code: redemptionCode
       });
 
       if (txError) throw txError;
@@ -90,6 +94,7 @@ export function Rewards() {
       if (updateError) throw updateError;
 
       setLastPrize(prize);
+      setGeneratedCode(redemptionCode);
       setShowSuccess(true);
       setStatus({ type: 'success', message: `¡Canje exitoso! Canjeaste ${prize.title}` });
       
@@ -159,7 +164,7 @@ export function Rewards() {
               
               <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 mb-8">
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Código de Canje</p>
-                <p className="text-xl font-mono font-black text-ink">{Math.random().toString(36).substring(2, 10).toUpperCase()}</p>
+                <p className="text-xl font-mono font-black text-ink">{generatedCode}</p>
                 <p className="text-[9px] font-bold text-love mt-2 uppercase">Muestra esta pantalla al personal</p>
               </div>
 

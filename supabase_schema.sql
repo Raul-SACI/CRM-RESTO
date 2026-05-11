@@ -22,6 +22,7 @@ CREATE TABLE public.transactions (
   points_earned INTEGER NOT NULL,
   description TEXT DEFAULT 'Carga de puntos por consumo',
   branch TEXT DEFAULT 'PRINCIPAL',
+  redemption_code TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
