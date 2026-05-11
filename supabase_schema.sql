@@ -21,6 +21,7 @@ CREATE TABLE public.transactions (
   amount DECIMAL(12, 2) NOT NULL,
   points_earned INTEGER NOT NULL,
   description TEXT DEFAULT 'Carga de puntos por consumo',
+  branch TEXT DEFAULT 'PRINCIPAL',
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -35,11 +36,19 @@ CREATE TABLE public.catalogo_premios (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- 4. Tabla de Ajustes (Settings)
+CREATE TABLE public.settings (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  points_conversion_rate INTEGER DEFAULT 1000,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- RLS (Row Level Security)
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.catalogo_premios ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
 
 -- 4. Políticas para Profiles (RESETEO Y CORRECCIÓN DE RECURSIÓN)
 DROP POLICY IF EXISTS "Los usuarios pueden ver su propio perfil" ON public.profiles;
@@ -93,6 +102,15 @@ CREATE POLICY "Todo el mundo puede ver los premios"
 
 CREATE POLICY "Staff can manage catalog"
   ON public.catalogo_premios FOR ALL
+  USING (public.check_is_staff())
+  WITH CHECK (public.check_is_staff());
+
+-- Políticas para Ajustes
+CREATE POLICY "Public read settings"
+  ON public.settings FOR SELECT USING (true);
+
+CREATE POLICY "Staff manage settings"
+  ON public.settings FOR ALL
   USING (public.check_is_staff())
   WITH CHECK (public.check_is_staff());
 

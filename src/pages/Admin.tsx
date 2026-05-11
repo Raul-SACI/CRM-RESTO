@@ -284,18 +284,26 @@ export function Admin() {
         setStaff(filtered);
         localStorage.setItem(cacheKey, JSON.stringify(filtered));
       } else if (activeTab === 'history') {
-        // En lugar de un join complejo que puede fallar por RLS, traemos los datos planos
-        // y los relacionaremos en el frontend si es necesario.
         const { data, error } = await supabase
           .from('transactions')
-          .select('*')
+          .select('*, profiles!client_id(full_name, dni)')
           .order('created_at', { ascending: false })
-          .limit(100);
+          .limit(200);
         
-        if (error) throw error;
-        
-        setAllTransactions(data || []);
-        localStorage.setItem(cacheKey, JSON.stringify(data || []));
+        if (error) {
+          console.error("History fetch error, retrying flat:", error);
+          const { data: flatData, error: flatError } = await supabase
+            .from('transactions')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(200);
+          if (flatError) throw flatError;
+          setAllTransactions(flatData || []);
+          localStorage.setItem(cacheKey, JSON.stringify(flatData || []));
+        } else {
+          setAllTransactions(data || []);
+          localStorage.setItem(cacheKey, JSON.stringify(data || []));
+        }
       }
     } catch (e: any) {
       console.error("Fetch error in Admin:", e);
@@ -384,6 +392,27 @@ export function Admin() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleExportHistory = () => {
+    const dataToExport = allTransactions.map(tx => {
+      const p = (tx as any).profiles;
+      const profile = Array.isArray(p) ? p[0] : p;
+      return {
+        'Fecha': new Date(tx.created_at).toLocaleString('es-AR'),
+        'Sucursal': tx.branch || '—',
+        'Cliente': profile?.full_name || 'Desconocido',
+        'DNI': profile?.dni || '—',
+        'Detalle': tx.description,
+        'Monto ($)': tx.amount,
+        'Puntos Sumados': tx.points_earned
+      };
+    });
+    
+    const ws = XLSX.utils.json_to_sheet(dataToExport);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Historial");
+    XLSX.writeFile(wb, `movimientos_salon_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
   const updateUserRole = async (userId: string, newRole: string) => {
@@ -670,11 +699,18 @@ export function Admin() {
 
           {activeTab === 'history' && (
             <div className="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-xl shadow-slate-200/50">
-               <div className="p-6 border-b border-slate-100 bg-slate-50">
+               <div className="p-6 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
                 <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-ink">
                   <History size={16} className="text-love" />
-                  Historial del Salón (Últimos 50)
+                  Historial del Salón (Últimos 200)
                 </h3>
+                <button 
+                  onClick={handleExportHistory}
+                  className="flex items-center gap-2 bg-ink text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-lg shadow-ink/10"
+                >
+                  <FileSpreadsheet size={14} />
+                  Exportar CSV
+                </button>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left font-mono">
@@ -683,6 +719,7 @@ export function Admin() {
                       <th className="px-6 py-4">Fecha</th>
                       <th className="px-6 py-4">Sucursal</th>
                       <th className="px-6 py-4">Cliente</th>
+                      <th className="px-6 py-4">DNI</th>
                       <th className="px-6 py-4">Carga</th>
                       <th className="px-6 py-4 text-right">Puntos</th>
                     </tr>
@@ -690,7 +727,7 @@ export function Admin() {
                   <tbody className="text-[10px] font-medium text-ink/80">
                     {allTransactions.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="px-6 py-12 text-center text-slate-400 italic">
+                        <td colSpan={6} className="px-6 py-12 text-center text-slate-400 italic">
                           No se encontraron movimientos registrados en el salón.
                         </td>
                       </tr>
@@ -702,8 +739,15 @@ export function Admin() {
                         <td className="px-6 py-3 uppercase font-black text-ink">
                           {(() => {
                             const p = (tx as any).profiles;
-                            if (Array.isArray(p)) return p[0]?.full_name || 'Desconocido';
-                            return p?.full_name || 'Desconocido';
+                            const profile = Array.isArray(p) ? p[0] : p;
+                            return profile?.full_name || 'Desconocido';
+                          })()}
+                        </td>
+                        <td className="px-6 py-3 text-slate-400">
+                          {(() => {
+                            const p = (tx as any).profiles;
+                            const profile = Array.isArray(p) ? p[0] : p;
+                            return profile?.dni || '—';
                           })()}
                         </td>
                         <td className="px-6 py-3 italic text-slate-500">{tx.description}</td>
