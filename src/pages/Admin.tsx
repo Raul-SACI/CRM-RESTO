@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '@/src/lib/supabase';
 import { Profile, Prize, Transaction, SystemSettings } from '@/src/types';
 import { motion, AnimatePresence } from 'motion/react';
-import { Users, Gift, Settings, Search, Plus, Trash2, Calendar, Award, History, DollarSign, Upload, Image as ImageIcon, FileSpreadsheet, UserPlus, X } from 'lucide-react';
+import { Users, Gift, Settings, Search, Plus, Trash2, Pencil, Calendar, Award, History, DollarSign, Upload, Image as ImageIcon, FileSpreadsheet, UserPlus, X } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import * as XLSX from 'xlsx';
 
@@ -15,6 +15,7 @@ export function Admin() {
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [settings, setSettings] = useState<SystemSettings | null>(null);
   const [newPrize, setNewPrize] = useState({ title: '', description: '', points_cost: 0, image_url: '' });
+  const [editingPrizeId, setEditingPrizeId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [updatingSettings, setUpdatingSettings] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -305,7 +306,7 @@ export function Admin() {
     }
   };
 
-  const handleCreatePrize = async (e: React.FormEvent) => {
+  const handleSubmitPrize = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPrize.image_url) {
       alert("Por favor sube una imagen");
@@ -314,19 +315,55 @@ export function Admin() {
     
     setLoading(true);
     try {
-      const { error, data } = await supabase.from('catalogo_premios').insert([{ ...newPrize, is_active: true }]).select();
-      if (error) {
-        console.error("Error Detail:", error);
-        alert(`Error Supabase: ${error.message} (Código: ${error.code})`);
+      if (editingPrizeId) {
+        const { error } = await supabase
+          .from('catalogo_premios')
+          .update({
+            title: newPrize.title,
+            description: newPrize.description,
+            points_cost: newPrize.points_cost,
+            image_url: newPrize.image_url
+          })
+          .eq('id', editingPrizeId);
+        
+        if (error) {
+          alert(`Error al actualizar: ${error.message}`);
+        } else {
+          setEditingPrizeId(null);
+          setNewPrize({ title: '', description: '', points_cost: 0, image_url: '' });
+          await fetchData(true);
+          alert('¡Premio actualizado!');
+        }
       } else {
-        setNewPrize({ title: '', description: '', points_cost: 0, image_url: '' });
-        await fetchData();
-        alert('¡Premio publicado!');
+        const { error } = await supabase.from('catalogo_premios').insert([{ ...newPrize, is_active: true }]);
+        if (error) {
+          console.error("Error Detail:", error);
+          alert(`Error Supabase: ${error.message} (Código: ${error.code})`);
+        } else {
+          setNewPrize({ title: '', description: '', points_cost: 0, image_url: '' });
+          await fetchData(true);
+          alert('¡Premio publicado!');
+        }
       }
     } catch (err: any) {
       alert("Error de conexión");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const startEditingPrize = (prize: Prize) => {
+    setEditingPrizeId(prize.id);
+    setNewPrize({
+      title: prize.title,
+      description: prize.description,
+      points_cost: prize.points_cost,
+      image_url: prize.image_url
+    });
+    // Scroll to the form
+    const formElement = document.getElementById('prize-form');
+    if (formElement) {
+      formElement.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
@@ -501,10 +538,10 @@ export function Admin() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="md:col-span-1 bg-white rounded-3xl p-6 border border-slate-100 shadow-xl shadow-slate-200/50 h-fit">
                 <h3 className="text-xs font-black uppercase tracking-widest mb-6 flex items-center gap-2 text-ink">
-                  <Plus size={16} className="text-love" />
-                  Nuevo Premio
+                  {editingPrizeId ? <Pencil size={16} className="text-love" /> : <Plus size={16} className="text-love" />}
+                  {editingPrizeId ? 'Editar Premio' : 'Nuevo Premio'}
                 </h3>
-                <form onSubmit={handleCreatePrize} className="space-y-4">
+                <form id="prize-form" onSubmit={handleSubmitPrize} className="space-y-4">
                   <input placeholder="Título del premio" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs outline-none focus:border-love text-ink" value={newPrize.title} onChange={e => setNewPrize({...newPrize, title: e.target.value})} required />
                   <textarea placeholder="Descripción del beneficio" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs outline-none focus:border-love h-24 text-ink" value={newPrize.description} onChange={e => setNewPrize({...newPrize, description: e.target.value})} required />
                   <input type="number" placeholder="Costo en puntos" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs outline-none focus:border-love text-ink" value={newPrize.points_cost || ''} onChange={e => setNewPrize({...newPrize, points_cost: parseInt(e.target.value)})} required />
@@ -549,8 +586,20 @@ export function Admin() {
                   </div>
 
                   <button type="submit" disabled={uploading || !newPrize.image_url} className="w-full bg-love text-white py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest shadow-red active:scale-[0.98] transition-all disabled:opacity-20">
-                    Publicar Premio
+                    {editingPrizeId ? 'Guardar Cambios' : 'Publicar Premio'}
                   </button>
+                  {editingPrizeId && (
+                    <button 
+                      type="button" 
+                      onClick={() => {
+                        setEditingPrizeId(null);
+                        setNewPrize({ title: '', description: '', points_cost: 0, image_url: '' });
+                      }} 
+                      className="w-full bg-slate-100 text-slate-500 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest transition-all"
+                    >
+                      Cancelar
+                    </button>
+                  )}
                 </form>
               </div>
               <div className="md:col-span-2 space-y-4">
@@ -567,9 +616,14 @@ export function Admin() {
                       <h4 className="font-black text-sm uppercase tracking-tighter text-ink">{prize.title}</h4>
                       <p className="text-[10px] text-love font-black uppercase tracking-widest italic">{prize.points_cost} Puntos</p>
                     </div>
-                    <button onClick={() => handleDeletePrize(prize.id)} className="p-3 text-slate-300 hover:text-love transition-colors">
-                      <Trash2 size={18} />
-                    </button>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button onClick={() => startEditingPrize(prize)} className="p-3 text-slate-300 hover:text-ink transition-colors">
+                        <Pencil size={18} />
+                      </button>
+                      <button onClick={() => handleDeletePrize(prize.id)} className="p-3 text-slate-300 hover:text-love transition-colors">
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
                   </div>
                 ))}
                 
