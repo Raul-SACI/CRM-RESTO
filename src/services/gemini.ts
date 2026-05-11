@@ -15,10 +15,15 @@ function getAI() {
   return genAIInstance;
 }
 
+export interface ExtractedReceiptItem {
+  name: string;
+  quantity: number;
+}
+
 export interface ExtractedReceiptData {
   amount: number | null;
   invoice_number: string | null;
-  items: string[];
+  items: ExtractedReceiptItem[];
 }
 
 export async function extractDataFromReceipt(base64Image: string): Promise<ExtractedReceiptData> {
@@ -27,9 +32,9 @@ export async function extractDataFromReceipt(base64Image: string): Promise<Extra
     Analiza este ticket de restaurante. Extrae los siguientes datos en formato JSON:
     1. "amount": El monto total FINAL a pagar (solo el número). Busca palabras como "TOTAL", "Total:", "Total a pagar", "Importe Total". Asegúrate de obtener el valor final después de cualquier descuento.
     2. "invoice_number": El número de identificación del ticket o factura. Busca etiquetas como "Nro.:", "Pedido:", "Ticket Nro:", "Factura Nro:". Ejemplo: "B00999-00028504" o "306".
-    3. "items": Una lista de los nombres de los productos consumidos (ej: "BASTONES DE MOZZARELLA", "PIZZA 1/2 & 1/2", "RABAS"). Los items suelen estar bajo columnas como "DESCRIPCION" o "Detalle".
+    3. "items": Una lista de OBJETOS con "name" (nombre del artículo) y "quantity" (cantidad consumida como número). Los items suelen estar bajo columnas como "DESCRIPCION" o "Detalle" y "CANT.". Ej: {"name": "BASTONES DE MOZZARELLA", "quantity": 1}.
 
-    Si no encuentras un dato, devuelve null para ese campo.
+    Si no encuentras un dato, devuelve null para ese campo o un array vacío para items.
     Devuelve ÚNICAMENTE el objeto JSON. No incluyas explicaciones ni bloques de código.
   `;
 

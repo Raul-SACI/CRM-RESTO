@@ -6,8 +6,10 @@ import { Users, Gift, Settings, Search, Plus, Trash2, Pencil, Calendar, Award, H
 import { cn } from '@/src/lib/utils';
 import * as XLSX from 'xlsx';
 
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell, PieChart, Pie } from 'recharts';
+
 export function Admin() {
-  const [activeTab, setActiveTab] = useState<'clients' | 'prizes' | 'staff' | 'history' | 'settings'>('clients');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'clients' | 'prizes' | 'staff' | 'history' | 'settings'>('dashboard');
   const [loading, setLoading] = useState(true);
   const [clients, setClients] = useState<Profile[]>([]);
   const [prizes, setPrizes] = useState<Prize[]>([]);
@@ -149,10 +151,57 @@ export function Admin() {
   useEffect(() => {
     if (activeTab === 'settings') {
       fetchSettings();
+    } else if (activeTab === 'dashboard') {
+      // Dashboard needs transactions and clients
+      void fetchData(true);
     } else {
       fetchData();
     }
   }, [activeTab]);
+
+  const getDashboardData = () => {
+    const itemRanking: Record<string, number> = {};
+    const clientRanking: Record<string, number> = {};
+
+    allTransactions.forEach(tx => {
+      // Parse items from description if present
+      const match = tx.description?.match(/\|\|JSON_ITEMS:(.*)$/);
+      if (match && match[1]) {
+        try {
+          const items = JSON.parse(match[1]);
+          if (Array.isArray(items)) {
+            items.forEach((item: any) => {
+              const name = String(item.name || 'Desconocido').toUpperCase();
+              const qty = parseInt(item.quantity) || 0;
+              itemRanking[name] = (itemRanking[name] || 0) + qty;
+            });
+          }
+        } catch (e) {
+          console.error("Error parsing items metadata:", e);
+        }
+      }
+
+      // Ranking by client amount
+      const p = (tx as any).profiles;
+      const profile = Array.isArray(p) ? p[0] : p;
+      const clientName = profile?.full_name || tx.client_id;
+      clientRanking[clientName] = (clientRanking[clientName] || 0) + (tx.amount || 0);
+    });
+
+    const itemData = Object.entries(itemRanking)
+      .map(([name, qty]) => ({ name, qty }))
+      .sort((a, b) => b.qty - a.qty)
+      .slice(0, 10);
+
+    const clientData = Object.entries(clientRanking)
+      .map(([name, total]) => ({ name, total }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 10);
+
+    return { itemData, clientData };
+  };
+
+  const dashboardData = getDashboardData();
 
   const fetchSettings = async () => {
     setLoading(true);
@@ -489,7 +538,7 @@ export function Admin() {
         </div>
         
         <div className="flex flex-wrap p-1 bg-slate-100 rounded-xl border border-slate-200 overflow-x-auto">
-          {['clients', 'prizes', 'staff', 'history', 'settings'].map((tab) => (
+          {['dashboard', 'clients', 'prizes', 'staff', 'history', 'settings'].map((tab) => (
             <button 
               key={tab}
               onClick={() => setActiveTab(tab as any)}
@@ -498,7 +547,7 @@ export function Admin() {
                 activeTab === tab ? "bg-love text-white shadow-lg shadow-love/20" : "text-slate-400 hover:text-ink"
               )}
             >
-              {tab === 'clients' ? 'Clientes' : tab === 'prizes' ? 'Premios' : tab === 'staff' ? 'Staff' : tab === 'history' ? 'Movimientos' : 'Ajustes'}
+              {tab === 'dashboard' ? 'Dashboard' : tab === 'clients' ? 'Clientes' : tab === 'prizes' ? 'Premios' : tab === 'staff' ? 'Staff' : tab === 'history' ? 'Movimientos' : 'Ajustes'}
             </button>
           ))}
         </div>
@@ -508,6 +557,100 @@ export function Admin() {
         <div className="py-20 text-center animate-pulse text-slate-200 uppercase font-black tracking-widest text-[10px] italic">Cargando datos...</div>
       ) : (
         <>
+          {activeTab === 'dashboard' && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Visual Cards */}
+                <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xs font-black uppercase tracking-widest text-ink flex items-center gap-2">
+                       <Award size={16} className="text-love" />
+                       Ranking de Ventas (Top Clientes)
+                    </h3>
+                  </div>
+                  <div className="h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={dashboardData.clientData} layout="vertical" margin={{ left: 40, right: 20 }}>
+                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                        <XAxis type="number" hide />
+                        <YAxis 
+                          type="category" 
+                          dataKey="name" 
+                          width={100} 
+                          tick={{ fontSize: 9, fontWeight: 700, fill: '#64748b' }}
+                          axisLine={false}
+                          tickLine={false}
+                        />
+                        <Tooltip 
+                          contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '10px', fontWeight: 800 }}
+                          formatter={(val: number) => [`$${val.toLocaleString('es-AR')}`, 'Total Gastado']}
+                        />
+                        <Bar dataKey="total" fill="#FF4757" radius={[0, 4, 4, 0]} barSize={20} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50">
+                   <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xs font-black uppercase tracking-widest text-ink flex items-center gap-2">
+                       <Gift size={16} className="text-ink" />
+                       Artículos Más Vendidos (Cantidades)
+                    </h3>
+                  </div>
+                  <div className="h-[300px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={dashboardData.itemData} margin={{ top: 20, bottom: 20 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                        <XAxis 
+                          dataKey="name" 
+                          tick={{ fontSize: 8, fontWeight: 700, fill: '#64748b' }}
+                          axisLine={false}
+                          tickLine={false}
+                        />
+                        <YAxis hide />
+                        <Tooltip 
+                           contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '10px', fontWeight: 800 }}
+                           formatter={(val: number) => [val, 'Cantidad']}
+                        />
+                        <Bar dataKey="qty" fill="#1e293b" radius={[4, 4, 0, 0]} barSize={30}>
+                          {dashboardData.itemData.map((_, index) => (
+                            <Cell key={`cell-${index}`} fill={index === 0 ? '#FF4757' : '#1e293b'} opacity={1 - (index * 0.05)} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </div>
+
+              {/* Grid de Métricas Rápidas */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center">
+                  <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Total Recaudado</p>
+                  <p className="text-lg font-black text-ink mt-1">
+                    ${allTransactions.reduce((acc, tx) => acc + (tx.amount || 0), 0).toLocaleString('es-AR')}
+                  </p>
+                </div>
+                <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center">
+                  <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Puntos Emitidos</p>
+                  <p className="text-lg font-black text-love mt-1">
+                    {allTransactions.reduce((acc, tx) => acc + (tx.points_earned || 0), 0).toLocaleString()}
+                  </p>
+                </div>
+                <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center">
+                  <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Prom Ticket</p>
+                  <p className="text-lg font-black text-ink mt-1">
+                    ${allTransactions.length > 0 ? (allTransactions.reduce((acc, tx) => acc + (tx.amount || 0), 0) / allTransactions.length).toLocaleString('es-AR', { maximumFractionDigits: 0 }) : '0'}
+                  </p>
+                </div>
+                <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center">
+                   <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Transacciones</p>
+                   <p className="text-lg font-black text-ink mt-1">{allTransactions.length}</p>
+                </div>
+              </div>
+            </div>
+          )}
           {activeTab === 'clients' && (
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

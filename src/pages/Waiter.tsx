@@ -8,7 +8,7 @@ import { cn } from '@/src/lib/utils';
 import { Profile, SystemSettings } from '@/src/types';
 import { BRANCHES } from '@/src/constants';
 import { Html5QrcodeScanner } from 'html5-qrcode';
-import { extractDataFromReceipt } from '@/src/services/gemini';
+import { extractDataFromReceipt, ExtractedReceiptItem } from '@/src/services/gemini';
 
 export function Waiter() {
   const { profile: waiterProfile } = useAuth();
@@ -16,7 +16,9 @@ export function Waiter() {
   const [dni, setDni] = useState('');
   const [amount, setAmount] = useState('');
   const [invoiceNumber, setInvoiceNumber] = useState('');
-  const [extractedItems, setExtractedItems] = useState<string[]>([]);
+  const [extractedItems, setExtractedItems] = useState<ExtractedReceiptItem[]>([]);
+  const [newItemName, setNewItemName] = useState('');
+  const [newItemQty, setNewItemQty] = useState('1');
   const [selectedBranch, setSelectedBranch] = useState(BRANCHES[0]);
   const [client, setClient] = useState<Profile | null>(null);
   const [settings, setSettings] = useState<SystemSettings | null>(null);
@@ -175,7 +177,7 @@ export function Waiter() {
           if (data.items && data.items.length > 0) {
             setStatus({ 
               type: 'success', 
-              message: `Ticket procesado. Items: ${data.items.slice(0, 3).join(', ')}${data.items.length > 3 ? '...' : ''}` 
+              message: `Ticket procesado. ${data.items.length} ítems encontrados.` 
             });
           } else {
             setStatus({ type: 'success', message: 'Datos extraídos del ticket.' });
@@ -218,6 +220,10 @@ export function Waiter() {
     try {
       console.log("Starting transaction for client:", client.id, "by waiter:", waiterProfile.id);
       
+      const itemsMetaStr = extractedItems.length > 0 
+        ? ` ||JSON_ITEMS:${JSON.stringify(extractedItems)}`
+        : '';
+
       const { error: txError } = await supabase.from('transactions').insert({
         client_id: client.id,
         waiter_id: waiterProfile.id,
@@ -225,7 +231,7 @@ export function Waiter() {
         points_earned: pointsToAdd,
         branch: selectedBranch,
         invoice_number: invoiceNumber || null,
-        description: `Consumo ${selectedBranch} - $${amountNum.toLocaleString('es-AR')}${invoiceNumber ? ` (Fact: ${invoiceNumber})` : ''}${extractedItems.length > 0 ? ` | Ítems: ${extractedItems.join(', ')}` : ''}`
+        description: `Consumo ${selectedBranch} - $${amountNum.toLocaleString('es-AR')}${invoiceNumber ? ` (Fact: ${invoiceNumber})` : ''}${extractedItems.length > 0 ? ` | Ítems: ${extractedItems.map(i => `${i.quantity}x ${i.name}`).join(', ')}` : ''}${itemsMetaStr}`
       });
 
       if (txError) {
@@ -458,6 +464,59 @@ export function Waiter() {
                         onChange={(e) => setAmount(e.target.value)}
                       />
                     </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <label className="block text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Detalle de Consumo (Opcional)</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={newItemName}
+                        onChange={(e) => setNewItemName(e.target.value)}
+                        placeholder="Nombre artículo"
+                        className="flex-1 h-10 px-4 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold text-ink focus:outline-none focus:border-love/30"
+                      />
+                      <input
+                        type="number"
+                        value={newItemQty}
+                        onChange={(e) => setNewItemQty(e.target.value)}
+                        placeholder="Cant"
+                        className="w-16 h-10 px-2 bg-slate-50 border border-slate-100 rounded-xl text-xs font-bold text-ink text-center focus:outline-none focus:border-love/30"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (newItemName.trim()) {
+                            setExtractedItems([...extractedItems, { name: newItemName.trim(), quantity: parseInt(newItemQty) || 1 }]);
+                            setNewItemName('');
+                            setNewItemQty('1');
+                          }
+                        }}
+                        className="px-4 bg-ink text-white rounded-xl text-[10px] font-black uppercase hover:bg-slate-800 transition-colors flex items-center justify-center"
+                      >
+                        <PlusCircle size={14} />
+                      </button>
+                    </div>
+                    
+                    {extractedItems.length > 0 && (
+                      <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 space-y-2 max-h-40 overflow-y-auto">
+                        {extractedItems.map((item, idx) => (
+                          <div key={idx} className="flex items-center justify-between group bg-white p-2 rounded-lg border border-slate-50 shadow-sm">
+                            <div className="flex items-center gap-2">
+                              <span className="w-5 h-5 flex items-center justify-center bg-slate-100 border border-slate-200 rounded text-[9px] font-bold text-slate-400">{item.quantity}</span>
+                              <span className="text-[10px] font-bold text-ink uppercase tracking-tight">{item.name}</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setExtractedItems(extractedItems.filter((_, i) => i !== idx))}
+                              className="p-1 text-slate-300 hover:text-love transition-opacity"
+                            >
+                              <X size={12} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-1">
