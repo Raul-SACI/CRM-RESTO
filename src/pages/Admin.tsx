@@ -258,6 +258,16 @@ export function Admin() {
           setClients(filtered);
           localStorage.setItem(cacheKey, JSON.stringify(filtered));
         }
+      } else if (activeTab === 'prizes') {
+        const { data, error } = await supabase
+          .from('catalogo_premios')
+          .select('*')
+          .order('points_cost', { ascending: true });
+        
+        if (error) throw error;
+        
+        setPrizes(data || []);
+        localStorage.setItem(cacheKey, JSON.stringify(data || []));
       } else if (activeTab === 'staff') {
         const { data, error } = await supabase
           .from('profiles')
