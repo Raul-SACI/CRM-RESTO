@@ -224,7 +224,7 @@ export function Waiter() {
         ? ` ||JSON_ITEMS:${JSON.stringify(extractedItems)}`
         : '';
 
-      const { error: txError } = await supabase.from('transactions').insert({
+      const { data: txData, error: txError } = await supabase.from('transactions').insert({
         client_id: client.id,
         waiter_id: waiterProfile.id,
         amount: amountNum,
@@ -232,7 +232,7 @@ export function Waiter() {
         branch: selectedBranch,
         invoice_number: invoiceNumber || null,
         description: `Consumo ${selectedBranch} - $${amountNum.toLocaleString('es-AR')}${invoiceNumber ? ` (Fact: ${invoiceNumber})` : ''}${extractedItems.length > 0 ? ` | Ítems: ${extractedItems.map(i => `${i.quantity}x ${i.name}`).join(', ')}` : ''}${itemsMetaStr}`
-      });
+      }).select().single();
 
       if (txError) {
         console.error("DEBUG - Transaction Error:", txError);
@@ -241,6 +241,22 @@ export function Waiter() {
           throw new Error('Permiso Denegado (RLS): El sistema no permite que este Mozo guarde transacciones en la base de datos.');
         }
         throw new Error(`Error en transacción: ${txError.message || txError.code}`);
+      }
+
+      // Insert items into detail table if any
+      if (txData && extractedItems.length > 0) {
+        try {
+          const { error: itemsError } = await supabase.from('transaction_items').insert(
+            extractedItems.map(item => ({
+              transaction_id: txData.id,
+              item_name: item.name,
+              quantity: item.quantity
+            }))
+          );
+          if (itemsError) console.error("Error saving detailed items:", itemsError);
+        } catch (e) {
+          console.error("Failed to insert into transaction_items table:", e);
+        }
       }
 
       console.log("Transaction saved, now updating profile points...");

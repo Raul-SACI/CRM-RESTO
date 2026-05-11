@@ -20,6 +20,16 @@ export interface Transaction {
   invoice_number?: string;
   description: string;
   created_at: string;
+  // Optional relations
+  transaction_items?: TransactionItem[];
+}
+
+export interface TransactionItem {
+  id: string;
+  transaction_id: string;
+  item_name: string;
+  quantity: number;
+  created_at: string;
 }
 
 export interface SystemSettings {

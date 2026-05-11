@@ -164,20 +164,29 @@ export function Admin() {
     const clientRanking: Record<string, number> = {};
 
     allTransactions.forEach(tx => {
-      // Parse items from description if present
-      const match = tx.description?.match(/\|\|JSON_ITEMS:(.*)$/);
-      if (match && match[1]) {
-        try {
-          const items = JSON.parse(match[1]);
-          if (Array.isArray(items)) {
-            items.forEach((item: any) => {
-              const name = String(item.name || 'Desconocido').toUpperCase();
-              const qty = parseInt(item.quantity) || 0;
-              itemRanking[name] = (itemRanking[name] || 0) + qty;
-            });
+      // 1. Try to use transaction_items relation if available
+      if (tx.transaction_items && Array.isArray(tx.transaction_items) && tx.transaction_items.length > 0) {
+        tx.transaction_items.forEach((item: any) => {
+          const name = String(item.item_name || 'Desconocido').toUpperCase();
+          const qty = parseInt(item.quantity) || 0;
+          itemRanking[name] = (itemRanking[name] || 0) + qty;
+        });
+      } else {
+        // Fallback: Parse items from description if present (for old records)
+        const match = tx.description?.match(/\|\|JSON_ITEMS:(.*)$/);
+        if (match && match[1]) {
+          try {
+            const items = JSON.parse(match[1]);
+            if (Array.isArray(items)) {
+              items.forEach((item: any) => {
+                const name = String(item.name || 'Desconocido').toUpperCase();
+                const qty = parseInt(item.quantity) || 0;
+                itemRanking[name] = (itemRanking[name] || 0) + qty;
+              });
+            }
+          } catch (e) {
+            console.error("Error parsing items metadata:", e);
           }
-        } catch (e) {
-          console.error("Error parsing items metadata:", e);
         }
       }
 
@@ -335,12 +344,12 @@ export function Admin() {
         });
         setStaff(filtered);
         localStorage.setItem(cacheKey, JSON.stringify(filtered));
-      } else if (activeTab === 'history') {
+      } else if (activeTab === 'dashboard' || activeTab === 'history') {
         const { data, error } = await supabase
           .from('transactions')
-          .select('*, profiles!client_id(full_name, dni)')
+          .select('*, profiles!client_id(full_name, dni), transaction_items(*)')
           .order('created_at', { ascending: false })
-          .limit(200);
+          .limit(activeTab === 'dashboard' ? 500 : 200);
         
         if (error) {
           console.error("History fetch error, retrying flat:", error);
@@ -947,7 +956,18 @@ export function Admin() {
                             return profile?.dni || '—';
                           })()}
                         </td>
-                        <td className="px-6 py-3 italic text-slate-500">{tx.description}</td>
+                        <td className="px-6 py-3 italic text-slate-500 whitespace-pre-line">
+                          {tx.description?.split('||JSON_ITEMS')[0]}
+                          {tx.transaction_items && tx.transaction_items.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {tx.transaction_items.map((item: any, i: number) => (
+                                <span key={i} className="bg-love/5 text-love text-[7px] px-1.5 py-0.5 rounded border border-love/10 font-black uppercase tracking-tighter">
+                                  {item.quantity}x {item.item_name}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </td>
                         <td className="px-6 py-3 font-mono font-black text-ink">
                           {tx.redemption_code ? (
                             <span className="bg-slate-100 px-2 py-1 rounded text-[9px] border border-slate-200">
