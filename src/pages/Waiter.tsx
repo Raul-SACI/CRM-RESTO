@@ -14,6 +14,7 @@ export function Waiter() {
   const [searchParams] = useSearchParams();
   const [dni, setDni] = useState('');
   const [amount, setAmount] = useState('');
+  const [invoiceNumber, setInvoiceNumber] = useState('');
   const [selectedBranch, setSelectedBranch] = useState(BRANCHES[0]);
   const [client, setClient] = useState<Profile | null>(null);
   const [settings, setSettings] = useState<SystemSettings | null>(null);
@@ -176,7 +177,8 @@ export function Waiter() {
         amount: amountNum,
         points_earned: pointsToAdd,
         branch: selectedBranch,
-        description: `Consumo ${selectedBranch} - $${amountNum.toLocaleString('es-AR')}`
+        invoice_number: invoiceNumber || null,
+        description: `Consumo ${selectedBranch} - $${amountNum.toLocaleString('es-AR')}${invoiceNumber ? ` (Fact: ${invoiceNumber})` : ''}`
       });
 
       if (txError) {
@@ -214,6 +216,7 @@ export function Waiter() {
       setClient(null);
       setDni('');
       setAmount('');
+      setInvoiceNumber('');
     } catch (err: any) {
       console.error("DEBUG - Full Submit Error Trace:", err);
       setStatus({ 
@@ -387,6 +390,16 @@ export function Waiter() {
                         onChange={(e) => setAmount(e.target.value)}
                       />
                     </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Número de Factura (Opcional)</label>
+                    <input
+                      placeholder="Ej: 0001-00004567"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-love text-ink font-bold"
+                      value={invoiceNumber}
+                      onChange={(e) => setInvoiceNumber(e.target.value)}
+                    />
                   </div>
 
                   <div className="bg-love/5 rounded-[1.5rem] md:rounded-[2rem] p-4 md:p-6 text-love border-2 border-love/5 flex justify-between items-center group">

@@ -408,6 +408,7 @@ export function Admin() {
         'DNI': profile?.dni || '—',
         'Detalle': tx.description,
         'Código': tx.redemption_code || '—',
+        'Factura': tx.invoice_number || '—',
         'Monto ($)': tx.amount,
         'Puntos Sumados': tx.points_earned
       };
@@ -773,6 +774,7 @@ export function Admin() {
                       <th className="px-6 py-4">DNI</th>
                       <th className="px-6 py-4">Carga</th>
                       <th className="px-6 py-4">Código</th>
+                      <th className="px-6 py-4">Factura</th>
                       <th className="px-6 py-4 text-right">Puntos</th>
                     </tr>
                   </thead>
@@ -807,6 +809,13 @@ export function Admin() {
                           {tx.redemption_code ? (
                             <span className="bg-slate-100 px-2 py-1 rounded text-[9px] border border-slate-200">
                               {tx.redemption_code}
+                            </span>
+                          ) : '—'}
+                        </td>
+                        <td className="px-6 py-3 font-mono font-black text-ink uppercase">
+                          {tx.invoice_number ? (
+                            <span className="bg-slate-100 px-2 py-1 rounded text-[9px] border border-slate-200">
+                              {tx.invoice_number}
                             </span>
                           ) : '—'}
                         </td>

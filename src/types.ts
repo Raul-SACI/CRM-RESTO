@@ -17,6 +17,7 @@ export interface Transaction {
   points_earned: number;
   branch?: string;
   redemption_code?: string;
+  invoice_number?: string;
   description: string;
   created_at: string;
 }

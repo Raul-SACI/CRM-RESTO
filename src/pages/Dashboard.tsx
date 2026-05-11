@@ -494,6 +494,14 @@ export function Dashboard() {
                        </span>
                     </div>
                   )}
+                  {tx.invoice_number && (
+                    <div className="mt-2 flex items-center gap-2">
+                       <span className="text-[8px] font-black uppercase text-slate-300">Factura:</span>
+                       <span className="bg-slate-200 text-ink px-2 py-0.5 rounded-md font-mono text-[9px] font-black tracking-widest">
+                         {tx.invoice_number}
+                       </span>
+                    </div>
+                  )}
                 </div>
                 <div className="text-right ml-4 shrink-0">
                   <p className={cn(
