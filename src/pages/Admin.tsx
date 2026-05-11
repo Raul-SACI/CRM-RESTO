@@ -484,7 +484,7 @@ export function Admin() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50">
         <div>
-          <h2 className="text-2xl font-black uppercase tracking-tighter italic text-ink">Gestión <span className="text-love">Resto</span></h2>
+          <h2 className="text-2xl font-black uppercase tracking-tighter italic text-ink">CRAFT <span className="text-love">RESTO</span></h2>
           <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-black">Panel Central Administrativo</p>
         </div>
         
@@ -710,7 +710,7 @@ export function Admin() {
                 
                 <div className="pt-8 mt-4 border-t border-slate-100 text-center">
                   <p className="text-[8px] font-black uppercase tracking-widest text-slate-300">
-                    CRM RESTO v1.0.6-FIX-DATABASE • DB Status: Connected
+                    CRM CRAFT RESTO v1.0.6-FIX-DATABASE • DB Status: Connected
                   </p>
                 </div>
               </div>

@@ -1,7 +1,7 @@
 {
-  "name": "Ceniza & Amor CRM",
-  "short_name": "Ceniza & Amor",
-  "description": "Premium Loyalty CRM for Ceniza & Amor Restaurant",
+  "name": "CRM CRAFT RESTO",
+  "short_name": "CRM CRAFT",
+  "description": "Premium Loyalty CRM for Restaurants",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#121212",

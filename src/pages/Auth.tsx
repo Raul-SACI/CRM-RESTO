@@ -68,7 +68,7 @@ export function Auth() {
           >
             <div className="font-bold text-3xl text-white">R</div>
           </motion.div>
-          <h1 className="text-4xl font-black mb-2 tracking-tighter uppercase text-ink">CRM <span className="text-love">RESTO</span></h1>
+          <h1 className="text-4xl font-black mb-2 tracking-tighter uppercase text-ink">CRM CRAFT <span className="text-love">RESTO</span></h1>
           <p className="text-slate-400 text-[10px] uppercase tracking-[0.3em] font-black">Premium Experience</p>
         </div>
 
