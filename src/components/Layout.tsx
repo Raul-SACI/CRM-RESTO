@@ -9,25 +9,12 @@ interface LayoutProps {
 }
 
 export function Layout({ children }: LayoutProps) {
-  const { profile } = useAuth();
+  const { profile, signOut } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    try {
-      // Intentamos cerrar sesión en Supabase
-      const { error } = await supabase.auth.signOut();
-      if (error) console.error("SignOut error:", error);
-    } catch (e) {
-      console.error("Critical SignOut error:", e);
-    } finally {
-      // Limpiamos TODO para evitar rastros de sesiones bloqueadas
-      localStorage.clear();
-      sessionStorage.clear();
-      
-      // Forzamos redirección y recarga completa
-      window.location.href = '#/auth';
-      window.location.reload();
-    }
+    await signOut();
+    navigate('/auth');
   };
 
   return (

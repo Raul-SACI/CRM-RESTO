@@ -20,6 +20,7 @@ interface AuthContextType {
   profile: Profile | null;
   loading: boolean;
   refreshProfile: () => Promise<void>;
+  signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -27,6 +28,7 @@ const AuthContext = createContext<AuthContextType>({
   profile: null,
   loading: true,
   refreshProfile: async () => {},
+  signOut: async () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -255,6 +257,21 @@ export default function App() {
     if (user) await fetchProfile(user.id, user.email);
   };
 
+  const signOut = async () => {
+    try {
+      // Optimismo: Cerramos sesión localmente primero para feedback instantáneo
+      setUser(null);
+      setProfile(null);
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      // En segundo plano cerramos en Supabase
+      await supabase.auth.signOut();
+    } catch (e) {
+      console.error("SignOut error:", e);
+    }
+  };
+
   if (!isConfigured) {
     return (
       <div className="min-h-screen bg-bar-black flex flex-col items-center justify-center p-8 text-center">
@@ -286,7 +303,7 @@ export default function App() {
   }
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, refreshProfile }}>
+    <AuthContext.Provider value={{ user, profile, loading, refreshProfile, signOut }}>
       <HashRouter>
         <AppRoutes />
       </HashRouter>
