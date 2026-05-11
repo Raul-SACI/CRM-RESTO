@@ -19,8 +19,11 @@ export function Admin() {
   const [uploading, setUploading] = useState(false);
   const [updatingSettings, setUpdatingSettings] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [importing, setImporting] = useState(false);
   const [newClient, setNewClient] = useState({ fullName: '', email: '', dni: '', birthDate: '', password: '' });
+  const [editingClient, setEditingClient] = useState<Profile | null>(null);
+  const [editClientForm, setEditClientForm] = useState({ fullName: '', email: '', dni: '', birthDate: '' });
 
   const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -416,6 +419,44 @@ export function Admin() {
     XLSX.writeFile(wb, `movimientos_salon_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
+  const startEditingClient = (client: Profile) => {
+    setEditingClient(client);
+    setEditClientForm({
+      fullName: client.full_name,
+      email: client.email,
+      dni: client.dni,
+      birthDate: client.birth_date || ''
+    });
+    setShowEditModal(true);
+  };
+
+  const handleUpdateClient = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingClient) return;
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: editClientForm.fullName,
+          email: editClientForm.email,
+          dni: editClientForm.dni,
+          birth_date: editClientForm.birthDate
+        })
+        .eq('id', editingClient.id);
+
+      if (error) throw error;
+      
+      alert('¡Cliente actualizado con éxito!');
+      setShowEditModal(false);
+      await fetchData(true);
+    } catch (err: any) {
+      alert('Error al actualizar cliente: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
   const updateUserRole = async (userId: string, newRole: string) => {
     const roleNames: Record<string, string> = {
       'admin': 'Administrador',
@@ -547,12 +588,21 @@ export function Admin() {
                             <span className="text-love font-black italic text-lg">{client.points}</span>
                           </td>
                           <td className="px-6 py-4 text-right">
-                            <button 
-                              onClick={() => updateUserRole(client.id, 'waiter')}
-                              className="text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded bg-slate-100 text-slate-500 hover:bg-love hover:text-white transition-all shadow-sm"
-                            >
-                              Hacer Staff
-                            </button>
+                            <div className="flex items-center justify-end gap-2">
+                              <button 
+                                onClick={() => startEditingClient(client)}
+                                className="p-2 text-slate-300 hover:text-ink transition-colors"
+                                title="Editar Datos"
+                              >
+                                <Pencil size={16} />
+                              </button>
+                              <button 
+                                onClick={() => updateUserRole(client.id, 'waiter')}
+                                className="text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded bg-slate-100 text-slate-500 hover:bg-love hover:text-white transition-all shadow-sm"
+                              >
+                                Hacer Staff
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))
@@ -830,7 +880,80 @@ export function Admin() {
         </>
       )}
 
-      {/* Manual Add Modal */}
+      {/* Edit Client Modal */}
+      <AnimatePresence>
+        {showEditModal && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="bg-white border border-slate-200 p-8 rounded-[2rem] w-full max-w-md shadow-2xl relative"
+            >
+              <button 
+                onClick={() => setShowEditModal(false)}
+                className="absolute top-6 right-6 text-slate-300 hover:text-love transition-colors"
+              >
+                <X size={24} />
+              </button>
+
+              <h3 className="text-xl font-black mb-6 uppercase tracking-tight italic text-ink">Editar <span className="text-love">Cliente</span></h3>
+              <form onSubmit={handleUpdateClient} className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Nombre Completo</label>
+                  <input 
+                    required
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-love text-ink" 
+                    value={editClientForm.fullName} 
+                    onChange={e => setEditClientForm({...editClientForm, fullName: e.target.value})} 
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">DNI</label>
+                    <input 
+                      required
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-love text-ink" 
+                      value={editClientForm.dni} 
+                      onChange={e => setEditClientForm({...editClientForm, dni: e.target.value})} 
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Fecha Nac.</label>
+                    <input 
+                      type="date"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-love text-ink" 
+                      value={editClientForm.birthDate} 
+                      onChange={e => setEditClientForm({...editClientForm, birthDate: e.target.value})} 
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Email</label>
+                  <input 
+                    type="email"
+                    required
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-love text-ink" 
+                    value={editClientForm.email} 
+                    onChange={e => setEditClientForm({...editClientForm, email: e.target.value})} 
+                  />
+                </div>
+                <button 
+                  type="submit" 
+                  disabled={loading}
+                  className="w-full bg-ink text-white py-4 rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-ink/20 mt-4 disabled:opacity-50"
+                >
+                  {loading ? 'Guardando...' : 'Guardar Cambios'}
+                </button>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <AnimatePresence>
         {showAddModal && (
           <motion.div 
