@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Users, Gift, Settings, Search, Plus, Trash2, Pencil, Calendar, Award, History, DollarSign, Upload, Image as ImageIcon, FileSpreadsheet, UserPlus, X } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import * as XLSX from 'xlsx';
+import { BRANCHES } from '@/src/constants';
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell, PieChart, Pie } from 'recharts';
 
@@ -26,6 +27,7 @@ export function Admin() {
   const [newClient, setNewClient] = useState({ fullName: '', email: '', dni: '', birthDate: '', password: '' });
   const [editingClient, setEditingClient] = useState<Profile | null>(null);
   const [editClientForm, setEditClientForm] = useState({ fullName: '', email: '', dni: '', birthDate: '' });
+  const [selectedBranchFilter, setSelectedBranchFilter] = useState<string>('Todas');
 
   const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -163,7 +165,11 @@ export function Admin() {
     const itemRanking: Record<string, number> = {};
     const clientRanking: Record<string, number> = {};
 
-    allTransactions.forEach(tx => {
+    const filteredTransactions = selectedBranchFilter === 'Todas' 
+      ? allTransactions 
+      : allTransactions.filter(tx => tx.branch === selectedBranchFilter);
+
+    filteredTransactions.forEach(tx => {
       // 1. Try to use transaction_items relation if available
       if (tx.transaction_items && Array.isArray(tx.transaction_items) && tx.transaction_items.length > 0) {
         tx.transaction_items.forEach((item: any) => {
@@ -207,7 +213,7 @@ export function Admin() {
       .sort((a, b) => b.total - a.total)
       .slice(0, 10);
 
-    return { itemData, clientData };
+    return { itemData, clientData, filteredTransactions };
   };
 
   const dashboardData = getDashboardData();
@@ -568,6 +574,32 @@ export function Admin() {
         <>
           {activeTab === 'dashboard' && (
             <div className="space-y-6">
+              {/* Branch Filter */}
+              <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex flex-wrap gap-2 items-center">
+                <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 mr-2">Filtrar por Sucursal:</span>
+                <button
+                  onClick={() => setSelectedBranchFilter('Todas')}
+                  className={cn(
+                    "px-4 py-2 rounded-xl text-[10px] font-bold uppercase transition-all",
+                    selectedBranchFilter === 'Todas' ? "bg-ink text-white" : "bg-slate-50 text-slate-400 hover:bg-slate-100"
+                  )}
+                >
+                  Todas
+                </button>
+                {BRANCHES.map(branch => (
+                  <button
+                    key={branch}
+                    onClick={() => setSelectedBranchFilter(branch)}
+                    className={cn(
+                      "px-4 py-2 rounded-xl text-[10px] font-bold uppercase transition-all",
+                      selectedBranchFilter === branch ? "bg-ink text-white" : "bg-slate-50 text-slate-400 hover:bg-slate-100"
+                    )}
+                  >
+                    {branch}
+                  </button>
+                ))}
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Visual Cards */}
                 <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50">
@@ -638,24 +670,24 @@ export function Admin() {
                 <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center">
                   <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Total Recaudado</p>
                   <p className="text-lg font-black text-ink mt-1">
-                    ${allTransactions.reduce((acc, tx) => acc + (tx.amount || 0), 0).toLocaleString('es-AR')}
+                    ${dashboardData.filteredTransactions.reduce((acc, tx) => acc + (tx.amount || 0), 0).toLocaleString('es-AR')}
                   </p>
                 </div>
                 <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center">
                   <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Puntos Emitidos</p>
                   <p className="text-lg font-black text-love mt-1">
-                    {allTransactions.reduce((acc, tx) => acc + (tx.points_earned || 0), 0).toLocaleString()}
+                    {dashboardData.filteredTransactions.reduce((acc, tx) => acc + (tx.points_earned || 0), 0).toLocaleString()}
                   </p>
                 </div>
                 <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center">
                   <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Prom Ticket</p>
                   <p className="text-lg font-black text-ink mt-1">
-                    ${allTransactions.length > 0 ? (allTransactions.reduce((acc, tx) => acc + (tx.amount || 0), 0) / allTransactions.length).toLocaleString('es-AR', { maximumFractionDigits: 0 }) : '0'}
+                    ${dashboardData.filteredTransactions.length > 0 ? (dashboardData.filteredTransactions.reduce((acc, tx) => acc + (tx.amount || 0), 0) / dashboardData.filteredTransactions.length).toLocaleString('es-AR', { maximumFractionDigits: 0 }) : '0'}
                   </p>
                 </div>
                 <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center">
                    <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Transacciones</p>
-                   <p className="text-lg font-black text-ink mt-1">{allTransactions.length}</p>
+                   <p className="text-lg font-black text-ink mt-1">{dashboardData.filteredTransactions.length}</p>
                 </div>
               </div>
             </div>
