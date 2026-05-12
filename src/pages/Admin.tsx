@@ -1144,7 +1144,7 @@ export function Admin() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">DNI</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">DNI (sin puntos)</label>
                     <input 
                       required
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-love text-ink" 
@@ -1218,10 +1218,10 @@ export function Admin() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">DNI</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">DNI (sin puntos)</label>
                     <input 
                       required
-                      placeholder="Sin puntos" 
+                      placeholder="Ej: 37657683" 
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-love text-ink" 
                       value={newClient.dni} 
                       onChange={e => setNewClient({...newClient, dni: e.target.value})} 

@@ -90,7 +90,7 @@ export function Auth() {
                 <div className="relative">
                   <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
                   <input
-                    placeholder="DNI"
+                    placeholder="DNI (sin puntos)"
                     required
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-sm focus:border-love outline-none transition-all placeholder:text-slate-300 text-ink"
                     value={formData.dni}
