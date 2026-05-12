@@ -120,7 +120,7 @@ export default function App() {
       full_name: userEmail?.split('@')[0] || 'Usuario',
       email: userEmail || '',
       dni: isAdminEmail ? 'ADMIN' : '',
-      birth_date: '2000-01-01',
+      birth_date: '',
       role: isAdminEmail ? 'admin' : 'client',
       points: 0,
       created_at: new Date().toISOString()
@@ -213,7 +213,7 @@ export default function App() {
             full_name: session.user.email?.split('@')[0] || 'Usuario',
             email: session.user.email || '',
             dni: isAdminEmail ? 'ADMIN' : '',
-            birth_date: '2000-01-01',
+            birth_date: '',
             role: isAdminEmail ? 'admin' : 'client',
             points: 0,
             created_at: new Date().toISOString()

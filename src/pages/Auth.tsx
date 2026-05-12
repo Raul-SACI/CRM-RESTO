@@ -45,17 +45,30 @@ export function Auth() {
         
         if (signUpError) throw signUpError;
         if (user) {
+          // Wait a bit for the trigger to definitely finish
+          await new Promise(resolve => setTimeout(resolve, 800));
+          
           // Update or Create profile (Upsert to handle trigger race condition)
-          const { error: profileError } = await supabase.from('profiles').upsert({
+          const profileData = {
             id: user.id,
             dni: formData.dni,
             full_name: formData.fullName,
             email: formData.email,
-            birth_date: formData.birthDate || null,
             role: 'client',
-          }, { onConflict: 'id' });
+          };
           
-          if (profileError) throw profileError;
+          // Only include birth_date if provided to avoid overwriting with null if it was already set by trigger correctly
+          if (formData.birthDate) {
+            (profileData as any).birth_date = formData.birthDate;
+          }
+
+          const { error: profileError } = await supabase.from('profiles').upsert(profileData, { onConflict: 'id' });
+          
+          if (profileError) {
+            console.error("Manual profile upsert error:", profileError);
+            // If it failed, try a simple update
+            await supabase.from('profiles').update({ birth_date: formData.birthDate || null }).eq('id', user.id);
+          }
         }
       }
     } catch (err: any) {

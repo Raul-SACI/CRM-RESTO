@@ -211,11 +211,21 @@ export function Admin() {
     const newClients = clients.filter(c => {
       const isClient = !c.role || c.role === 'client';
       if (!isClient) return false;
-      const cAt = c.created_at?.split('T')[0];
-      return cAt && cAt >= dateStart && cAt <= dateEnd;
+      if (!c.created_at) return false;
+      const cAt = c.created_at.split('T')[0];
+      return cAt >= dateStart && cAt <= dateEnd;
     }).sort((a, b) => new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime());
 
     const regPerDay: Record<string, number> = {};
+    
+    // Ensure all days between dateStart and dateEnd have at least 0 registrations for a better chart
+    let curr = new Date(dateStart + 'T12:00:00');
+    const end = new Date(dateEnd + 'T12:00:00');
+    while (curr <= end) {
+      regPerDay[curr.toISOString().split('T')[0]] = 0;
+      curr.setDate(curr.getDate() + 1);
+    }
+
     newClients.forEach(c => {
       const day = c.created_at!.split('T')[0];
       regPerDay[day] = (regPerDay[day] || 0) + 1;
@@ -867,7 +877,7 @@ export function Admin() {
                             <div className="flex items-center gap-2 text-xs text-slate-500">
                               <Calendar size={12} className={cn("text-love", !client.birth_date && "opacity-20")} />
                               {client.birth_date ? (
-                                <span className="font-bold">{client.birth_date}</span>
+                                <span className="font-bold text-ink">{client.birth_date}</span>
                               ) : (
                                 <span className="text-[10px] text-slate-300 italic">No cargada</span>
                               )}
