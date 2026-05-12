@@ -5,7 +5,7 @@ CREATE TABLE public.profiles (
   id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
   dni TEXT UNIQUE NOT NULL,
   full_name TEXT NOT NULL,
-  email TEXT NOT NULL,
+  email TEXT UNIQUE NOT NULL,
   birth_date DATE,
   points INTEGER DEFAULT 0 CHECK (points >= 0),
   role TEXT DEFAULT 'client' CHECK (role IN ('client', 'waiter', 'admin')),
@@ -149,5 +149,18 @@ BEGIN
   WHERE 
     EXTRACT(MONTH FROM birth_date) = EXTRACT(MONTH FROM CURRENT_DATE) AND
     EXTRACT(DAY FROM birth_date) = EXTRACT(DAY FROM CURRENT_DATE);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 6. Función para vincular perfiles por email (útil para registros post-importación)
+CREATE OR REPLACE FUNCTION public.vincular_perfil_por_email(p_user_id UUID, p_email TEXT)
+RETURNS void AS $$
+BEGIN
+  -- Si el perfil existe con el email pero con un ID distinto (o nulo/temp)
+  -- lo actualizamos para que coincida con el nuevo Auth ID
+  UPDATE public.profiles
+  SET id = p_user_id
+  WHERE LOWER(email) = LOWER(p_email)
+  AND id != p_user_id; -- Solo si el ID es diferente
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

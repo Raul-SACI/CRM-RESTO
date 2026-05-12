@@ -141,6 +141,7 @@ export default function App() {
     setLoading(false);
 
     try {
+      // 1. Try exact ID match
       const profilePromise = supabase
         .from('profiles')
         .select('*')
@@ -159,6 +160,27 @@ export default function App() {
         return;
       }
       
+      // 2. If no data by ID, try matching by email to link imported accounts
+      if (!data && userEmail) {
+        // Use the RPC to link the profile safely on the server side
+        await supabase.rpc('vincular_perfil_por_email', { 
+          p_user_id: userId, 
+          p_email: userEmail.toLowerCase().trim() 
+        });
+
+        // Re-attempt fetch after linking
+        const { data: linkedData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .maybeSingle();
+        
+        if (linkedData) {
+          data = linkedData;
+          console.log("Successfully linked existing email profile via RPC");
+        }
+      }
+
       const finalProfile = data ? { ...data, role: isAdminEmail ? 'admin' : data.role } : emergencyProfile;
       setProfile(finalProfile);
       
