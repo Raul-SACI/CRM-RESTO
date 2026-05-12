@@ -208,7 +208,23 @@ export function Admin() {
       .sort((a, b) => b.total - a.total)
       .slice(0, 10);
 
-    return { prizeData, clientData, filteredTransactions };
+    const newClients = clients.filter(c => {
+      if (c.role !== 'client') return false;
+      const cAt = c.created_at?.split('T')[0];
+      return cAt && cAt >= dateStart && cAt <= dateEnd;
+    }).sort((a, b) => new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime());
+
+    const regPerDay: Record<string, number> = {};
+    newClients.forEach(c => {
+      const day = c.created_at!.split('T')[0];
+      regPerDay[day] = (regPerDay[day] || 0) + 1;
+    });
+
+    const registrationData = Object.entries(regPerDay)
+      .map(([date, count]) => ({ date, count }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    return { prizeData, clientData, filteredTransactions, newClients, registrationData };
   };
 
   const dashboardData = getDashboardData();
@@ -688,6 +704,53 @@ export function Admin() {
                         </Bar>
                       </BarChart>
                     </ResponsiveContainer>
+                  </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50 md:col-span-2">
+                   <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xs font-black uppercase tracking-widest text-ink flex items-center gap-2">
+                       <UserPlus size={16} className="text-love" />
+                       Nuevos Clientes ({dashboardData.newClients.length})
+                    </h3>
+                  </div>
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="lg:col-span-2 h-[250px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={dashboardData.registrationData}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                          <XAxis 
+                             dataKey="date" 
+                             tick={{ fontSize: 8, fontWeight: 700, fill: '#64748b' }}
+                             tickFormatter={(val) => new Date(val).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })}
+                             axisLine={false}
+                             tickLine={false}
+                          />
+                          <YAxis allowDecimals={false} tick={{ fontSize: 8, fontWeight: 700, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                          <Tooltip 
+                            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '10px', fontWeight: 800 }}
+                            labelFormatter={(val) => new Date(val).toLocaleDateString('es-AR', { dateStyle: 'medium' })}
+                          />
+                          <Bar dataKey="count" fill="#FF4757" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="space-y-3 max-h-[250px] overflow-y-auto pr-2">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Últimos Registros:</p>
+                      {dashboardData.newClients.length > 0 ? (
+                        dashboardData.newClients.slice(0, 10).map(client => (
+                          <div key={client.id} className="flex items-center justify-between bg-slate-50 p-2 rounded-xl border border-slate-100">
+                             <div className="overflow-hidden">
+                                <p className="text-[10px] font-bold text-ink truncate uppercase">{client.full_name}</p>
+                                <p className="text-[8px] font-bold text-slate-400">{new Date(client.created_at!).toLocaleDateString('es-AR')}</p>
+                             </div>
+                             <div className="text-[10px] font-black text-love">{client.dni}</div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center py-10 text-[10px] font-bold text-slate-300 uppercase italic">No hubo registros</div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
