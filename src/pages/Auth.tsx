@@ -37,7 +37,8 @@ export function Auth() {
           options: {
             data: {
               full_name: formData.fullName,
-              dni: formData.dni
+              dni: formData.dni,
+              birth_date: formData.birthDate || null
             }
           }
         });
@@ -50,7 +51,7 @@ export function Auth() {
             dni: formData.dni,
             full_name: formData.fullName,
             email: formData.email,
-            birth_date: formData.birthDate,
+            birth_date: formData.birthDate || null,
             role: 'client',
           }, { onConflict: 'id' });
           

@@ -96,7 +96,8 @@ export function Admin() {
         options: {
           data: {
             full_name: newClient.fullName.trim(),
-            dni: trimmedDni
+            dni: trimmedDni,
+            birth_date: newClient.birthDate || null
           }
         }
       });
@@ -113,7 +114,7 @@ export function Admin() {
             full_name: newClient.fullName.trim(),
             email: trimmedEmail,
             dni: trimmedDni,
-            birth_date: newClient.birthDate,
+            birth_date: newClient.birthDate || null,
             role: 'client',
             points: 0
           }, { onConflict: 'id' });
@@ -501,7 +502,7 @@ export function Admin() {
           full_name: editClientForm.fullName,
           email: editClientForm.email,
           dni: editClientForm.dni,
-          birth_date: editClientForm.birthDate
+          birth_date: editClientForm.birthDate || null
         })
         .eq('id', editingClient.id);
 
