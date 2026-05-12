@@ -28,6 +28,12 @@ export function Admin() {
   const [editingClient, setEditingClient] = useState<Profile | null>(null);
   const [editClientForm, setEditClientForm] = useState({ fullName: '', email: '', dni: '', birthDate: '' });
   const [selectedBranchFilter, setSelectedBranchFilter] = useState<string>('Todas');
+  const [dateStart, setDateStart] = useState<string>(() => {
+    const d = new Date();
+    d.setDate(1); // First day of current month
+    return d.toISOString().split('T')[0];
+  });
+  const [dateEnd, setDateEnd] = useState<string>(() => new Date().toISOString().split('T')[0]);
 
   const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -161,48 +167,37 @@ export function Admin() {
   }, [activeTab]);
 
   const getDashboardData = () => {
-    const itemRanking: Record<string, number> = {};
+    const prizeRanking: Record<string, number> = {};
     const clientRanking: Record<string, number> = {};
 
-    const filteredTransactions = selectedBranchFilter === 'Todas' 
-      ? allTransactions 
-      : allTransactions.filter(tx => tx.branch === selectedBranchFilter);
+    const filteredTransactions = allTransactions.filter(tx => {
+      // Branch filter
+      const branchMatch = selectedBranchFilter === 'Todas' || tx.branch === selectedBranchFilter;
+      
+      // Date filter
+      const txDate = tx.created_at.split('T')[0];
+      const dateMatch = txDate >= dateStart && txDate <= dateEnd;
+
+      return branchMatch && dateMatch;
+    });
 
     filteredTransactions.forEach(tx => {
-      // 1. Try to use transaction_items relation if available
-      if (tx.transaction_items && Array.isArray(tx.transaction_items) && tx.transaction_items.length > 0) {
-        tx.transaction_items.forEach((item: any) => {
-          const name = String(item.item_name || 'Desconocido').toUpperCase();
-          const qty = parseInt(item.quantity) || 0;
-          itemRanking[name] = (itemRanking[name] || 0) + qty;
-        });
-      } else {
-        // Fallback: Parse items from description if present (for old records)
-        const match = tx.description?.match(/\|\|JSON_ITEMS:(.*)$/);
-        if (match && match[1]) {
-          try {
-            const items = JSON.parse(match[1]);
-            if (Array.isArray(items)) {
-              items.forEach((item: any) => {
-                const name = String(item.name || 'Desconocido').toUpperCase();
-                const qty = parseInt(item.quantity) || 0;
-                itemRanking[name] = (itemRanking[name] || 0) + qty;
-              });
-            }
-          } catch (e) {
-            console.error("Error parsing items metadata:", e);
-          }
-        }
+      // Ranking by prize redemptions
+      if (tx.redemption_code && tx.description?.startsWith('CANJE:')) {
+        const prizeName = tx.description.replace('CANJE:', '').trim();
+        prizeRanking[prizeName] = (prizeRanking[prizeName] || 0) + 1;
       }
 
       // Ranking by client amount
       const p = (tx as any).profiles;
       const profile = Array.isArray(p) ? p[0] : p;
       const clientName = profile?.full_name || tx.client_id;
-      clientRanking[clientName] = (clientRanking[clientName] || 0) + (tx.amount || 0);
+      if (tx.amount > 0) {
+        clientRanking[clientName] = (clientRanking[clientName] || 0) + (tx.amount || 0);
+      }
     });
 
-    const itemData = Object.entries(itemRanking)
+    const prizeData = Object.entries(prizeRanking)
       .map(([name, qty]) => ({ name, qty }))
       .sort((a, b) => b.qty - a.qty)
       .slice(0, 10);
@@ -212,7 +207,7 @@ export function Admin() {
       .sort((a, b) => b.total - a.total)
       .slice(0, 10);
 
-    return { itemData, clientData, filteredTransactions };
+    return { prizeData, clientData, filteredTransactions };
   };
 
   const dashboardData = getDashboardData();
@@ -573,30 +568,62 @@ export function Admin() {
         <>
           {activeTab === 'dashboard' && (
             <div className="space-y-6">
-              {/* Branch Filter */}
-              <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex flex-wrap gap-2 items-center">
-                <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 mr-2">Filtrar por Sucursal:</span>
-                <button
-                  onClick={() => setSelectedBranchFilter('Todas')}
-                  className={cn(
-                    "px-4 py-2 rounded-xl text-[10px] font-bold uppercase transition-all",
-                    selectedBranchFilter === 'Todas' ? "bg-ink text-white" : "bg-slate-50 text-slate-400 hover:bg-slate-100"
-                  )}
-                >
-                  Todas
-                </button>
-                {BRANCHES.map(branch => (
-                  <button
-                    key={branch}
-                    onClick={() => setSelectedBranchFilter(branch)}
-                    className={cn(
-                      "px-4 py-2 rounded-xl text-[10px] font-bold uppercase transition-all",
-                      selectedBranchFilter === branch ? "bg-ink text-white" : "bg-slate-50 text-slate-400 hover:bg-slate-100"
-                    )}
+              {/* Filters */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex flex-wrap gap-2 items-center">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 mr-2">Sucursal:</span>
+                  <div className="flex flex-wrap gap-1">
+                    <button
+                      onClick={() => setSelectedBranchFilter('Todas')}
+                      className={cn(
+                        "px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase transition-all",
+                        selectedBranchFilter === 'Todas' ? "bg-ink text-white" : "bg-slate-50 text-slate-400 hover:bg-slate-100"
+                      )}
+                    >
+                      Todas
+                    </button>
+                    {BRANCHES.map(branch => (
+                      <button
+                        key={branch}
+                        onClick={() => setSelectedBranchFilter(branch)}
+                        className={cn(
+                          "px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase transition-all",
+                          selectedBranchFilter === branch ? "bg-ink text-white" : "bg-slate-50 text-slate-400 hover:bg-slate-100"
+                        )}
+                      >
+                        {branch}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-2 flex-1">
+                    <Calendar size={14} className="text-slate-300" />
+                    <div className="flex items-center gap-1 flex-1">
+                      <input 
+                        type="date" 
+                        value={dateStart} 
+                        onChange={e => setDateStart(e.target.value)}
+                        className="bg-slate-50 border border-slate-100 rounded-lg px-2 py-1.5 text-[10px] font-bold text-ink outline-none focus:border-love/30 flex-1"
+                      />
+                      <span className="text-[9px] font-black text-slate-300 uppercase">A</span>
+                      <input 
+                        type="date" 
+                        value={dateEnd} 
+                        onChange={e => setDateEnd(e.target.value)}
+                        className="bg-slate-50 border border-slate-100 rounded-lg px-2 py-1.5 text-[10px] font-bold text-ink outline-none focus:border-love/30 flex-1"
+                      />
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => fetchData(true)}
+                    className="p-2 bg-slate-50 text-slate-400 rounded-xl hover:bg-slate-100 transition-colors"
+                    title="Actualizar Datos"
                   >
-                    {branch}
+                    <History size={14} />
                   </button>
-                ))}
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -635,12 +662,12 @@ export function Admin() {
                    <div className="flex items-center justify-between mb-6">
                     <h3 className="text-xs font-black uppercase tracking-widest text-ink flex items-center gap-2">
                        <Gift size={16} className="text-ink" />
-                       Artículos Más Vendidos (Cantidades)
+                       Premios Más Canjeados (Cantidades)
                     </h3>
                   </div>
                   <div className="h-[300px]">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={dashboardData.itemData} margin={{ top: 20, bottom: 20 }}>
+                      <BarChart data={dashboardData.prizeData} margin={{ top: 20, bottom: 20 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                         <XAxis 
                           dataKey="name" 
@@ -651,10 +678,10 @@ export function Admin() {
                         <YAxis hide />
                         <Tooltip 
                            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '10px', fontWeight: 800 }}
-                           formatter={(val: number) => [val, 'Cantidad']}
+                           formatter={(val: number) => [val, 'Canjes']}
                         />
                         <Bar dataKey="qty" fill="#1e293b" radius={[4, 4, 0, 0]} barSize={30}>
-                          {dashboardData.itemData.map((_, index) => (
+                          {dashboardData.prizeData.map((_, index) => (
                             <Cell key={`cell-${index}`} fill={index === 0 ? '#FF4757' : '#1e293b'} opacity={1 - (index * 0.05)} />
                           ))}
                         </Bar>
