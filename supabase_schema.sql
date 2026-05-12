@@ -120,12 +120,13 @@ CREATE POLICY "Staff manage settings"
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, full_name, email, dni, role, points)
+  INSERT INTO public.profiles (id, full_name, email, dni, birth_date, role, points)
   VALUES (
     NEW.id, 
     COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.email), 
     NEW.email, 
     COALESCE(NEW.raw_user_meta_data->>'dni', 'TEMP-' || NEW.id),
+    (NEW.raw_user_meta_data->>'birth_date')::DATE,
     'client',
     0
   )

@@ -209,7 +209,8 @@ export function Admin() {
       .slice(0, 10);
 
     const newClients = clients.filter(c => {
-      if (c.role !== 'client') return false;
+      const isClient = !c.role || c.role === 'client';
+      if (!isClient) return false;
       const cAt = c.created_at?.split('T')[0];
       return cAt && cAt >= dateStart && cAt <= dateEnd;
     }).sort((a, b) => new Date(b.created_at!).getTime() - new Date(a.created_at!).getTime());
@@ -362,6 +363,15 @@ export function Admin() {
         setStaff(filtered);
         localStorage.setItem(cacheKey, JSON.stringify(filtered));
       } else if (activeTab === 'dashboard' || activeTab === 'history') {
+        // Dashboard also needs clients for the registration chart
+        if (activeTab === 'dashboard' || activeTab === 'history') {
+          const { data: pData } = await supabase.from('profiles').select('*');
+          if (pData) {
+            const onlyClients = pData.filter(p => !p.role || p.role === 'client');
+            setClients(onlyClients);
+          }
+        }
+
         const { data, error } = await supabase
           .from('transactions')
           .select('*, profiles!client_id(full_name, dni), transaction_items(*)')
@@ -855,8 +865,12 @@ export function Admin() {
                           <td className="px-6 py-4 font-mono text-xs text-slate-500">{client.dni}</td>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-2 text-xs text-slate-500">
-                              <Calendar size={12} className="text-love" />
-                              {client.birth_date}
+                              <Calendar size={12} className={cn("text-love", !client.birth_date && "opacity-20")} />
+                              {client.birth_date ? (
+                                <span className="font-bold">{client.birth_date}</span>
+                              ) : (
+                                <span className="text-[10px] text-slate-300 italic">No cargada</span>
+                              )}
                             </div>
                           </td>
                           <td className="px-6 py-4 text-right">
