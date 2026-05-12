@@ -80,17 +80,17 @@ export function Admin() {
 
     setLoading(true);
     try {
+      const trimmedDni = newClient.dni.trim();
+      const trimmedEmail = newClient.email.trim();
+      
       // 1. Create Supabase Auth User
-      // Nota: En Supabase, signUp creará el usuario en auth.users y el trigger 
-      // debería crear el perfil. Por seguridad, recomendamos tener "Confirm Email" desactivado 
-      // si se desea que el acceso sea inmediato.
       const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: newClient.email,
+        email: trimmedEmail,
         password: newClient.password,
         options: {
           data: {
-            full_name: newClient.fullName,
-            dni: newClient.dni
+            full_name: newClient.fullName.trim(),
+            dni: trimmedDni
           }
         }
       });
@@ -104,9 +104,9 @@ export function Admin() {
           .from('profiles')
           .upsert({
             id: userId,
-            full_name: newClient.fullName,
-            email: newClient.email,
-            dni: newClient.dni,
+            full_name: newClient.fullName.trim(),
+            email: trimmedEmail,
+            dni: trimmedDni,
             birth_date: newClient.birthDate,
             role: 'client',
             points: 0
@@ -114,8 +114,7 @@ export function Admin() {
 
         if (profileError) {
           console.error("Profile upsert failed:", profileError);
-          // Si el upsert falló por RLS, informamos al usuario pero signUp ya ocurrió
-          alert(`Usuario de autenticación creado, pero su perfil no se pudo vincular (Error: ${profileError.message}). El cliente podría tener problemas para ver sus puntos hasta que un admin actualice su rol.`);
+          throw new Error(`Usuario creado pero el perfil falló: ${profileError.message}`);
         }
       }
       
@@ -1127,7 +1126,7 @@ export function Admin() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Fecha Nac.</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Fecha de Nacimiento</label>
                     <input 
                       type="date"
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-love text-ink" 
@@ -1202,7 +1201,7 @@ export function Admin() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Fecha Nac.</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Fecha de Nacimiento</label>
                     <input 
                       type="date"
                       required

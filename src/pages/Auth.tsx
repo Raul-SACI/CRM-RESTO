@@ -34,19 +34,26 @@ export function Auth() {
         const { data: { user }, error: signUpError } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
+          options: {
+            data: {
+              full_name: formData.fullName,
+              dni: formData.dni
+            }
+          }
         });
         
         if (signUpError) throw signUpError;
         if (user) {
-          // Create profile
-          const { error: profileError } = await supabase.from('profiles').insert({
+          // Update or Create profile (Upsert to handle trigger race condition)
+          const { error: profileError } = await supabase.from('profiles').upsert({
             id: user.id,
             dni: formData.dni,
             full_name: formData.fullName,
             email: formData.email,
             birth_date: formData.birthDate,
             role: 'client',
-          });
+          }, { onConflict: 'id' });
+          
           if (profileError) throw profileError;
         }
       }
@@ -100,15 +107,18 @@ export function Auth() {
                     onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
                   />
                 </div>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                  <input
-                    type="date"
-                    required
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-sm focus:border-love outline-none transition-all text-slate-400"
-                    value={formData.birthDate}
-                    onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })}
-                  />
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-3 block">Fecha de Nacimiento</label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                    <input
+                      type="date"
+                      required
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-sm focus:border-love outline-none transition-all text-slate-400"
+                      value={formData.birthDate}
+                      onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })}
+                    />
+                  </div>
                 </div>
               </>
             )}
