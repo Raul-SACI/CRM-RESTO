@@ -440,14 +440,17 @@ export function Waiter() {
                     <div className="relative">
                       <span className="absolute left-4 md:left-6 top-1/2 -translate-y-1/2 text-xl md:text-2xl font-black text-slate-300">$</span>
                       <input
-                        type="number"
+                        type="text"
+                        inputMode="numeric"
                         placeholder="0"
                         required
-                        min="100"
                         autoFocus
                         className="w-full bg-slate-100 border-none rounded-xl md:rounded-2xl py-4 md:py-8 pl-10 md:pl-12 pr-4 md:pr-6 text-3xl md:text-5xl font-black outline-none focus:ring-4 focus:ring-love/10 transition-all text-black text-center"
-                        value={amount}
-                        onChange={(e) => setAmount(e.target.value)}
+                        value={amount ? parseFloat(amount).toLocaleString('es-AR') : ''}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, '');
+                          setAmount(val);
+                        }}
                       />
                     </div>
                     {amount && !isNaN(parseFloat(amount)) && (

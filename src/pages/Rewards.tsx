@@ -132,10 +132,12 @@ export function Rewards() {
             <p className="text-[10px] uppercase tracking-widest text-slate-400 mt-1 font-bold">Canjea tus puntos acumulados</p>
           </div>
         </div>
-        <div className="text-right">
-          <p className="text-[9px] uppercase tracking-[0.2em] font-black text-slate-400 mb-0.5">Saldo</p>
-          <p className="text-xl font-black italic text-love">{(profile?.points ?? 0).toLocaleString()} <span className="text-[10px] font-bold not-italic text-slate-400">PTS</span></p>
-        </div>
+        {profile?.role !== 'admin' && (
+          <div className="text-right">
+            <p className="text-[9px] uppercase tracking-[0.2em] font-black text-slate-400 mb-0.5">Saldo</p>
+            <p className="text-xl font-black italic text-love">{(profile?.points ?? 0).toLocaleString()} <span className="text-[10px] font-bold not-italic text-slate-400">PTS</span></p>
+          </div>
+        )}
       </div>
 
       <AnimatePresence>
