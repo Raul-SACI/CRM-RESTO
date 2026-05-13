@@ -30,7 +30,7 @@ export function Admin() {
   const [selectedBranchFilter, setSelectedBranchFilter] = useState<string>('Todas');
   const [dateStart, setDateStart] = useState<string>(() => {
     const d = new Date();
-    d.setDate(1); // First day of current month
+    d.setDate(d.getDate() - 30); // Last 30 days by default instead of start of month for more context
     return d.toISOString().split('T')[0];
   });
   const [dateEnd, setDateEnd] = useState<string>(() => new Date().toISOString().split('T')[0]);
@@ -382,19 +382,27 @@ export function Admin() {
           }
         }
 
-        const { data, error } = await supabase
+        let query = supabase
           .from('transactions')
           .select('*, profiles!client_id(full_name, dni), transaction_items(*)')
-          .order('created_at', { ascending: false })
-          .limit(activeTab === 'dashboard' ? 500 : 200);
+          .order('created_at', { ascending: false });
+        
+        if (dateStart) query = query.gte('created_at', `${dateStart}T00:00:00`);
+        if (dateEnd) query = query.lte('created_at', `${dateEnd}T23:59:59`);
+
+        const { data, error } = await query.limit(activeTab === 'dashboard' ? 500 : 1000);
         
         if (error) {
           console.error("History fetch error, retrying flat:", error);
-          const { data: flatData, error: flatError } = await supabase
+          let flatQuery = supabase
             .from('transactions')
             .select('*')
-            .order('created_at', { ascending: false })
-            .limit(200);
+            .order('created_at', { ascending: false });
+          
+          if (dateStart) flatQuery = flatQuery.gte('created_at', `${dateStart}T00:00:00`);
+          if (dateEnd) flatQuery = flatQuery.lte('created_at', `${dateEnd}T23:59:59`);
+
+          const { data: flatData, error: flatError } = await flatQuery.limit(500);
           if (flatError) throw flatError;
           setAllTransactions(flatData || []);
           localStorage.setItem(cacheKey, JSON.stringify(flatData || []));
@@ -1057,12 +1065,58 @@ export function Admin() {
           )}
 
           {activeTab === 'history' && (
-            <div className="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-xl shadow-slate-200/50">
-               <div className="p-6 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
-                <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-ink">
-                  <History size={16} className="text-love" />
-                  Historial del Salón (Últimos 200)
-                </h3>
+            <div className="space-y-4">
+              <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50 flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="flex flex-wrap gap-2 items-center">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 mr-2">Filtro Período:</span>
+                  <div className="flex items-center gap-2">
+                    <div className="relative">
+                      <Calendar size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" />
+                      <input 
+                        type="date" 
+                        value={dateStart} 
+                        onChange={e => setDateStart(e.target.value)}
+                        className="bg-slate-50 border border-slate-100 rounded-lg pl-8 pr-2 py-1.5 text-[10px] font-bold text-ink outline-none focus:border-love/30"
+                      />
+                    </div>
+                    <span className="text-[9px] font-black text-slate-300 uppercase">Hasta</span>
+                    <div className="relative">
+                      <Calendar size={12} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" />
+                      <input 
+                        type="date" 
+                        value={dateEnd} 
+                        onChange={e => setDateEnd(e.target.value)}
+                        className="bg-slate-50 border border-slate-100 rounded-lg pl-8 pr-2 py-1.5 text-[10px] font-bold text-ink outline-none focus:border-love/30"
+                      />
+                    </div>
+                    <button 
+                      onClick={() => fetchData(true)}
+                      className="ml-2 bg-ink text-white px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-black transition-all"
+                    >
+                      Aplicar
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 mr-2">Sucursal:</span>
+                  <select 
+                    value={selectedBranchFilter}
+                    onChange={e => setSelectedBranchFilter(e.target.value)}
+                    className="bg-slate-50 border border-slate-100 rounded-lg px-3 py-1.5 text-[10px] font-bold text-ink outline-none focus:border-love/30"
+                  >
+                    <option value="Todas">Todas</option>
+                    {BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-xl shadow-slate-200/50">
+                <div className="p-6 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+                  <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-ink">
+                    <History size={16} className="text-love" />
+                    Historial del Salón
+                  </h3>
                 <button 
                   onClick={handleExportHistory}
                   className="flex items-center gap-2 bg-ink text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-black transition-all shadow-lg shadow-ink/10"
@@ -1088,14 +1142,23 @@ export function Admin() {
                     </tr>
                   </thead>
                   <tbody className="text-[10px] font-medium text-ink/80">
-                    {allTransactions.length === 0 ? (
-                      <tr>
-                        <td colSpan={10} className="px-6 py-12 text-center text-slate-400 italic">
-                          No se encontraron movimientos registrados en el salón.
-                        </td>
-                      </tr>
-                    ) : (
-                      allTransactions.map(tx => {
+                    {(() => {
+                      const filtered = allTransactions.filter(tx => {
+                        const branchMatch = selectedBranchFilter === 'Todas' || tx.branch === selectedBranchFilter;
+                        return branchMatch;
+                      });
+
+                      if (filtered.length === 0) {
+                        return (
+                          <tr>
+                            <td colSpan={10} className="px-6 py-12 text-center text-slate-400 italic">
+                              No se encontraron movimientos para el filtro seleccionado.
+                            </td>
+                          </tr>
+                        );
+                      }
+
+                      return filtered.map(tx => {
                         const cleanDesc = (tx.description || '').split('||JSON_ITEMS')[0].trim();
                         const isCanje = cleanDesc.toUpperCase().startsWith('CANJE:');
                         const operacion = isCanje ? 'Canje' : (cleanDesc.toUpperCase().startsWith('CONSUMO') ? 'Consumo' : 'Otro');
@@ -1162,12 +1225,14 @@ export function Admin() {
                             {tx.amount > 0 && <p className="text-[8px] text-slate-400 font-bold tracking-tight">${tx.amount.toLocaleString()}</p>}
                           </td>
                         </tr>
-                      );}))}
+                      );});
+                    })()}
                   </tbody>
                 </table>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
           {activeTab === 'settings' && (
             <div className="max-w-2xl mx-auto">
