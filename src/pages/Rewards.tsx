@@ -16,6 +16,7 @@ export function Rewards() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [lastPrize, setLastPrize] = useState<Prize | null>(null);
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
+  const [redemptionTime, setRedemptionTime] = useState<Date | null>(null);
 
   useEffect(() => {
     const fetchPrizes = async () => {
@@ -95,6 +96,7 @@ export function Rewards() {
 
       setLastPrize(prize);
       setGeneratedCode(redemptionCode);
+      setRedemptionTime(new Date());
       setShowSuccess(true);
       setStatus({ type: 'success', message: `¡Canje exitoso! Canjeaste ${prize.title}` });
       
@@ -168,6 +170,21 @@ export function Rewards() {
                 <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Código de Canje</p>
                 <p className="text-xl font-mono font-black text-ink">{generatedCode}</p>
                 <p className="text-[9px] font-bold text-love mt-2 uppercase">Muestra esta pantalla al personal</p>
+                
+                {redemptionTime && (
+                  <div className="mt-4 pt-4 border-t border-slate-200">
+                    <p className="text-[8px] font-black uppercase tracking-[0.2em] text-slate-400">Realizado el:</p>
+                    <p className="text-[10px] font-bold text-ink mb-2">
+                      {redemptionTime.toLocaleDateString('es-AR')} - {redemptionTime.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} hs
+                    </p>
+                    <div className="bg-love/5 p-2 rounded-lg border border-love/10">
+                      <p className="text-[8px] font-black text-love uppercase leading-tight">
+                        Vence hoy a las 23:59 hs.<br/>
+                        SOLO VÁLIDO PARA EL DÍA DE LA FECHA.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <button 
