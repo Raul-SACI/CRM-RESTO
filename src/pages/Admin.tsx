@@ -496,12 +496,21 @@ export function Admin() {
     const dataToExport = allTransactions.map(tx => {
       const p = (tx as any).profiles;
       const profile = Array.isArray(p) ? p[0] : p;
+      const date = new Date(tx.created_at);
+      
+      const cleanDesc = (tx.description || '').split('||JSON_ITEMS')[0].trim();
+      const isCanje = cleanDesc.toUpperCase().startsWith('CANJE:');
+      const operacion = isCanje ? 'Canje' : (cleanDesc.toUpperCase().startsWith('CONSUMO') ? 'Consumo' : 'Otro');
+      const premio = isCanje ? cleanDesc.split(':')[1]?.trim() || '—' : '—';
+
       return {
-        'Fecha': new Date(tx.created_at).toLocaleString('es-AR'),
+        'Fecha': date.toLocaleDateString('es-AR'),
+        'Hora': date.toLocaleTimeString('es-AR'),
         'Sucursal': tx.branch || '—',
         'Cliente': profile?.full_name || 'Desconocido',
         'DNI': profile?.dni || '—',
-        'Detalle': tx.description,
+        'Operación': operacion,
+        'Premio Canjeado': premio,
         'Código': tx.redemption_code || '—',
         'Factura': tx.invoice_number || '—',
         'Monto ($)': tx.amount,
@@ -1067,10 +1076,12 @@ export function Admin() {
                   <thead>
                     <tr className="text-[9px] uppercase text-slate-400 border-b border-slate-100">
                       <th className="px-6 py-4">Fecha</th>
+                      <th className="px-6 py-4">Hora</th>
                       <th className="px-6 py-4">Sucursal</th>
                       <th className="px-6 py-4">Cliente</th>
                       <th className="px-6 py-4">DNI</th>
-                      <th className="px-6 py-4">Carga</th>
+                      <th className="px-6 py-4">Operación</th>
+                      <th className="px-6 py-4">Premio</th>
                       <th className="px-6 py-4">Código</th>
                       <th className="px-6 py-4">Factura</th>
                       <th className="px-6 py-4 text-right">Puntos</th>
@@ -1079,61 +1090,79 @@ export function Admin() {
                   <tbody className="text-[10px] font-medium text-ink/80">
                     {allTransactions.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="px-6 py-12 text-center text-slate-400 italic">
+                        <td colSpan={10} className="px-6 py-12 text-center text-slate-400 italic">
                           No se encontraron movimientos registrados en el salón.
                         </td>
                       </tr>
                     ) : (
-                      allTransactions.map(tx => (
-                      <tr key={tx.id} className="border-b border-slate-100 hover:bg-slate-50">
-                        <td className="px-6 py-3">{new Date(tx.created_at).toLocaleString('es-AR')}</td>
-                        <td className="px-6 py-3 bg-slate-50 font-black text-slate-400 uppercase">{tx.branch || '—'}</td>
-                        <td className="px-6 py-3 uppercase font-black text-ink">
-                          {(() => {
-                            const p = (tx as any).profiles;
-                            const profile = Array.isArray(p) ? p[0] : p;
-                            return profile?.full_name || 'Desconocido';
-                          })()}
-                        </td>
-                        <td className="px-6 py-3 text-slate-400">
-                          {(() => {
-                            const p = (tx as any).profiles;
-                            const profile = Array.isArray(p) ? p[0] : p;
-                            return profile?.dni || '—';
-                          })()}
-                        </td>
-                        <td className="px-6 py-3 italic text-slate-500 whitespace-pre-line">
-                          {tx.description?.split('||JSON_ITEMS')[0]}
-                          {tx.transaction_items && tx.transaction_items.length > 0 && (
-                            <div className="flex flex-wrap gap-1 mt-1">
-                              {tx.transaction_items.map((item: any, i: number) => (
-                                <span key={i} className="bg-love/5 text-love text-[7px] px-1.5 py-0.5 rounded border border-love/10 font-black uppercase tracking-tighter">
-                                  {item.quantity}x {item.item_name}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-6 py-3 font-mono font-black text-ink">
-                          {tx.redemption_code ? (
-                            <span className="bg-slate-100 px-2 py-1 rounded text-[9px] border border-slate-200">
-                              {tx.redemption_code}
+                      allTransactions.map(tx => {
+                        const cleanDesc = (tx.description || '').split('||JSON_ITEMS')[0].trim();
+                        const isCanje = cleanDesc.toUpperCase().startsWith('CANJE:');
+                        const operacion = isCanje ? 'Canje' : (cleanDesc.toUpperCase().startsWith('CONSUMO') ? 'Consumo' : 'Otro');
+                        const premio = isCanje ? cleanDesc.split(':')[1]?.trim() || '—' : '—';
+                        const date = new Date(tx.created_at);
+
+                        return (
+                        <tr key={tx.id} className="border-b border-slate-100 hover:bg-slate-50">
+                          <td className="px-6 py-3">{date.toLocaleDateString('es-AR')}</td>
+                          <td className="px-6 py-3 text-slate-400">{date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</td>
+                          <td className="px-6 py-3 bg-slate-50 font-black text-slate-400 uppercase">{tx.branch || '—'}</td>
+                          <td className="px-6 py-3 uppercase font-black text-ink">
+                            {(() => {
+                              const p = (tx as any).profiles;
+                              const profile = Array.isArray(p) ? p[0] : p;
+                              return profile?.full_name || 'Desconocido';
+                            })()}
+                          </td>
+                          <td className="px-6 py-3 text-slate-400">
+                            {(() => {
+                              const p = (tx as any).profiles;
+                              const profile = Array.isArray(p) ? p[0] : p;
+                              return profile?.dni || '—';
+                            })()}
+                          </td>
+                          <td className="px-6 py-3">
+                            <span className={cn(
+                              "px-2 py-0.5 rounded text-[8px] font-black uppercase",
+                              operacion === 'Canje' ? "bg-love/10 text-love" : "bg-ink/10 text-ink"
+                            )}>
+                              {operacion}
                             </span>
-                          ) : '—'}
-                        </td>
-                        <td className="px-6 py-3 font-mono font-black text-ink uppercase">
-                          {tx.invoice_number ? (
-                            <span className="bg-slate-100 px-2 py-1 rounded text-[9px] border border-slate-200">
-                              {tx.invoice_number}
-                            </span>
-                          ) : '—'}
-                        </td>
-                        <td className="px-6 py-3 text-right">
-                          <p className="text-love font-black italic">+{tx.points_earned}</p>
-                          {tx.amount > 0 && <p className="text-[8px] text-slate-400 font-bold tracking-tight">${tx.amount.toLocaleString()}</p>}
-                        </td>
-                      </tr>
-                    )))}
+                          </td>
+                          <td className="px-6 py-3 italic text-slate-500">
+                            {premio}
+                            {tx.transaction_items && tx.transaction_items.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {tx.transaction_items.map((item: any, i: number) => (
+                                  <span key={i} className="bg-love/5 text-love text-[7px] px-1.5 py-0.5 rounded border border-love/10 font-black uppercase tracking-tighter">
+                                    {item.quantity}x {item.item_name}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-6 py-3 font-mono font-black text-ink">
+                            {tx.redemption_code ? (
+                              <span className="bg-slate-100 px-2 py-1 rounded text-[9px] border border-slate-200">
+                                {tx.redemption_code}
+                              </span>
+                            ) : '—'}
+                          </td>
+                          <td className="px-6 py-3 font-mono font-black text-ink uppercase">
+                            {tx.invoice_number ? (
+                              <span className="bg-slate-100 px-2 py-1 rounded text-[9px] border border-slate-200">
+                                {tx.invoice_number}
+                              </span>
+                            ) : '—'}
+                          </td>
+                          <td className="px-6 py-3 text-right">
+                            <p className={cn("font-black italic", tx.points_earned >= 0 ? "text-love" : "text-slate-400")}>
+                              {tx.points_earned >= 0 ? '+' : ''}{tx.points_earned}
+                            </p>
+                            {tx.amount > 0 && <p className="text-[8px] text-slate-400 font-bold tracking-tight">${tx.amount.toLocaleString()}</p>}
+                          </td>
+                        </tr>
+                      );}))}
                   </tbody>
                 </table>
               </div>

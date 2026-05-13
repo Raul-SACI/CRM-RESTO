@@ -10,6 +10,8 @@ import { BRANCHES } from '@/src/constants';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import { extractDataFromReceipt, ExtractedReceiptItem } from '@/src/services/gemini';
 
+import { numberToWords } from '@/src/lib/numberToWords';
+
 export function Waiter() {
   const { profile: waiterProfile } = useAuth();
   const [searchParams] = useSearchParams();
@@ -439,7 +441,7 @@ export function Waiter() {
                       <span className="absolute left-4 md:left-6 top-1/2 -translate-y-1/2 text-xl md:text-2xl font-black text-slate-300">$</span>
                       <input
                         type="number"
-                        placeholder="Importe Consumido (Ej. 15000)"
+                        placeholder="0"
                         required
                         min="100"
                         autoFocus
@@ -448,6 +450,16 @@ export function Waiter() {
                         onChange={(e) => setAmount(e.target.value)}
                       />
                     </div>
+                    {amount && !isNaN(parseFloat(amount)) && (
+                      <div className="mt-2 text-center animate-in fade-in slide-in-from-top-1 duration-300">
+                        <p className="text-[11px] md:text-sm font-black text-ink uppercase italic">
+                          ${parseFloat(amount).toLocaleString('es-AR')}
+                          <span className="text-love ml-2 font-bold tracking-tight">
+                            ({numberToWords(Math.floor(parseFloat(amount)))})
+                          </span>
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-1">
