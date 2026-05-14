@@ -424,7 +424,7 @@ export function Admin() {
   };
 
   const handleDeleteClients = async (idsToDelete?: string[]) => {
-    const targets = idsToDelete || selectedClients;
+    const targets = Array.isArray(idsToDelete) ? idsToDelete : selectedClients;
     if (targets.length === 0) return;
     
     const confirmMsg = targets.length === 1 
@@ -914,7 +914,7 @@ export function Admin() {
                       </span>
                     </div>
                     <button 
-                      onClick={handleDeleteClients}
+                      onClick={() => handleDeleteClients()}
                       disabled={deleting}
                       className="flex items-center gap-2 bg-love text-white px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-red-600 transition-all shadow-lg shadow-love/20 disabled:opacity-50"
                     >
