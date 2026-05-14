@@ -27,6 +27,8 @@ export function Admin() {
   const [newClient, setNewClient] = useState({ fullName: '', email: '', dni: '', birthDate: '', password: '' });
   const [editingClient, setEditingClient] = useState<Profile | null>(null);
   const [editClientForm, setEditClientForm] = useState({ fullName: '', email: '', dni: '', birthDate: '' });
+  const [selectedClients, setSelectedClients] = useState<string[]>([]);
+  const [deleting, setDeleting] = useState(false);
   const [selectedBranchFilter, setSelectedBranchFilter] = useState<string>('Todas');
   const [dateStart, setDateStart] = useState<string>(() => {
     const d = new Date();
@@ -157,6 +159,7 @@ export function Admin() {
   };
 
   useEffect(() => {
+    setSelectedClients([]);
     if (activeTab === 'settings') {
       fetchSettings();
     } else if (activeTab === 'dashboard') {
@@ -417,6 +420,44 @@ export function Admin() {
     } finally {
       clearTimeout(fetchTimeout);
       setLoading(false);
+    }
+  };
+
+  const handleDeleteClients = async (idsToDelete?: string[]) => {
+    const targets = idsToDelete || selectedClients;
+    if (targets.length === 0) return;
+    
+    const confirmMsg = targets.length === 1 
+      ? "¿Estás seguro de que deseas eliminar este cliente? Esta acción no se puede deshacer."
+      : `¿Estás seguro de que deseas eliminar los ${targets.length} clientes seleccionados? Esta acción no se puede deshacer y podría afectar el historial si los clientes tienen transacciones.`;
+
+    if (!confirm(confirmMsg)) return;
+
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .in('id', targets);
+
+      if (error) {
+        if (error.message.includes('violates foreign key constraint')) {
+          throw new Error("No se pueden eliminar clientes con transacciones previas. Primero elimina sus movimientos o consulta con soporte.");
+        }
+        throw error;
+      }
+
+      alert(targets.length === 1 ? 'Cliente eliminado' : 'Clientes eliminados correctamente');
+      if (idsToDelete) {
+        setSelectedClients(prev => prev.filter(id => !idsToDelete.includes(id)));
+      } else {
+        setSelectedClients([]);
+      }
+      await fetchData(true);
+    } catch (err: any) {
+      alert("Error al eliminar: " + err.message);
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -864,10 +905,43 @@ export function Admin() {
                     Base de Clientes
                   </h3>
                 </div>
+                
+                {selectedClients.length > 0 && (
+                  <div className="px-6 py-3 bg-love/5 border-b border-love/10 flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-300">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-love italic">
+                        {selectedClients.length} Seleccionado{selectedClients.length !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    <button 
+                      onClick={handleDeleteClients}
+                      disabled={deleting}
+                      className="flex items-center gap-2 bg-love text-white px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-red-600 transition-all shadow-lg shadow-love/20 disabled:opacity-50"
+                    >
+                      <Trash2 size={12} />
+                      {deleting ? 'Eliminando...' : 'Eliminar' }
+                    </button>
+                  </div>
+                )}
+
                 <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead>
                     <tr className="text-[9px] uppercase tracking-widest text-slate-400 border-b border-slate-100">
+                      <th className="px-6 py-4 w-10">
+                        <input 
+                          type="checkbox" 
+                          className="rounded border-slate-300 text-love focus:ring-love"
+                          checked={clients.length > 0 && selectedClients.length === clients.length}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedClients(clients.map(c => c.id));
+                            } else {
+                              setSelectedClients([]);
+                            }
+                          }}
+                        />
+                      </th>
                       <th className="px-6 py-4">Nombre</th>
                       <th className="px-6 py-4">DNI</th>
                       <th className="px-6 py-4">Cumpleaños</th>
@@ -884,7 +958,24 @@ export function Admin() {
                       </tr>
                     ) : (
                       clients.map(client => (
-                        <tr key={client.id} className="border-b border-slate-100 hover:bg-slate-50 transition-colors text-ink">
+                        <tr key={client.id} className={cn(
+                          "border-b border-slate-100 hover:bg-slate-50 transition-colors text-ink",
+                          selectedClients.includes(client.id) && "bg-love/5"
+                        )}>
+                          <td className="px-6 py-4">
+                            <input 
+                              type="checkbox" 
+                              className="rounded border-slate-300 text-love focus:ring-love"
+                              checked={selectedClients.includes(client.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedClients(prev => [...prev, client.id]);
+                                } else {
+                                  setSelectedClients(prev => prev.filter(id => id !== client.id));
+                                }
+                              }}
+                            />
+                          </td>
                           <td className="px-6 py-4">
                             <p className="font-bold">{client.full_name}</p>
                             <p className="text-[10px] text-slate-400 italic font-mono">{client.email}</p>
@@ -911,6 +1002,13 @@ export function Admin() {
                                 title="Editar Datos"
                               >
                                 <Pencil size={16} />
+                              </button>
+                              <button 
+                                onClick={() => handleDeleteClients([client.id])}
+                                className="p-2 text-slate-300 hover:text-love transition-colors"
+                                title="Eliminar Cliente"
+                              >
+                                <Trash2 size={16} />
                               </button>
                               <button 
                                 onClick={() => updateUserRole(client.id, 'waiter')}
