@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '@/src/lib/supabase';
 import { Profile, Prize, Transaction, SystemSettings } from '@/src/types';
 import { motion, AnimatePresence } from 'motion/react';
-import { Users, Gift, Settings, Search, Plus, Trash2, Pencil, Calendar, Award, History, DollarSign, Upload, Image as ImageIcon, FileSpreadsheet, UserPlus, X, Palette } from 'lucide-react';
+import { Users, Gift, Settings, Search, Plus, Trash2, Pencil, Calendar, Award, History, DollarSign, Upload, Image as ImageIcon, FileSpreadsheet, UserPlus, X, Palette, Home, User } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import * as XLSX from 'xlsx';
 import { BRANCHES } from '@/src/constants';
@@ -44,6 +44,17 @@ export function Admin() {
   const [savingDesign, setSavingDesign] = useState(false);
   const [designSubSection, setDesignSubSection] = useState<'branding' | 'styling' | 'colors' | 'banners' | 'css'>('branding');
   const [activeBannerIndex, setActiveBannerIndex] = useState<number>(0);
+
+  const hexToRgbStr = (hex: string): string => {
+    let c = hex.replace('#', '');
+    if (c.length === 3) {
+      c = c[0] + c[0] + c[1] + c[1] + c[2] + c[2];
+    }
+    const r = parseInt(c.substring(0, 2), 16) || 0;
+    const g = parseInt(c.substring(2, 4), 16) || 0;
+    const b = parseInt(c.substring(4, 6), 16) || 0;
+    return `${r}, ${g}, ${b}`;
+  };
 
   useEffect(() => {
     if (activeTab === 'design' && designConfig) {
@@ -1410,6 +1421,645 @@ export function Admin() {
                       {updatingSettings ? 'Guardando...' : 'Guardar Cambios'}
                     </button>
                   </form>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'design' && (
+            <div className="space-y-6">
+              {!localDesign ? (
+                <div className="py-12 text-center text-slate-400 font-bold uppercase text-[10px] tracking-widest">
+                  Cargando panel de diseño...
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                  {/* Left Column - Editing Controls */}
+                  <div className="lg:col-span-7 space-y-6">
+                    <div className="bg-white rounded-[2rem] p-6 md:p-8 border border-slate-100 shadow-xl shadow-slate-200/50">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-love/10 rounded-2xl flex items-center justify-center text-love">
+                            <Palette size={24} />
+                          </div>
+                          <div>
+                            <h3 className="text-xl font-black uppercase tracking-tighter text-ink">Estilo y <span className="text-love">Marca</span></h3>
+                            <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mt-1">Control de diseño para Marketing</p>
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={async () => {
+                            setSavingDesign(true);
+                            try {
+                              await saveDesignConfig(localDesign);
+                              alert('¡Configuración de diseño guardada con éxito!');
+                            } catch (err) {
+                              alert('Error al guardar diseño.');
+                            } finally {
+                              setSavingDesign(false);
+                            }
+                          }}
+                          disabled={savingDesign}
+                          className="bg-love text-white px-5 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-love/30 hover:bg-red-600 transition-all disabled:opacity-50"
+                        >
+                          {savingDesign ? 'Guardando...' : 'Aplicar y Guardar'}
+                        </button>
+                      </div>
+
+                      {/* Subsection Navigation Bar */}
+                      <div className="flex flex-wrap gap-1 p-1 bg-slate-50 border border-slate-200/60 rounded-xl mb-6">
+                        {(['branding', 'styling', 'colors', 'banners', 'css'] as const).map((sub) => {
+                          const labels: Record<string, string> = {
+                            branding: 'Branding',
+                            styling: 'Tipografía',
+                            colors: 'Colores',
+                            banners: 'Publicidad/Banners',
+                            css: 'CSS Avanzado'
+                          };
+                          return (
+                            <button
+                              key={sub}
+                              onClick={() => {
+                                setDesignSubSection(sub);
+                                if (sub === 'banners' && localDesign.banners.length > 0) {
+                                  setActiveBannerIndex(0);
+                                }
+                              }}
+                              className={cn(
+                                "px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wide transition-all",
+                                designSubSection === sub 
+                                  ? "bg-slate-900 text-white shadow-sm" 
+                                  : "text-slate-400 hover:text-ink"
+                              )}
+                            >
+                              {labels[sub]}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Branding Subsegment */}
+                      {designSubSection === 'branding' && (
+                        <div className="space-y-4">
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Nombre Comercial de la Marca</label>
+                            <input
+                              type="text"
+                              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-love text-ink font-bold"
+                              value={localDesign.logoText}
+                              onChange={(e) => setLocalDesign({ ...localDesign, logoText: e.target.value })}
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Eslogan o Subtítulo del Logo</label>
+                            <input
+                              type="text"
+                              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-love text-ink"
+                              value={localDesign.logoSubtitle}
+                              onChange={(e) => setLocalDesign({ ...localDesign, logoSubtitle: e.target.value })}
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Logo URL (Imagen de marca)</label>
+                            <input
+                              type="text"
+                              placeholder="Ej: https://tudominio.com/logo.png"
+                              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-love text-ink font-mono text-xs"
+                              value={localDesign.logoUrl}
+                              onChange={(e) => setLocalDesign({ ...localDesign, logoUrl: e.target.value })}
+                            />
+                            <p className="text-[9px] text-slate-400 mt-1">Si dejas este campo en blanco, se creará un logo inicial abstracto a partir de la primera letra del nombre comercial.</p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Styling & Corner Borders Subsegment */}
+                      {designSubSection === 'styling' && (
+                        <div className="space-y-6">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Fuente Principal (Cuerpo)</label>
+                              <select
+                                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-love text-ink font-semibold"
+                                value={localDesign.fontSans}
+                                onChange={(e) => setLocalDesign({ ...localDesign, fontSans: e.target.value })}
+                              >
+                                {AVAILABLE_FONTS.map((font) => (
+                                  <option key={font} value={font}>{font}</option>
+                                ))}
+                              </select>
+                            </div>
+
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Fuente Titulares (H1, H2, Logo)</label>
+                              <select
+                                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-love text-ink font-semibold"
+                                value={localDesign.fontHeadings}
+                                onChange={(e) => setLocalDesign({ ...localDesign, fontHeadings: e.target.value })}
+                              >
+                                {AVAILABLE_FONTS.map((font) => (
+                                  <option key={font} value={font}>{font}</option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+
+                          <div className="space-y-3">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Esquinas y Redondeado (Borders)</label>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                              {CORNER_PRESETS.map((preset) => {
+                                const isActive = localDesign.radiusLg === preset.lg;
+                                return (
+                                  <button
+                                    type="button"
+                                    key={preset.name}
+                                    onClick={() => setLocalDesign({
+                                      ...localDesign,
+                                      radiusLg: preset.lg,
+                                      radiusMd: preset.md,
+                                      radiusSm: preset.sm
+                                    })}
+                                    className={cn(
+                                      "p-3 rounded-xl border text-center transition-all",
+                                      isActive 
+                                        ? "border-love bg-love/5 text-love font-bold shadow-sm" 
+                                        : "border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100"
+                                    )}
+                                  >
+                                    <p className="text-[10px] font-bold uppercase">{preset.name}</p>
+                                    <p className="text-[8px] opacity-75 mt-0.5">{preset.lg}</p>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Colors Subsegment */}
+                      {designSubSection === 'colors' && (
+                        <div className="space-y-6">
+                          <div className="space-y-3">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Paletas Rápidas Prediseñadas</label>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                              {COLOR_PRESETS.map((preset) => {
+                                const isActive = localDesign.primaryColor.toLowerCase() === preset.primary.toLowerCase();
+                                return (
+                                  <button
+                                    type="button"
+                                    key={preset.name}
+                                    onClick={() => setLocalDesign({
+                                      ...localDesign,
+                                      primaryColor: preset.primary,
+                                      primaryColorHover: preset.hover,
+                                      primaryColorRgb: preset.rgb
+                                    })}
+                                    className={cn(
+                                      "p-2.5 rounded-xl border flex items-center gap-2 transition-all text-left",
+                                      isActive 
+                                        ? "border-slate-900 bg-white shadow-md text-ink font-bold" 
+                                        : "border-slate-200 bg-slate-50 text-slate-400 hover:bg-slate-100"
+                                    )}
+                                  >
+                                    <span className="w-4 h-4 rounded-full shrink-0 shadow-inner" style={{ backgroundColor: preset.primary }} />
+                                    <span className="text-[9px] font-bold uppercase tracking-tight leading-none overflow-hidden text-ellipsis whitespace-nowrap">{preset.name.split(' (')[0]}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Color Principal Customizado (HEX)</label>
+                              <div className="flex gap-2">
+                                <input
+                                  type="color"
+                                  className="w-12 h-11 p-0.5 bg-white border border-slate-200 rounded-xl cursor-pointer"
+                                  value={localDesign.primaryColor}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setLocalDesign({
+                                      ...localDesign,
+                                      primaryColor: val,
+                                      primaryColorHover: val,
+                                      primaryColorRgb: hexToRgbStr(val)
+                                    });
+                                  }}
+                                />
+                                <input
+                                  type="text"
+                                  className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-mono text-ink"
+                                  value={localDesign.primaryColor}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    if (val.startsWith('#') && val.length <= 7) {
+                                      setLocalDesign({
+                                        ...localDesign,
+                                        primaryColor: val,
+                                        primaryColorHover: val,
+                                        primaryColorRgb: hexToRgbStr(val)
+                                      });
+                                    }
+                                  }}
+                                />
+                              </div>
+                            </div>
+
+                            <div className="space-y-1">
+                              <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Variable RGB (Fondo Opacidad)</label>
+                              <input
+                                type="text"
+                                disabled
+                                className="w-full bg-slate-100 border border-slate-200 rounded-xl px-4 py-3 text-sm font-mono text-slate-400"
+                                value={localDesign.primaryColorRgb}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="pt-4 border-t border-slate-100 space-y-4">
+                            <h4 className="text-[11px] font-black uppercase tracking-widest text-slate-700">Fondos Clásicos vs Oscuros</h4>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              <div className="space-y-3 p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                                <h5 className="text-[10px] font-black uppercase tracking-wide text-ink">Estilo de Modo Claro</h5>
+                                <div className="space-y-2">
+                                  <div>
+                                    <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 block mb-1">Color Fondo de Página</label>
+                                    <input
+                                      type="text"
+                                      className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs font-mono text-ink"
+                                      value={localDesign.bgPaperLight}
+                                      onChange={(e) => setLocalDesign({ ...localDesign, bgPaperLight: e.target.value })}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 block mb-1">Color Tarjetas (Cards)</label>
+                                    <input
+                                      type="text"
+                                      className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs font-mono text-ink"
+                                      value={localDesign.bgCardLight}
+                                      onChange={(e) => setLocalDesign({ ...localDesign, bgCardLight: e.target.value })}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="space-y-3 p-4 bg-slate-900 rounded-2xl border border-slate-850 text-white">
+                                <h5 className="text-[10px] font-black uppercase tracking-wide text-slate-300">Estilo de Modo Oscuro</h5>
+                                <div className="space-y-2">
+                                  <div>
+                                    <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 block mb-1">Color Fondo de Página</label>
+                                    <input
+                                      type="text"
+                                      className="w-full bg-slate-850 border border-slate-750 rounded-lg px-2 py-1 text-xs font-mono text-white bg-slate-800"
+                                      value={localDesign.bgPaperDark}
+                                      onChange={(e) => setLocalDesign({ ...localDesign, bgPaperDark: e.target.value })}
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400 block mb-1">Color Tarjetas (Cards)</label>
+                                    <input
+                                      type="text"
+                                      className="w-full bg-slate-850 border border-slate-750 rounded-lg px-2 py-1 text-xs font-mono text-white bg-slate-800"
+                                      value={localDesign.bgCardDark}
+                                      onChange={(e) => setLocalDesign({ ...localDesign, bgCardDark: e.target.value })}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Advertising Banners Subsegment */}
+                      {designSubSection === 'banners' && (
+                        <div className="space-y-6">
+                          <div className="flex items-center justify-between">
+                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Administrar Campañas Publicitarias</label>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newId = `banner-${Date.now()}`;
+                                const newBanner: BannerConfig = {
+                                  id: newId,
+                                  title: 'Nueva Promo Especial',
+                                  subtitle: 'Consigue promociones exclusivas con tus puntos.',
+                                  imageUrl: 'https://images.unsplash.com/photo-1543007630-9710e4a00a20?q=80&w=600&auto=format&fit=crop',
+                                  linkUrl: '#/rewards',
+                                  bgColor: '#065f46',
+                                  textColor: '#ecfdf5',
+                                  buttonText: 'Canjear YA'
+                                };
+                                const updatedBanners = [...localDesign.banners, newBanner];
+                                setLocalDesign({ ...localDesign, banners: updatedBanners });
+                                setActiveBannerIndex(updatedBanners.length - 1);
+                              }}
+                              className="text-[9px] font-black uppercase tracking-widest text-love border border-love/20 px-3 py-1 rounded-lg hover:bg-love/5 transition-all flex items-center gap-1"
+                            >
+                              <Plus size={12} /> Agregar Banner
+                            </button>
+                          </div>
+
+                          {localDesign.banners.length === 0 ? (
+                            <div className="py-8 text-center text-slate-400 text-xs italic">
+                              No hay banners activos. Los clientes no verán anuncios en su app.
+                            </div>
+                          ) : (
+                            <div className="space-y-4">
+                              {/* Sliders Selector */}
+                              <div className="flex gap-1 overflow-x-auto pb-1 border-b border-slate-100">
+                                {localDesign.banners.map((item, index) => {
+                                  const isActive = index === activeBannerIndex;
+                                  return (
+                                    <button
+                                      type="button"
+                                      key={item.id}
+                                      onClick={() => setActiveBannerIndex(index)}
+                                      className={cn(
+                                        "px-2.5 py-1.5 rounded-t-lg text-[9px] font-black uppercase tracking-tighter whitespace-nowrap transition-all border-t border-x",
+                                        isActive 
+                                          ? "border-slate-200 bg-slate-100 text-ink" 
+                                          : "border-transparent bg-transparent text-slate-400 hover:text-slate-600"
+                                      )}
+                                    >
+                                      Banner {index + 1}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+
+                              {/* Form detail of selected Banner */}
+                              {localDesign.banners[activeBannerIndex] && (
+                                <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-4 relative">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const updatedList = localDesign.banners.filter((_, i) => i !== activeBannerIndex);
+                                      setLocalDesign({ ...localDesign, banners: updatedList });
+                                      setActiveBannerIndex(0);
+                                    }}
+                                    className="absolute top-4 right-4 text-slate-400 hover:text-love transition-colors"
+                                    title="Eliminar Banner"
+                                  >
+                                    <Trash2 size={16} />
+                                  </button>
+
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1">
+                                      <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400">Título Promocional</label>
+                                      <input
+                                        type="text"
+                                        className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-ink font-bold"
+                                        value={localDesign.banners[activeBannerIndex].title}
+                                        onChange={(e) => {
+                                          const updated = [...localDesign.banners];
+                                          updated[activeBannerIndex].title = e.target.value;
+                                          setLocalDesign({ ...localDesign, banners: updated });
+                                        }}
+                                      />
+                                    </div>
+
+                                    <div className="space-y-1">
+                                      <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400">Texto del Botón (CTA)</label>
+                                      <input
+                                        type="text"
+                                        className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-ink"
+                                        value={localDesign.banners[activeBannerIndex].buttonText}
+                                        onChange={(e) => {
+                                          const updated = [...localDesign.banners];
+                                          updated[activeBannerIndex].buttonText = e.target.value;
+                                          setLocalDesign({ ...localDesign, banners: updated });
+                                        }}
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div className="space-y-1">
+                                    <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400">Subtítulo o Descripción de Campaña</label>
+                                    <input
+                                      type="text"
+                                      className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-ink"
+                                      value={localDesign.banners[activeBannerIndex].subtitle}
+                                      onChange={(e) => {
+                                        const updated = [...localDesign.banners];
+                                        updated[activeBannerIndex].subtitle = e.target.value;
+                                        setLocalDesign({ ...localDesign, banners: updated });
+                                      }}
+                                    />
+                                  </div>
+
+                                  <div className="space-y-1">
+                                    <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400">Imagen URL (Banner banner background o fotito)</label>
+                                    <input
+                                      type="text"
+                                      className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-mono text-ink"
+                                      value={localDesign.banners[activeBannerIndex].imageUrl}
+                                      onChange={(e) => {
+                                        const updated = [...localDesign.banners];
+                                        updated[activeBannerIndex].imageUrl = e.target.value;
+                                        setLocalDesign({ ...localDesign, banners: updated });
+                                      }}
+                                    />
+                                  </div>
+
+                                  <div className="grid grid-cols-3 gap-2">
+                                    <div>
+                                      <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400">Color Fondo Banner</label>
+                                      <input
+                                        type="text"
+                                        className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs font-mono text-ink"
+                                        value={localDesign.banners[activeBannerIndex].bgColor}
+                                        onChange={(e) => {
+                                          const updated = [...localDesign.banners];
+                                          updated[activeBannerIndex].bgColor = e.target.value;
+                                          setLocalDesign({ ...localDesign, banners: updated });
+                                        }}
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400">Color Letra Banner</label>
+                                      <input
+                                        type="text"
+                                        className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs font-mono text-ink"
+                                        value={localDesign.banners[activeBannerIndex].textColor}
+                                        onChange={(e) => {
+                                          const updated = [...localDesign.banners];
+                                          updated[activeBannerIndex].textColor = e.target.value;
+                                          setLocalDesign({ ...localDesign, banners: updated });
+                                        }}
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400">Link de Redirección</label>
+                                      <input
+                                        type="text"
+                                        className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs text-ink"
+                                        value={localDesign.banners[activeBannerIndex].linkUrl}
+                                        onChange={(e) => {
+                                          const updated = [...localDesign.banners];
+                                          updated[activeBannerIndex].linkUrl = e.target.value;
+                                          setLocalDesign({ ...localDesign, banners: updated });
+                                        }}
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Custom CSS Editor */}
+                      {designSubSection === 'css' && (
+                        <div className="space-y-3">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Código CSS de Marketing Personalizado</label>
+                          <textarea
+                            rows={8}
+                            placeholder="/* Escribe tus overrides de CSS personalizados aquí */&#10;.bento-ad-card { border: 2px dashed #ff0000; }"
+                            className="w-full bg-slate-900 border border-slate-950 font-mono text-xs text-emerald-400 p-4 rounded-2xl outline-none focus:border-love"
+                            value={localDesign.customCss}
+                            onChange={(e) => setLocalDesign({ ...localDesign, customCss: e.target.value })}
+                          />
+                          <p className="text-[9px] text-slate-400 leading-relaxed px-1">
+                            Este código CSS se inyecta directamente en el &lt;head&gt; de todas las vistas del sistema. Permite cambiar colores específicos, degradados avanzados, o detalles tipográficos que no cuenten con un botón dedicado.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Right Column - Live Mockup Preview */}
+                  <div className="lg:col-span-5">
+                    <div className="sticky top-28 space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Previsualización en tiempo real</span>
+                        <div className="flex gap-1">
+                          <span className="w-2.5 h-2.5 rounded-full bg-slate-300" />
+                          <span className="w-2.5 h-2.5 rounded-full bg-slate-300" />
+                          <span className="w-2.5 h-2.5 rounded-full bg-slate-300" />
+                        </div>
+                      </div>
+
+                      {/* Mockup Frame Container */}
+                      <div 
+                        className="bg-slate-100 rounded-[2.5rem] p-4 border-4 border-slate-800 shadow-2xl relative overflow-hidden flex flex-col justify-between max-w-sm mx-auto"
+                        style={{ 
+                          fontFamily: `"${localDesign.fontSans}", sans-serif`,
+                          minHeight: '520px'
+                        }}
+                      >
+                        {/* Status bar */}
+                        <div className="flex justify-between items-center text-[8px] font-bold px-2 text-slate-500 mb-2">
+                          <span>12:00 PM</span>
+                          <span className="text-[9px]">RestoLoyalty 📶 🔋 100%</span>
+                        </div>
+
+                        {/* App header inside preview */}
+                        <div className="bg-white px-4 py-3 rounded-2xl border border-slate-200/50 shadow-sm flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-2">
+                            {localDesign.logoUrl ? (
+                              <img referrerPolicy="no-referrer" src={localDesign.logoUrl} className="w-6 h-6 object-contain rounded" alt="" />
+                            ) : (
+                              <div className="w-6 h-6 rounded flex items-center justify-center font-black text-xs text-white" style={{ backgroundColor: localDesign.primaryColor }}>
+                                {localDesign.logoText.charAt(0)}
+                              </div>
+                            )}
+                            <div>
+                              <h5 className="font-extrabold text-[10px] leading-none uppercase text-ink" style={{ fontFamily: `"${localDesign.fontHeadings}", sans-serif` }}>{localDesign.logoText || 'CRM RESTO'}</h5>
+                              <p className="text-[6px] tracking-widest text-slate-400 uppercase mt-0.5">{localDesign.logoSubtitle || 'Loyalty'}</p>
+                            </div>
+                          </div>
+                          <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: localDesign.primaryColor }} />
+                        </div>
+
+                        {/* Interactive Banner slider mockup inside phone */}
+                        <div className="space-y-3 flex-1 overflow-y-auto no-scrollbar pb-12">
+                          {localDesign.banners.length > 0 && (
+                            <div 
+                              className="rounded-2xl p-4 text-white relative overflow-hidden shadow-md flex flex-col justify-between"
+                              style={{ 
+                                backgroundColor: localDesign.banners[activeBannerIndex]?.bgColor || '#7c2d12',
+                                color: localDesign.banners[activeBannerIndex]?.textColor || '#ffedd5',
+                                minHeight: '130px'
+                              }}
+                            >
+                              <div className="relative z-10">
+                                <h4 className="text-xs font-black uppercase tracking-tight" style={{ fontFamily: `"${localDesign.fontHeadings}", sans-serif` }}>
+                                  {localDesign.banners[activeBannerIndex]?.title}
+                                </h4>
+                                <p className="text-[8px] opacity-90 mt-1">
+                                  {localDesign.banners[activeBannerIndex]?.subtitle}
+                                </p>
+                              </div>
+
+                              <div className="flex justify-between items-end mt-4 relative z-10">
+                                <span className="text-[7px] bg-white/20 px-2 py-1 rounded font-bold uppercase tracking-wider backdrop-blur-sm">
+                                  {localDesign.banners[activeBannerIndex]?.buttonText}
+                                </span>
+                                <span className="text-[7px] opacity-50 font-mono">Promo {activeBannerIndex + 1}/{localDesign.banners.length}</span>
+                              </div>
+
+                              {/* Abstract shape */}
+                              <div className="absolute right-0 bottom-0 top-0 w-1/2 opacity-30 pointer-events-none">
+                                {localDesign.banners[activeBannerIndex]?.imageUrl && (
+                                  <img referrerPolicy="no-referrer" src={localDesign.banners[activeBannerIndex]?.imageUrl} className="w-full h-full object-cover rounded-l-full" alt="" />
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* App main Points Card inside phone */}
+                          <div className="rounded-2xl p-4 text-white relative overflow-hidden flex flex-col justify-between" style={{ backgroundColor: localDesign.primaryColor, borderRadius: localDesign.radiusMd }}>
+                            <div>
+                              <p className="text-[7px] uppercase font-bold tracking-widest opacity-80">Saldo Actual Fidelidad</p>
+                              <p className="text-3xl font-black italic mt-1" style={{ fontFamily: `"${localDesign.fontHeadings}", sans-serif` }}>7.450 <span className="text-xs uppercase font-normal tracking-tighter">pts</span></p>
+                            </div>
+                            <div className="flex justify-between text-[6px] uppercase tracking-wider opacity-60 mt-4">
+                              <span>Socio Preferred</span>
+                              <span>DNI: 34.567.890</span>
+                            </div>
+                          </div>
+
+                          {/* Quick Bento card list mock */}
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="bg-white rounded-xl p-3 border border-slate-200/50 shadow-sm" style={{ borderRadius: localDesign.radiusSm }}>
+                              <p className="text-[7px] text-slate-400 font-bold uppercase tracking-wider">Premio Especial</p>
+                              <p className="font-extrabold text-[10px] text-ink mt-1">Café de la casa</p>
+                              <p className="text-[8px] font-black italic mt-1 text-slate-400">100 Pts</p>
+                            </div>
+                            <div className="bg-white rounded-xl p-3 border border-slate-200/50 shadow-sm" style={{ borderRadius: localDesign.radiusSm }}>
+                              <p className="text-[7px] text-slate-400 font-bold uppercase tracking-wider">Siguiente Nivel</p>
+                              <p className="font-extrabold text-[10px] text-ink mt-1">Gold VIP</p>
+                              <div className="w-full bg-slate-100 h-1 rounded-full mt-1 overflow-hidden">
+                                <div className="h-full rounded-full" style={{ width: '75%', backgroundColor: localDesign.primaryColor }} />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Navigation Tab Bar Mockup inside phone */}
+                        <div className="bg-white p-2 rounded-xl border border-slate-200/50 shadow-lg flex justify-around items-center text-[7px] font-black uppercase text-slate-400">
+                          <span className="text-ink flex flex-col items-center gap-0.5">
+                            <Home size={10} style={{ color: localDesign.primaryColor }} />
+                            Inicio
+                          </span>
+                          <span className="flex flex-col items-center gap-0.5">
+                            <Gift size={10} />
+                            Premios
+                          </span>
+                          <span className="flex flex-col items-center gap-0.5">
+                            <User size={10} />
+                            Perfil
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

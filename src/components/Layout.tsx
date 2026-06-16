@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { LogOut, Home, Gift, User, ShieldCheck, Moon, Sun } from 'lucide-react';
 import { supabase } from '@/src/lib/supabase';
 import { useAuth, useTheme } from '@/src/App';
+import { useDesign } from '@/src/components/DesignEngine';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -11,6 +12,7 @@ interface LayoutProps {
 export function Layout({ children }: LayoutProps) {
   const { profile, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { designConfig } = useDesign();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -22,10 +24,30 @@ export function Layout({ children }: LayoutProps) {
     <div className="min-h-screen bg-paper flex flex-col font-sans overflow-x-hidden">
       <header className="mx-2 md:mx-6 mt-2 md:mt-6 bg-white p-3 md:p-4 rounded-xl md:rounded-2xl border border-slate-200 shadow-xl shadow-slate-200/50 flex justify-between items-center sticky top-2 md:top-6 z-50">
         <div className="flex items-center gap-2 md:gap-3">
-          <div className="w-8 h-8 md:w-10 md:h-10 bg-love rounded-lg flex items-center justify-center font-bold text-lg md:text-xl uppercase shadow-lg shadow-love/20 text-white">R</div>
+          {designConfig.logoUrl ? (
+            <img 
+              referrerPolicy="no-referrer"
+              src={designConfig.logoUrl} 
+              alt="Logo" 
+              className="w-8 h-8 md:w-10 md:h-10 object-contain rounded-lg" 
+              onError={(e) => {
+                // fallback if loading fails
+                (e.currentTarget as HTMLElement).style.display = 'none';
+              }}
+            />
+          ) : null}
+          {(!designConfig.logoUrl) && (
+            <div className="w-8 h-8 md:w-10 md:h-10 bg-love rounded-lg flex items-center justify-center font-bold text-lg md:text-xl uppercase shadow-lg shadow-love/20 text-white">
+              {(designConfig.logoText || 'CRM RESTO').charAt(0)}
+            </div>
+          )}
           <div className="hidden xs:block">
-            <h1 className="text-sm md:text-lg font-black tracking-tighter leading-none uppercase text-ink">CRM <span className="text-love">RESTO</span></h1>
-            <p className="text-[8px] md:text-[10px] uppercase tracking-widest text-slate-400 mt-1">Management & Loyalty</p>
+            <h1 className="text-sm md:text-lg font-black tracking-tighter leading-none uppercase text-ink logo-title">
+              {designConfig.logoText || 'CRM RESTO'}
+            </h1>
+            <p className="text-[8px] md:text-[10px] uppercase tracking-widest text-slate-400 mt-1">
+              {designConfig.logoSubtitle || 'Management & Loyalty'}
+            </p>
           </div>
         </div>
         
