@@ -4,13 +4,14 @@ import { LogOut, Home, Gift, User, ShieldCheck, Moon, Sun } from 'lucide-react';
 import { supabase } from '@/src/lib/supabase';
 import { useAuth, useTheme } from '@/src/App';
 import { useDesign } from '@/src/components/DesignEngine';
+import { cn } from '@/src/lib/utils';
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
 export function Layout({ children }: LayoutProps) {
-  const { profile, signOut } = useAuth();
+  const { profile, signOut, isSimulatingClient, setIsSimulatingClient } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { designConfig } = useDesign();
   const navigate = useNavigate();
@@ -22,7 +23,30 @@ export function Layout({ children }: LayoutProps) {
 
   return (
     <div className="min-h-screen bg-paper flex flex-col font-sans overflow-x-hidden">
-      <header className="mx-2 md:mx-6 mt-2 md:mt-6 bg-white p-3 md:p-4 rounded-xl md:rounded-2xl border border-slate-200 shadow-xl shadow-slate-200/50 flex justify-between items-center sticky top-2 md:top-6 z-50">
+      {isSimulatingClient && (
+        <div className="w-full bg-slate-900 border-b border-love text-white text-[10px] md:text-xs py-3 px-6 flex items-center justify-between font-black uppercase tracking-wider z-[100] sticky top-0 transition-all shadow-md">
+          <div className="flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-love animate-ping" />
+            <span className="flex items-center gap-1">
+              <User size={14} className="text-love" />
+              Vista Cliente Activa: Estás viendo la app como un usuario normal
+            </span>
+          </div>
+          <button
+            onClick={() => {
+              setIsSimulatingClient(false);
+              navigate('/admin');
+            }}
+            className="px-4 py-1.5 bg-love hover:bg-love/90 text-white rounded-xl transition-all font-black shadow-lg shadow-love/20 active:scale-95 cursor-pointer text-[10px]"
+          >
+            Volver a Admin
+          </button>
+        </div>
+      )}
+      <header className={cn(
+        "mx-2 md:mx-6 mt-2 md:mt-6 bg-white p-3 md:p-4 rounded-xl md:rounded-2xl border border-slate-200 shadow-xl shadow-slate-200/50 flex justify-between items-center sticky z-50",
+        isSimulatingClient ? "top-14" : "top-2 md:top-6"
+      )}>
         <div className="flex items-center gap-2 md:gap-3">
           {designConfig.logoUrl ? (
             <img 

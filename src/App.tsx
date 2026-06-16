@@ -31,23 +31,29 @@ export const useTheme = () => useContext(ThemeContext);
 interface AuthContextType {
   user: any | null;
   profile: Profile | null;
+  realProfile: Profile | null;
   loading: boolean;
   refreshProfile: () => Promise<void>;
   signOut: () => Promise<void>;
+  isSimulatingClient: boolean;
+  setIsSimulatingClient: (val: boolean) => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   profile: null,
+  realProfile: null,
   loading: true,
   refreshProfile: async () => {},
   signOut: async () => {},
+  isSimulatingClient: false,
+  setIsSimulatingClient: () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
 
 function AppRoutes() {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, realProfile, loading } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -87,7 +93,7 @@ function AppRoutes() {
           path="/waiter" 
           element={
             user ? (
-              profile?.role === 'waiter' || profile?.role === 'admin' 
+              realProfile?.role === 'waiter' || realProfile?.role === 'admin' 
                 ? <Layout><Waiter /></Layout> 
                 : <Navigate to="/" replace />
             ) : (
@@ -100,7 +106,7 @@ function AppRoutes() {
           path="/admin" 
           element={
             user ? (
-              profile?.role === 'admin' 
+              realProfile?.role === 'admin' 
                 ? <Layout><Admin /></Layout> 
                 : <Navigate to="/" replace />
             ) : (
@@ -120,6 +126,15 @@ export default function App() {
     const saved = localStorage.getItem('theme');
     return (saved as 'light' | 'dark') || 'light';
   });
+
+  const [isSimulatingClient, setIsSimulatingClient] = useState<boolean>(() => {
+    return localStorage.getItem('isSimulatingClient') === 'true';
+  });
+
+  const handleSetSimulatingClient = (val: boolean) => {
+    setIsSimulatingClient(val);
+    localStorage.setItem('isSimulatingClient', String(val));
+  };
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -356,10 +371,21 @@ export default function App() {
     );
   }
 
+  const activeProfile = profile ? (isSimulatingClient ? { ...profile, role: 'client' as const } : profile) : null;
+
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>
       <DesignProvider>
-        <AuthContext.Provider value={{ user, profile, loading, refreshProfile, signOut }}>
+        <AuthContext.Provider value={{ 
+          user, 
+          profile: activeProfile, 
+          realProfile: profile, 
+          loading, 
+          refreshProfile, 
+          signOut,
+          isSimulatingClient,
+          setIsSimulatingClient: handleSetSimulatingClient
+        }}>
           <HashRouter>
             <AppRoutes />
           </HashRouter>
