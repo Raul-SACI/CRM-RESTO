@@ -1,8 +1,8 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LogOut, Home, Gift, User, ShieldCheck } from 'lucide-react';
+import { LogOut, Home, Gift, User, ShieldCheck, Moon, Sun } from 'lucide-react';
 import { supabase } from '@/src/lib/supabase';
-import { useAuth } from '@/src/App';
+import { useAuth, useTheme } from '@/src/App';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -10,6 +10,7 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   const { profile, signOut } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -49,6 +50,14 @@ export function Layout({ children }: LayoutProps) {
             </NavLink>
           )}
           
+          <button 
+            onClick={toggleTheme} 
+            className="ml-1 md:ml-4 p-2 text-slate-400 hover:text-love transition-all hover:bg-love/10 rounded-lg shrink-0" 
+            title={theme === 'light' ? 'Modo Oscuro' : 'Modo Claro'}
+          >
+            {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+          </button>
+
           <button onClick={handleLogout} className="ml-1 md:ml-2 p-2 text-slate-400 hover:text-love transition-all hover:bg-love/10 rounded-lg shrink-0" title="Cerrar Sesión">
             <LogOut size={20} />
           </button>

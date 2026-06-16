@@ -14,6 +14,19 @@ import { Admin } from '@/src/pages/Admin';
 import { Rewards } from '@/src/pages/Rewards';
 import { Layout } from '@/src/components/Layout';
 import { motion, AnimatePresence } from 'motion/react';
+import { DesignProvider } from '@/src/components/DesignEngine';
+
+interface ThemeContextType {
+  theme: 'light' | 'dark';
+  toggleTheme: () => void;
+}
+
+const ThemeContext = createContext<ThemeContextType>({
+  theme: 'light',
+  toggleTheme: () => {},
+});
+
+export const useTheme = () => useContext(ThemeContext);
 
 interface AuthContextType {
   user: any | null;
@@ -103,6 +116,25 @@ function AppRoutes() {
 }
 
 export default function App() {
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    const saved = localStorage.getItem('theme');
+    return (saved as 'light' | 'dark') || 'light';
+  });
+
+  useEffect(() => {
+    const root = window.document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  };
+
   const [user, setUser] = useState<any | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -325,10 +357,14 @@ export default function App() {
   }
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, refreshProfile, signOut }}>
-      <HashRouter>
-        <AppRoutes />
-      </HashRouter>
-    </AuthContext.Provider>
+    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+      <DesignProvider>
+        <AuthContext.Provider value={{ user, profile, loading, refreshProfile, signOut }}>
+          <HashRouter>
+            <AppRoutes />
+          </HashRouter>
+        </AuthContext.Provider>
+      </DesignProvider>
+    </ThemeContext.Provider>
   );
 }

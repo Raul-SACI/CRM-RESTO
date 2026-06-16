@@ -15,12 +15,58 @@
   
   --shadow-bento: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   --shadow-red: 0 10px 15px -3px rgba(239, 68, 68, 0.2);
+
+  --color-dark-paper: #020617;
+  --color-dark-ink: #f8fafc;
+  --color-dark-card: #0f172a;
+  --color-dark-border: #1e293b;
 }
 
 @layer base {
   body {
-    @apply bg-paper text-ink antialiased selection:bg-love/20;
+    @apply bg-paper text-ink antialiased selection:bg-love/20 transition-colors duration-300;
     -webkit-tap-highlight-color: transparent;
+  }
+
+  .dark body {
+    @apply bg-dark-paper text-dark-ink;
+  }
+
+  .dark .bg-white {
+    @apply !bg-dark-card;
+  }
+
+  /* Specific override for QR code container to stay light for scanning */
+  .dark .qr-container, .dark .qr-container * {
+    @apply !bg-white;
+  }
+
+  .dark .bg-slate-50 {
+    @apply !bg-slate-900/50;
+  }
+
+  .dark .bg-slate-100 {
+    @apply !bg-slate-800;
+  }
+
+  .dark .text-ink {
+    @apply !text-dark-ink;
+  }
+
+  .dark .text-slate-600, .dark .text-slate-400 {
+    @apply !text-slate-400;
+  }
+
+  .dark .border-slate-100, .dark .border-slate-200 {
+    @apply !border-dark-border;
+  }
+
+  .dark .shadow-xl, .dark .shadow-2xl {
+    @apply !shadow-none;
+  }
+
+  .dark .bg-paper {
+    @apply !bg-dark-paper;
   }
 }
 

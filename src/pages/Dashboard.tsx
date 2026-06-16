@@ -426,7 +426,7 @@ export function Dashboard() {
 
       {/* QR Code Card - Square Bento */}
       <div className="md:col-span-3 bg-white rounded-3xl p-6 shadow-xl shadow-slate-200/50 border border-slate-100 flex flex-col items-center justify-center text-center order-2 md:order-2">
-        <div className="bg-white p-4 rounded-2xl mb-4 border-2 border-slate-50 shadow-sm flex items-center justify-center">
+        <div className="qr-container p-4 rounded-2xl mb-4 border-2 border-slate-50 shadow-sm flex items-center justify-center">
           <QRCode 
             value={`${window.location.origin}/#/waiter?dni=${profile.dni || profile.id}`} 
             size={120}

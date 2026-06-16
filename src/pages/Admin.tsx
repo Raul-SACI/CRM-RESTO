@@ -2,15 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '@/src/lib/supabase';
 import { Profile, Prize, Transaction, SystemSettings } from '@/src/types';
 import { motion, AnimatePresence } from 'motion/react';
-import { Users, Gift, Settings, Search, Plus, Trash2, Pencil, Calendar, Award, History, DollarSign, Upload, Image as ImageIcon, FileSpreadsheet, UserPlus, X } from 'lucide-react';
+import { Users, Gift, Settings, Search, Plus, Trash2, Pencil, Calendar, Award, History, DollarSign, Upload, Image as ImageIcon, FileSpreadsheet, UserPlus, X, Palette } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import * as XLSX from 'xlsx';
 import { BRANCHES } from '@/src/constants';
+import { useDesign, COLOR_PRESETS, CORNER_PRESETS, AVAILABLE_FONTS, type DesignConfig, type BannerConfig } from '@/src/components/DesignEngine';
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell, PieChart, Pie } from 'recharts';
 
 export function Admin() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'clients' | 'prizes' | 'staff' | 'history' | 'settings'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'clients' | 'prizes' | 'staff' | 'history' | 'settings' | 'design'>('dashboard');
   const [loading, setLoading] = useState(true);
   const [clients, setClients] = useState<Profile[]>([]);
   const [prizes, setPrizes] = useState<Prize[]>([]);
@@ -36,6 +37,19 @@ export function Admin() {
     return d.toISOString().split('T')[0];
   });
   const [dateEnd, setDateEnd] = useState<string>(() => new Date().toISOString().split('T')[0]);
+
+  // Design editing module states
+  const { designConfig, saveDesignConfig } = useDesign();
+  const [localDesign, setLocalDesign] = useState<DesignConfig | null>(null);
+  const [savingDesign, setSavingDesign] = useState(false);
+  const [designSubSection, setDesignSubSection] = useState<'branding' | 'styling' | 'colors' | 'banners' | 'css'>('branding');
+  const [activeBannerIndex, setActiveBannerIndex] = useState<number>(0);
+
+  useEffect(() => {
+    if (activeTab === 'design' && designConfig) {
+      setLocalDesign(JSON.parse(JSON.stringify(designConfig)));
+    }
+  }, [activeTab, designConfig]);
 
   const handleImportExcel = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -162,6 +176,8 @@ export function Admin() {
     setSelectedClients([]);
     if (activeTab === 'settings') {
       fetchSettings();
+    } else if (activeTab === 'design') {
+      setLoading(false);
     } else if (activeTab === 'dashboard') {
       // Dashboard needs transactions and clients
       void fetchData(true);
@@ -642,18 +658,29 @@ export function Admin() {
         </div>
         
         <div className="flex flex-wrap p-1 bg-slate-100 rounded-xl border border-slate-200 overflow-x-auto">
-          {['dashboard', 'clients', 'prizes', 'staff', 'history', 'settings'].map((tab) => (
-            <button 
-              key={tab}
-              onClick={() => setActiveTab(tab as any)}
-              className={cn(
-                "px-4 py-2 rounded-lg text-[10px] font-bold uppercase transition-all whitespace-nowrap", 
-                activeTab === tab ? "bg-love text-white shadow-lg shadow-love/20" : "text-slate-400 hover:text-ink"
-              )}
-            >
-              {tab === 'dashboard' ? 'Dashboard' : tab === 'clients' ? 'Clientes' : tab === 'prizes' ? 'Premios' : tab === 'staff' ? 'Staff' : tab === 'history' ? 'Movimientos' : 'Ajustes'}
-            </button>
-          ))}
+          {['dashboard', 'clients', 'prizes', 'staff', 'history', 'settings', 'design'].map((tab) => {
+            const labels: Record<string, string> = {
+              dashboard: 'Dashboard',
+              clients: 'Clientes',
+              prizes: 'Premios',
+              staff: 'Staff',
+              history: 'Movimientos',
+              settings: 'Ajustes',
+              design: 'Diseño'
+            };
+            return (
+              <button 
+                key={tab}
+                onClick={() => setActiveTab(tab as any)}
+                className={cn(
+                  "px-4 py-2 rounded-lg text-[10px] font-bold uppercase transition-all whitespace-nowrap", 
+                  activeTab === tab ? "bg-love text-white shadow-lg shadow-love/20" : "text-slate-400 hover:text-ink"
+                )}
+              >
+                {labels[tab]}
+              </button>
+            );
+          })}
         </div>
       </div>
 
