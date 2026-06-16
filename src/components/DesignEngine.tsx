@@ -46,7 +46,7 @@ export const DEFAULT_DESIGN: DesignConfig = {
   bgCardLight: '#ffffff',
   bgCardDark: '#0f172a',
   logoUrl: '',
-  logoText: 'CRM RESTO',
+  logoText: 'CLUB CRAFT',
   logoSubtitle: 'Management & Loyalty',
   customCss: '',
   banners: [

@@ -664,7 +664,7 @@ export function Admin() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50">
         <div>
-          <h2 className="text-2xl font-black uppercase tracking-tighter italic text-ink">CRAFT <span className="text-love">RESTO</span></h2>
+          <h2 className="text-2xl font-black uppercase tracking-tighter italic text-ink">CLUB <span className="text-love">CRAFT</span></h2>
           <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-black">Panel Central Administrativo</p>
         </div>
         
@@ -1161,7 +1161,7 @@ export function Admin() {
                 
                 <div className="pt-8 mt-4 border-t border-slate-100 text-center">
                   <p className="text-[8px] font-black uppercase tracking-widest text-slate-300">
-                    CRM CRAFT RESTO v1.0.6-FIX-DATABASE • DB Status: Connected
+                    CLUB CRAFT v1.0.6-FIX-DATABASE • DB Status: Connected
                   </p>
                 </div>
               </div>
@@ -1970,7 +1970,7 @@ export function Admin() {
                               </div>
                             )}
                             <div>
-                              <h5 className="font-extrabold text-[10px] leading-none uppercase text-ink" style={{ fontFamily: `"${localDesign.fontHeadings}", sans-serif` }}>{localDesign.logoText || 'CRM RESTO'}</h5>
+                              <h5 className="font-extrabold text-[10px] leading-none uppercase text-ink" style={{ fontFamily: `"${localDesign.fontHeadings}", sans-serif` }}>{localDesign.logoText || 'CLUB CRAFT'}</h5>
                               <p className="text-[6px] tracking-widest text-slate-400 uppercase mt-0.5">{localDesign.logoSubtitle || 'Loyalty'}</p>
                             </div>
                           </div>

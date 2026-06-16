@@ -38,12 +38,12 @@ export function Layout({ children }: LayoutProps) {
           ) : null}
           {(!designConfig.logoUrl) && (
             <div className="w-8 h-8 md:w-10 md:h-10 bg-love rounded-lg flex items-center justify-center font-bold text-lg md:text-xl uppercase shadow-lg shadow-love/20 text-white">
-              {(designConfig.logoText || 'CRM RESTO').charAt(0)}
+              {(designConfig.logoText || 'CLUB CRAFT').charAt(0)}
             </div>
           )}
           <div className="hidden xs:block">
             <h1 className="text-sm md:text-lg font-black tracking-tighter leading-none uppercase text-ink logo-title">
-              {designConfig.logoText || 'CRM RESTO'}
+              {designConfig.logoText || 'CLUB CRAFT'}
             </h1>
             <p className="text-[8px] md:text-[10px] uppercase tracking-widest text-slate-400 mt-1">
               {designConfig.logoSubtitle || 'Management & Loyalty'}
