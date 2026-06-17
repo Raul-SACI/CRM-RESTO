@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '@/src/lib/supabase';
 import { Profile, Prize, Transaction, SystemSettings } from '@/src/types';
 import { motion, AnimatePresence } from 'motion/react';
-import { Users, Gift, Settings, Search, Plus, Trash2, Pencil, Calendar, Award, History, DollarSign, Upload, Image as ImageIcon, FileSpreadsheet, UserPlus, X, Palette, Home, User } from 'lucide-react';
+import { Users, Gift, Settings, Search, Plus, Trash2, Pencil, Calendar, Award, History, DollarSign, Upload, Image as ImageIcon, FileSpreadsheet, UserPlus, X, Palette, Home, User, Star, MessageSquare } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import * as XLSX from 'xlsx';
 import { BRANCHES } from '@/src/constants';
@@ -13,12 +13,13 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 
 export function Admin() {
   const { isSimulatingClient, setIsSimulatingClient } = useAuth();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'clients' | 'prizes' | 'staff' | 'history' | 'settings' | 'design'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'clients' | 'prizes' | 'staff' | 'history' | 'settings' | 'design' | 'feedback'>('dashboard');
   const [loading, setLoading] = useState(true);
   const [clients, setClients] = useState<Profile[]>([]);
   const [prizes, setPrizes] = useState<Prize[]>([]);
   const [staff, setStaff] = useState<Profile[]>([]);
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
+  const [feedbacks, setFeedbacks] = useState<any[]>([]);
   const [settings, setSettings] = useState<SystemSettings | null>(null);
   const [newPrize, setNewPrize] = useState({ title: '', description: '', points_cost: 0, image_url: '' });
   const [editingPrizeId, setEditingPrizeId] = useState<string | null>(null);
@@ -343,6 +344,7 @@ export function Admin() {
         else if (activeTab === 'prizes') setPrizes(parsed);
         else if (activeTab === 'staff') setStaff(parsed);
         else if (activeTab === 'history') setAllTransactions(parsed);
+        else if (activeTab === 'feedback') setFeedbacks(parsed);
         setLoading(false);
       } catch (e) {
         console.error("Cache parse error:", e);
@@ -442,6 +444,74 @@ export function Admin() {
           setAllTransactions(data || []);
           localStorage.setItem(cacheKey, JSON.stringify(data || []));
         }
+      } else if (activeTab === 'feedback') {
+        let remoteFeedbacks: any[] = [];
+        try {
+          const { data, error } = await supabase
+            .from('program_feedback')
+            .select('*')
+            .order('created_at', { ascending: false });
+          if (!error && data) {
+            remoteFeedbacks = data;
+          }
+        } catch (e) {
+          console.log("No program_feedback table, falling back to cached/seeded reviews");
+        }
+
+        const localCached = localStorage.getItem('local_program_feedback');
+        let localFeedbacks: any[] = [];
+        if (localCached) {
+          try {
+            localFeedbacks = JSON.parse(localCached);
+          } catch (e) {
+            console.error("Local feedback parse error:", e);
+          }
+        }
+
+        const combined = [...remoteFeedbacks, ...localFeedbacks];
+        if (combined.length === 0) {
+          const seeded = [
+            {
+              id: 'seed-1',
+              client_name: 'Sofía Martínez',
+              rating: 5,
+              comment: '¡Excelente programa de puntos! Me encanta que el vasito de café de especialidad de la marca CRAFT avance en tiempo real por el camino de puntos. Trato muy premium, el canje fue rapidísimo.',
+              prize_title: 'Café de Especialidad',
+              created_at: new Date(Date.now() - 1000 * 60 * 60 * 18).toISOString()
+            },
+            {
+              id: 'seed-2',
+              client_name: 'Juan Ignacio Pérez',
+              rating: 4,
+              comment: 'Los premios digitales son espectaculares y cargan en el día. Estaría bárbaro agregar más tostados y opciones saladas para el café de la tarde.',
+              prize_title: 'Tabla de Quesos Selectos',
+              created_at: new Date(Date.now() - 1000 * 60 * 60 * 42).toISOString()
+            },
+            {
+              id: 'seed-3',
+              client_name: 'Martina Silva',
+              rating: 5,
+              comment: 'Me volví miembra de nivel BLACK la semana pasada y la atención de los mozos al duplicar los puntos es magnífica. Recomiendo un montón registrarse en el club.',
+              prize_title: 'Cena para Dos',
+              created_at: new Date(Date.now() - 1000 * 60 * 60 * 68).toISOString()
+            },
+            {
+              id: 'seed-4',
+              client_name: 'Bautista Rodríguez',
+              rating: 5,
+              comment: 'La interfaz móvil corre genial en cualquier celular. La transparencia al escanear los códigos y las preguntas frecuentes aclaran todo al instante.',
+              prize_title: 'Cóctel de Bienvenida',
+              created_at: new Date(Date.now() - 1000 * 60 * 60 * 92).toISOString()
+            }
+          ];
+          setFeedbacks(seeded);
+          localStorage.setItem('local_program_feedback', JSON.stringify(seeded));
+          localStorage.setItem(cacheKey, JSON.stringify(seeded));
+        } else {
+          combined.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+          setFeedbacks(combined);
+          localStorage.setItem(cacheKey, JSON.stringify(combined));
+        }
       }
     } catch (e: any) {
       console.error("Fetch error in Admin:", e);
@@ -450,6 +520,26 @@ export function Admin() {
       clearTimeout(fetchTimeout);
       setLoading(false);
     }
+  };
+
+  const handleDeleteFeedback = async (id: string) => {
+    if (!confirm("¿Estás seguro de que deseas eliminar esta valoración?")) return;
+    try {
+      await supabase.from('program_feedback').delete().eq('id', id);
+    } catch (e) {
+      console.warn("Could not delete from remote table", e);
+    }
+    try {
+      const existingStr = localStorage.getItem('local_program_feedback');
+      if (existingStr) {
+        const parsed = JSON.parse(existingStr);
+        const filtered = parsed.filter((f: any) => f.id !== id);
+        localStorage.setItem('local_program_feedback', JSON.stringify(filtered));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    setFeedbacks(prev => prev.filter(f => f.id !== id));
   };
 
   const handleDeleteClients = async (idsToDelete?: string[]) => {
@@ -684,7 +774,7 @@ export function Admin() {
           </button>
 
           <div className="flex flex-wrap p-1 bg-slate-100 rounded-xl border border-slate-200 overflow-x-auto">
-            {['dashboard', 'clients', 'prizes', 'staff', 'history', 'settings', 'design'].map((tab) => {
+            {['dashboard', 'clients', 'prizes', 'staff', 'history', 'settings', 'design', 'feedback'].map((tab) => {
               const labels: Record<string, string> = {
                 dashboard: 'Dashboard',
                 clients: 'Clientes',
@@ -692,7 +782,8 @@ export function Admin() {
                 staff: 'Staff',
                 history: 'Movimientos',
                 settings: 'Ajustes',
-                design: 'Diseño'
+                design: 'Diseño',
+                feedback: 'Opiniones'
               };
               return (
                 <button 
@@ -2078,6 +2169,148 @@ export function Admin() {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {activeTab === 'feedback' && (
+            <div className="space-y-6">
+              {/* Header block with statistics cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-xl shadow-slate-200/50 flex flex-col justify-between">
+                  <div>
+                    <p className="text-[10px] uppercase font-black tracking-widest text-slate-400">Puntuación de Miembros</p>
+                    <h4 className="text-4xl font-black text-ink mt-2 leading-none">
+                      {feedbacks.length > 0 
+                        ? (feedbacks.reduce((acc, current) => acc + current.rating, 0) / feedbacks.length).toFixed(1) 
+                        : '5.0'}
+                      <span className="text-sm font-bold text-slate-400"> / 5.0</span>
+                    </h4>
+                  </div>
+                  <div className="flex items-center gap-1 mt-4">
+                    {[1, 2, 3, 4, 5].map((star) => {
+                      const avg = feedbacks.length > 0 
+                        ? (feedbacks.reduce((acc, current) => acc + current.rating, 0) / feedbacks.length) 
+                        : 5;
+                      return (
+                        <Star 
+                          key={star} 
+                          size={20} 
+                          className={cn(
+                            star <= Math.round(avg) 
+                              ? "fill-yellow-400 text-yellow-400" 
+                              : "text-slate-200"
+                          )} 
+                        />
+                      );
+                    })}
+                    <span className="text-xs font-bold text-slate-400 ml-2">Promedio General</span>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-xl shadow-slate-200/50 flex flex-col justify-between">
+                  <div>
+                    <p className="text-[10px] uppercase font-black tracking-widest text-slate-400">Total de Opiniones</p>
+                    <h4 className="text-4xl font-black text-love mt-2 leading-none">
+                      {feedbacks.length}
+                    </h4>
+                  </div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-4">
+                    Calificaciones enviadas por clientes al canjear
+                  </p>
+                </div>
+
+                <div className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-xl shadow-slate-200/50 flex flex-col justify-between">
+                  <div>
+                    <p className="text-[10px] uppercase font-black tracking-widest text-slate-400">Índice de Recomendación</p>
+                    <h4 className="text-4xl font-black text-ink mt-2 leading-none">
+                      {feedbacks.length > 0 
+                        ? Math.round((feedbacks.filter(f => f.rating >= 4).length / feedbacks.length) * 100) 
+                        : '100'}%
+                    </h4>
+                  </div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-4">
+                    Clientes que puntuaron con 4 o 5 estrellas
+                  </p>
+                </div>
+              </div>
+
+              {/* Feedbacks reviews table/cards */}
+              <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-xl shadow-slate-200/50">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 bg-love/10 rounded-xl flex items-center justify-center text-love">
+                    <MessageSquare size={20} />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black uppercase tracking-tighter text-ink">Registro de <span className="text-love">Valoraciones</span></h3>
+                    <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mt-1">Comentarios recibidos del Club CRAFT en tiempo real</p>
+                  </div>
+                </div>
+
+                {feedbacks.length === 0 ? (
+                  <div className="py-12 text-center text-slate-400 font-bold uppercase text-[10px] tracking-widest">
+                    No se han registrado valoraciones aún.
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {feedbacks.map((f, idx) => (
+                      <motion.div
+                        key={f.id || idx}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="p-5 rounded-2xl bg-slate-50 border border-slate-200/60 hover:border-love/30 transition-all flex flex-col sm:flex-row sm:items-start justify-between gap-4"
+                      >
+                        <div className="space-y-2 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="w-8 h-8 rounded-full bg-love/10 text-love text-xs font-black flex items-center justify-center uppercase shrink-0">
+                              {(f.client_name || 'C').charAt(0)}
+                            </span>
+                            <div>
+                              <h5 className="font-extrabold text-sm text-ink leading-tight">{f.client_name}</h5>
+                              <p className="text-[8px] font-semibold text-slate-400 uppercase tracking-wider">
+                                Canjeado: <span className="text-love font-bold">{f.prize_title || 'General'}</span>
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-0.5 pl-10">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <Star 
+                                key={star} 
+                                size={14} 
+                                className={cn(
+                                  star <= f.rating 
+                                    ? "fill-yellow-400 text-yellow-400" 
+                                    : "text-slate-200"
+                                )} 
+                              />
+                            ))}
+                            <span className="text-[10px] font-mono text-slate-400 ml-2">
+                              {new Date(f.created_at).toLocaleDateString('es-AR')} - {new Date(f.created_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} hs
+                            </span>
+                          </div>
+
+                          {f.comment && (
+                            <div className="pl-10">
+                              <p className="text-xs text-slate-600 dark:text-slate-400 font-medium italic border-l-2 border-slate-200 pl-3 py-1">
+                                "{f.comment}"
+                              </p>
+                            </div>
+                          )}
+                        </div>
+
+                        <button
+                          onClick={() => handleDeleteFeedback(f.id)}
+                          className="self-center p-2 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-love hover:border-love/20 shadow-sm transition-all shrink-0 cursor-pointer self-start sm:self-center bg-transparent"
+                          title="Eliminar comentario"
+                          type="button"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </>

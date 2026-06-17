@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '@/src/lib/supabase';
 import { motion, AnimatePresence } from 'motion/react';
 import { Prize } from '@/src/types';
-import { Gift, Sparkles, ChevronRight } from 'lucide-react';
+import { Gift, Sparkles, ChevronRight, Star, X } from 'lucide-react';
 import { useAuth } from '@/src/App';
 import { cn } from '@/src/lib/utils';
 
@@ -17,6 +17,13 @@ export function Rewards() {
   const [lastPrize, setLastPrize] = useState<Prize | null>(null);
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
   const [redemptionTime, setRedemptionTime] = useState<Date | null>(null);
+
+  // States for Program Feedback Rating
+  const [showRating, setShowRating] = useState(false);
+  const [ratingScore, setRatingScore] = useState<number>(5);
+  const [ratingComment, setRatingComment] = useState<string>('');
+  const [isSubmittingRating, setIsSubmittingRating] = useState(false);
+  const [ratingSubmitted, setRatingSubmitted] = useState(false);
 
   useEffect(() => {
     const fetchPrizes = async () => {
@@ -113,6 +120,56 @@ export function Rewards() {
     }
   };
 
+  const handleSubmitRating = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!profile) return;
+    setIsSubmittingRating(true);
+
+    const feedbackData = {
+      client_id: profile.id,
+      client_name: profile.full_name || 'Cliente de Club CRAFT',
+      rating: ratingScore,
+      comment: ratingComment,
+      prize_title: lastPrize?.title || 'General',
+      created_at: new Date().toISOString()
+    };
+
+    try {
+      // Intentar insertar en Supabase
+      const { error } = await supabase.from('program_feedback').insert(feedbackData);
+      if (error) {
+        console.warn("Table program_feedback might not exist, saving to local cache:", error);
+      }
+    } catch (err: any) {
+      console.warn("Error calling Supabase insert for rating. Fallback to localStorage:", err);
+    }
+
+    // Always append/save to localStorage so it persists locally
+    try {
+      const existingStr = localStorage.getItem('local_program_feedback');
+      let existingFeedbacks: any[] = [];
+      if (existingStr) {
+        existingFeedbacks = JSON.parse(existingStr);
+      }
+      existingFeedbacks.unshift({
+        id: 'user-' + Math.random().toString(36).substring(2, 9),
+        ...feedbackData
+      });
+      localStorage.setItem('local_program_feedback', JSON.stringify(existingFeedbacks));
+    } catch (err) {
+      console.error("Local storage save error for feedback:", err);
+    }
+
+    setIsSubmittingRating(false);
+    setRatingSubmitted(true);
+    setTimeout(() => {
+      setShowRating(false);
+      setRatingSubmitted(false);
+      setRatingComment('');
+      setRatingScore(5);
+    }, 2000);
+  };
+
   // Mock data if database is empty for demo purposes
   const displayPrizes = prizes.length > 0 ? prizes : [
     { id: '1', title: 'Cóctel de Bienvenida', description: 'Cualquier cóctel de nuestra carta de autor.', points_cost: 500, image_url: 'https://images.unsplash.com/photo-1536935338788-846bb9981813?auto=format&fit=crop&q=80&w=400', is_active: true },
@@ -188,11 +245,111 @@ export function Rewards() {
               </div>
 
               <button 
-                onClick={() => setShowSuccess(false)}
+                onClick={() => {
+                  setShowSuccess(false);
+                  setShowRating(true);
+                }}
                 className="w-full bg-ink text-white py-4 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-ink/20 active:scale-95 transition-all"
               >
                 Entendido
               </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Interactive Points Program Feedback Star-Rating Overlay */}
+      <AnimatePresence>
+        {showRating && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-ink/80 backdrop-blur-md z-[100] flex items-center justify-center p-6"
+          >
+            <motion.div 
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-8 rounded-[2.5rem] w-full max-w-sm shadow-2xl relative overflow-hidden text-center"
+            >
+              <button 
+                onClick={() => setShowRating(false)}
+                className="absolute top-6 right-6 text-slate-400 hover:text-love transition-colors"
+                type="button"
+              >
+                <X size={20} />
+              </button>
+
+              <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-love to-yellow-500" />
+              
+              <div className="w-16 h-16 bg-love/10 rounded-full flex items-center justify-center mx-auto mb-4 text-love">
+                <Star size={32} className="fill-love" />
+              </div>
+
+              {ratingSubmitted ? (
+                <div className="py-6 animate-pulse">
+                  <h3 className="text-2xl font-black text-ink dark:text-white uppercase italic">¡Muchas Gracias!</h3>
+                  <p className="text-slate-500 dark:text-slate-400 text-xs font-bold mt-2 uppercase tracking-widest">Tus opiniones nos ayudan a mejorar el sistema.</p>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmitRating} className="space-y-6">
+                  <div>
+                    <h3 className="text-xl font-black uppercase tracking-tight text-ink dark:text-white">Puntúa el Club CRAFT</h3>
+                    <p className="text-slate-400 dark:text-slate-500 text-[10px] font-semibold mt-1.5 leading-normal">
+                      ¿Qué te pareció el canje de <span className="font-extrabold text-love">"{lastPrize?.title}"</span> y tu experiencia con el sistema de puntos?
+                    </p>
+                  </div>
+
+                  {/* Star selections */}
+                  <div className="flex items-center justify-center gap-1 py-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        type="button"
+                        key={star}
+                        onClick={() => setRatingScore(star)}
+                        className="p-1 transition-transform active:scale-90"
+                      >
+                        <Star 
+                          size={32} 
+                          className={cn(
+                            "transition-all duration-200",
+                            star <= ratingScore 
+                              ? "fill-yellow-400 text-yellow-400 scale-110" 
+                              : "text-slate-200 dark:text-slate-700 hover:text-yellow-400/50"
+                          )} 
+                        />
+                      </button>
+                    ))}
+                  </div>
+                  
+                  <div className="text-[10px] font-black uppercase tracking-wider text-[#A06C00]">
+                    {ratingScore === 5 && '¡Excelente, me encanta! 🤩'}
+                    {ratingScore === 4 && '¡Muy bueno! 😀'}
+                    {ratingScore === 3 && 'Bueno / Conforme 🙂'}
+                    {ratingScore === 2 && 'Podría mejorar 😐'}
+                    {ratingScore === 1 && 'No me gustó en absoluto 😞'}
+                  </div>
+
+                  <div className="space-y-1 text-left">
+                    <label className="text-[8px] font-black uppercase tracking-widest text-slate-400 pl-1">Tu Comentario (Opcional)</label>
+                    <textarea
+                      placeholder="Déjanos un comentario o sugerencia para seguir mejorando..."
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl px-3 py-2 text-xs outline-none focus:border-love text-ink dark:text-white h-20 resize-none transition-all font-semibold"
+                      value={ratingComment}
+                      onChange={(e) => setRatingComment(e.target.value)}
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isSubmittingRating}
+                    className="w-full bg-love text-white py-3.5 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-love/30 active:scale-95 transition-all flex items-center justify-center gap-2"
+                  >
+                    {isSubmittingRating ? 'Enviando...' : 'Enviar Calificación'}
+                  </button>
+                </form>
+              )}
             </motion.div>
           </motion.div>
         )}
