@@ -4,11 +4,13 @@ import QRCode from 'react-qr-code';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   CreditCard, Award, TrendingUp, History, Users, 
-  Gift, Calendar, ChevronRight, BarChart3, PieChart
+  Gift, Calendar, ChevronRight, BarChart3, PieChart,
+  Flag, Sparkles, Car, Trophy, ArrowLeft, ArrowRight, Star
 } from 'lucide-react';
 import { supabase } from '@/src/lib/supabase';
 import { Transaction, SystemSettings, Profile } from '@/src/types';
 import { cn } from '@/src/lib/utils';
+import { useDesign } from '@/src/components/DesignEngine';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, 
   Tooltip, ResponsiveContainer, Cell, PieChart as RePieChart, Pie 
@@ -16,12 +18,81 @@ import {
 
 export function Dashboard() {
   const { profile } = useAuth();
+  const { designConfig } = useDesign();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [settings, setSettings] = useState<SystemSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [activeHistoryTab, setActiveHistoryTab] = useState<'all' | 'canjes'>('all');
   const [editForm, setEditForm] = useState({ fullName: '', dni: '' });
+
+  // Sliding banners like "Pedidos Ya (Argentina)"
+  const defaultBanners = [
+    {
+      id: 'default-1',
+      title: '¡Hora de Especialidad!',
+      subtitle: 'Canjea tu café de especialidad con 100 puntos hoy mismo.',
+      imageUrl: 'https://images.unsplash.com/photo-1541167760496-1628856ab772?q=80&w=1200&auto=format&fit=crop',
+      linkUrl: '#/rewards',
+      bgColor: '#1e293b',
+      textColor: '#f8fafc',
+      buttonText: 'Canjear Premio'
+    },
+    {
+      id: 'default-2',
+      title: 'Doble de Puntos los Jueves',
+      subtitle: 'Todos los consumos de este jueves suman el doble en tu perfil.',
+      imageUrl: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=1200&auto=format&fit=crop',
+      linkUrl: '#/',
+      bgColor: '#7f1d1d',
+      textColor: '#fee2e2',
+      buttonText: 'Ver Promociones'
+    },
+    {
+      id: 'default-3',
+      title: 'Hamburguesas Craft Pro',
+      subtitle: 'Nivel Black accede a 20% de descuento directo toda la semana.',
+      imageUrl: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=1200&auto=format&fit=crop',
+      linkUrl: '#/rewards',
+      bgColor: '#0f172a',
+      textColor: '#e2e8f0',
+      buttonText: 'Ver Carta'
+    }
+  ];
+
+  const bannerList = (designConfig?.banners && designConfig.banners.length > 0)
+    ? designConfig.banners
+    : defaultBanners;
+
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  useEffect(() => {
+    if (bannerList.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % bannerList.length);
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [bannerList]);
+
+  const handleNextSlide = () => {
+    setCurrentSlide((prev) => (prev + 1) % bannerList.length);
+  };
+
+  const handlePrevSlide = () => {
+    setCurrentSlide((prev) => (prev - 1 + bannerList.length) % bannerList.length);
+  };
+
+  const getCarPercentage = (pts: number) => {
+    if (pts <= 0) return 10;
+    if (pts >= 2000) return 90;
+    if (pts <= 500) {
+      return 10 + (pts / 500) * 25;
+    } else if (pts <= 1000) {
+      return 35 + ((pts - 500) / 500) * 30;
+    } else {
+      return 65 + ((pts - 1000) / 1000) * 25;
+    }
+  };
 
   // Admin Stats
   const [adminStats, setAdminStats] = useState<{
@@ -340,6 +411,97 @@ export function Dashboard() {
       animate={{ opacity: 1 }}
       className="grid grid-cols-1 md:grid-cols-12 gap-4 pb-12"
     >
+      {/* Sliding Promotion Banners (Pedidos Ya Argentina Vibe) */}
+      <div className="col-span-12 order-first mb-2">
+        <div className="relative w-full overflow-hidden rounded-[2rem] h-[200px] md:h-[260px] shadow-xl border border-slate-200/50 bg-slate-900 group">
+          {/* Active Banner Slide */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentSlide}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.4, ease: 'easeInOut' }}
+              className="absolute inset-0 w-full h-full"
+            >
+              <img 
+                src={bannerList[currentSlide].imageUrl} 
+                alt={bannerList[currentSlide].title}
+                referrerPolicy="no-referrer"
+                className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-[4000ms] ease-out opacity-75"
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-900/85 to-transparent" />
+              
+              <div className="absolute inset-0 flex flex-col justify-between p-6 md:p-8 z-10 max-w-2xl">
+                <div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="bg-love text-white text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shadow-lg shadow-love/30 flex items-center gap-1">
+                      <Sparkles size={8} className="animate-spin" /> PROMO CRAFT
+                    </span>
+                    {profile.points >= 2000 ? (
+                      <span className="bg-purple-600 text-purple-100 text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full">
+                        CLUB BLACK ACTIVO
+                      </span>
+                    ) : profile.points >= 1000 ? (
+                      <span className="bg-amber-500 text-amber-950 text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full">
+                        CLUB PREMIUM ACTIVO
+                      </span>
+                    ) : null}
+                  </div>
+                  <h3 className="text-xl md:text-3.5xl font-black text-white leading-tight uppercase tracking-tighter" style={{ fontFamily: `"${designConfig?.fontHeadings || 'Inter'}", sans-serif` }}>
+                    {bannerList[currentSlide].title}
+                  </h3>
+                  <p className="text-xs md:text-sm text-slate-300 mt-2 font-medium leading-relaxed max-w-md line-clamp-2">
+                    {bannerList[currentSlide].subtitle}
+                  </p>
+                </div>
+                
+                <div className="flex items-center gap-4">
+                  {bannerList[currentSlide].buttonText && (
+                    <a 
+                      href={bannerList[currentSlide].linkUrl || '#'}
+                      className="bg-love hover:bg-love/90 text-white font-black text-[9px] md:text-[10px] uppercase tracking-widest px-6 py-3 rounded-xl transition-all shadow-lg shadow-love/30 active:scale-95 font-sans"
+                    >
+                      {bannerList[currentSlide].buttonText}
+                    </a>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </AnimatePresence>
+
+          {/* Side arrow controls */}
+          <button 
+            onClick={handlePrevSlide}
+            className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/30 hover:bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20 backdrop-blur-sm"
+          >
+            <ArrowLeft size={16} />
+          </button>
+          <button 
+            onClick={handleNextSlide}
+            className="absolute right-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-black/30 hover:bg-black/50 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20 backdrop-blur-sm"
+          >
+            <ArrowRight size={16} />
+          </button>
+
+          {/* Dots Indicator */}
+          {bannerList.length > 1 && (
+            <div className="absolute bottom-4 right-6 z-20 flex gap-1.5 bg-black/20 px-3 py-1.5 rounded-full backdrop-blur-sm">
+              {bannerList.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentSlide(idx)}
+                  className={cn(
+                    "w-1.5 h-1.5 rounded-full transition-all",
+                    idx === currentSlide ? "bg-love w-4" : "bg-white/40 hover:bg-white/70"
+                  )}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Points Balance Card - Large Bento */}
       <div className="md:col-span-9 bg-love rounded-3xl p-8 flex flex-col justify-between border-4 border-slate-900/5 relative overflow-hidden group shadow-red order-1 text-white">
         <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-white/10 rounded-full blur-3xl group-hover:scale-110 transition-transform duration-700" />
@@ -354,7 +516,7 @@ export function Dashboard() {
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-2">
               <Award size={14} />
-              Cliente Preferred
+              {profile.points >= 2000 ? 'Cliente BLACK (Multiplicador x2.0)' : profile.points >= 1000 ? 'Cliente PREMIUM (Multiplicador x1.5)' : 'Cliente Preferred'}
             </span>
             <span className="text-white/40">DNI: {profile.dni || 'No asignado'}</span>
           </div>
@@ -367,6 +529,7 @@ export function Dashboard() {
         </div>
 
         {/* Modal Editar Perfil */}
+        {/* Code resumes unaltered from here */}
         <AnimatePresence>
           {isEditing && (
             <motion.div 
@@ -438,8 +601,150 @@ export function Dashboard() {
         <p className="text-ink font-bold mt-1 text-sm">{profile.full_name}</p>
       </div>
 
+      {/* Dynamic Points Road Timeline with Animated Car (As requested) */}
+      <div className="col-span-12 order-3 bg-white dark:bg-slate-900 rounded-[2rem] p-6 md:p-8 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none flex flex-col gap-6 relative overflow-hidden">
+        <div>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <span className="text-[10px] uppercase font-black tracking-widest text-love mb-1 flex items-center gap-1.5">
+                <Trophy size={11} className="text-yellow-500 animate-bounce" /> Camino de Fidelidad Craft
+              </span>
+              <h3 className="text-lg md:text-xl font-black uppercase tracking-tight text-ink dark:text-white" style={{ fontFamily: `"${designConfig?.fontHeadings || 'Inter'}", sans-serif` }}>
+                Ruta de Puntos & Beneficios
+              </h3>
+            </div>
+            <div className="bg-slate-100 dark:bg-slate-800 px-4 py-2 rounded-2xl border border-slate-200/60 dark:border-slate-700 font-bold text-xs flex items-center gap-2 text-ink dark:text-slate-300">
+              <span>Tu Saldo:</span>
+              <span className="text-love font-black italic">{profile.points.toLocaleString()} PTS</span>
+            </div>
+          </div>
+          
+          <p className="text-slate-500 dark:text-slate-400 text-xs mt-2 max-w-2xl font-medium">
+            ¡Suma puntos con tus consumos y haz avanzar tu autito CRAFT! Al llegar a <span className="font-bold text-love">1.000 pts</span> te conviertes en miembro <span className="font-bold text-love">PREMIUM (obteniendo x1.5 en tus consumos)</span> y a los <span className="font-bold text-love">2.000 pts</span> desbloqueas miembro <span className="font-bold text-love">BLACK (duplicas puntos x2.0 + máximos beneficios)</span>.
+          </p>
+        </div>
+
+        {/* The Asphalt Road Strip with autito */}
+        <div className="relative py-12 md:py-16 px-4 md:px-8 bg-slate-50 dark:bg-slate-950 rounded-3xl border border-slate-100 dark:border-sky-950/20 mt-2 overflow-hidden">
+          
+          {/* ROAD TRACK: Looks like a real asphalt road */}
+          <div className="relative h-14 bg-slate-700 dark:bg-slate-800 rounded-2xl border-t-4 border-b-4 border-dashed border-slate-500 dark:border-slate-600 flex items-center shadow-inner">
+            {/* Dashed center lane line (argentine/classic road styling) */}
+            <div className="absolute left-0 right-0 h-0.5 border-t border-dashed border-yellow-400 opacity-60 z-10" />
+            
+            {/* Active completed path track (glows red/yellow) */}
+            <div 
+              className="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-yellow-500/25 via-love/20 to-love/35 rounded-l-xl transition-all duration-1000 ease-out" 
+              style={{ width: `${getCarPercentage(profile.points)}%` }} 
+            />
+
+            {/* ROAD MILESTONES: visually placed on the road */}
+            <div className="absolute inset-0 px-4 md:px-8 flex items-center justify-between pointer-events-none z-10">
+              {[
+                { pts: 0, label: 'Inicio', target: '0 pts', pos: 10, icon: <Flag size={12} className="text-white" /> },
+                { pts: 500, label: 'Coffee Lover', target: '500 pts', pos: 35, icon: <Gift size={12} className="text-white" /> },
+                { pts: 1000, label: 'PREMIUM (x1.5)', target: '1K pts', pos: 65, icon: <Sparkles size={12} className="text-yellow-400" /> },
+                { pts: 2000, label: 'BLACK (x2.0)', target: '2K pts', pos: 90, icon: <Star size={12} className="text-purple-300 fill-purple-300" /> }
+              ].map((m, idx) => {
+                const reached = profile.points >= m.pts;
+                return (
+                  <div 
+                    key={idx}
+                    className="absolute -translate-x-1/2 flex flex-col items-center gap-1"
+                    style={{ left: `${m.pos}%` }}
+                  >
+                    {/* Road Pin Marker */}
+                    <div className={cn(
+                      "w-7 h-7 rounded-full flex items-center justify-center border-2 shadow-md transition-all duration-700",
+                      reached 
+                        ? "bg-love border-white scale-110 text-white ring-4 ring-love/20" 
+                        : "bg-slate-800 border-slate-600 text-slate-400"
+                    )}>
+                      {m.icon}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* ANIMATED AUTO CAR: Moves smoothly based on points */}
+            <div 
+              className="absolute transition-all duration-[1200ms] cubic-bezier(0.16, 1, 0.3, 1) -translate-x-1/2 z-30"
+              style={{ left: `${getCarPercentage(profile.points)}%` }}
+            >
+              <div className="flex flex-col items-center">
+                {/* Visual Speech Bubble above the car */}
+                <div className="bg-slate-900 border border-love text-white text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-lg shadow-lg mb-2 relative animate-bounce whitespace-nowrap">
+                  <span>🚗 CRAFT RIDER</span>
+                  <div className="absolute bottom-[-4px] left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 border-r border-b border-love rotate-45" />
+                </div>
+                
+                {/* Beetle Car layout with custom colors & exhaust puffs */}
+                <div className="w-14 h-14 bg-love hover:bg-love/90 text-white rounded-full flex items-center justify-center border-4 border-slate-900 shadow-xl shadow-love/40 relative group cursor-help">
+                  <Car size={24} className="text-white transform scale-x-[-1] animate-pulse" />
+                  
+                  {/* Wheel designs or exhausts */}
+                  <span className="absolute -bottom-1 -right-1 flex h-4 w-4">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-4 w-4 bg-green-500 border border-white"></span>
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+          </div>
+
+          {/* LABELS BELOW ROAD */}
+          <div className="relative mt-4 h-16">
+            {[
+              { pts: 0, label: 'Inicio', target: '0 pts', pos: 10, benefit: 'Pref. Club' },
+              { pts: 500, label: 'Coffee', target: '500 pts', pos: 35, benefit: 'Premio Especial' },
+              { pts: 1000, label: 'Premium', target: '1.000 pts', pos: 65, benefit: 'Multiplicador x1.5' },
+              { pts: 2000, label: 'Black Tier', target: '2.000 pts', pos: 90, benefit: 'Multiplicador x2.0' }
+            ].map((m, idx) => {
+              const reached = profile.points >= m.pts;
+              return (
+                <div 
+                  key={idx}
+                  className="absolute -translate-x-1/2 text-center"
+                  style={{ left: `${m.pos}%` }}
+                >
+                  <p className={cn(
+                    "text-[10px] md:text-xs font-black uppercase truncate max-w-[80px] md:max-w-[120px]",
+                    reached ? "text-love" : "text-slate-400"
+                  )}>
+                    {m.label}
+                  </p>
+                  <p className="text-[8px] md:text-[9px] text-[#A06C00] font-black uppercase mt-0.5 tracking-tight">
+                    {m.target}
+                  </p>
+                  <p className="text-[7px] md:text-[8px] font-bold text-slate-400 uppercase tracking-tighter mt-1 max-w-[70px] md:max-w-[100px] leading-tight font-sans">
+                    {m.benefit}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+
+        </div>
+
+        {/* CONTEXTUAL HOVER TIP OR SUCCESS MESSAGE */}
+        <div className="bg-love/5 dark:bg-love/5 border border-love/15 p-4 rounded-2xl flex items-center gap-3">
+          <Sparkles className="text-love animate-pulse shrink-0" size={18} />
+          <p className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 leading-normal">
+            {profile.points >= 2000 ? (
+              <span><strong>¡Felicidades, eres CLUB BLACK!</strong> Accedes a todos los beneficios premium, tienes prioridad en eventos y tus consumos de mozos duplican puntos (x2.0 puntos).</span>
+            ) : profile.points >= 1000 ? (
+              <span><strong>¡Estás en CLUB PREMIUM!</strong> Tus sumas rinden más con un multiplicador de x1.5 puntos. Te faltan <strong>{(2000 - profile.points).toLocaleString()} puntos</strong> para llegar al nivel <strong>CLUB BLACK (Doble Puntos)</strong>. Let\'s go!</span>
+            ) : (
+              <span>Te faltan <strong>{(1000 - profile.points).toLocaleString()} puntos</strong> para alcanzar el estatus de <strong>CLUB PREMIUM (Desbloquear multiplicador x1.5 en todos tus consumos)</strong>. ¡Ven a visitarnos y suma más puntos hoy!</span>
+            )}
+          </p>
+        </div>
+      </div>
+
       {/* Recent Activity Card - Side Bento */}
-      <div className="md:col-span-4 bg-white rounded-3xl p-6 border border-slate-100 shadow-xl shadow-slate-200/50 order-3">
+      <div className="md:col-span-4 bg-white rounded-3xl p-6 border border-slate-100 shadow-xl shadow-slate-200/50 order-4">
         <div className="flex items-center justify-between mb-6">
           <div className="flex gap-4">
             <button 
@@ -479,11 +784,11 @@ export function Dashboard() {
             return filteredTx.map((tx) => (
               <div 
                 key={tx.id}
-                className="bg-slate-50 p-4 rounded-2xl flex justify-between items-center border border-slate-100 group hover:border-love/20 transition-all"
+                className="bg-slate-50 p-4 rounded-2xl flex justify-between items-center border border-slate-100 group hover:border-love/20 transition-all font-sans"
               >
                 <div className="min-w-0">
                   <p className="text-[11px] font-black uppercase text-ink truncate tracking-tight">{tx.description}</p>
-                  <p className="text-[9px] text-slate-400 uppercase font-black tracking-widest mt-1">
+                  <p className="text-[9px] text-slate-400 uppercase font-black tracking-widest mt-1 font-mono">
                     {new Date(tx.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })} • {tx.branch}
                   </p>
                   {tx.redemption_code && (
@@ -527,7 +832,7 @@ export function Dashboard() {
       </div>
 
       {/* Info Card - Square Bento */}
-      <div className="md:col-span-8 bg-white rounded-3xl p-6 border border-slate-100 relative overflow-hidden group shadow-xl shadow-slate-200/50 order-4">
+      <div className="md:col-span-8 bg-white rounded-3xl p-6 border border-slate-100 relative overflow-hidden group shadow-xl shadow-slate-200/50 order-5">
         <div className="flex flex-col h-full justify-between">
           <div>
             <div className="flex items-center gap-2 mb-4">
@@ -536,7 +841,7 @@ export function Dashboard() {
             </div>
             <p className="text-ink text-sm font-bold mb-1">Tu perfil está verificado y activo.</p>
             <p className="text-slate-500 text-[11px] leading-relaxed font-medium">
-              Sumas 1 punto por cada ${ (settings?.points_conversion_rate || 1000).toLocaleString('es-AR') } consumidos. Los puntos de cumpleaños (500 pts) se cargan automáticamente al iniciar sesión en tu fecha especial.
+              Sumas 1 punto por cada $ { (settings?.points_conversion_rate || 1000).toLocaleString('es-AR') } consumidos. Si eres <span className="font-bold text-love">CLUB PREMIUM (1.000+ pts)</span> multiplicas tus puntos ganados por <span className="font-bold text-love">1.5x</span>, y si eres <span className="font-bold text-love">CLUB BLACK (2.000+ pts)</span> los <span className="font-bold text-love">duplicas (2x)</span> automáticamente.
             </p>
           </div>
           <div className="mt-6 flex gap-3 text-[10px] uppercase font-bold tracking-widest">

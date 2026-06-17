@@ -200,13 +200,24 @@ export function Waiter() {
 
     const conversionRate = settings?.points_conversion_rate || 1000;
     const amountNum = parseFloat(amount);
-    const pointsToAdd = Math.floor(amountNum / conversionRate);
-
-    if (pointsToAdd <= 0) {
+    
+    if (amountNum < conversionRate) {
       setStatus({ type: 'error', message: `El monto debe ser al menos $${conversionRate.toLocaleString('es-AR')}` });
       setLoading(false);
       return;
     }
+
+    let multiplier = 1;
+    let label = '';
+    if (client.points >= 2000) {
+      multiplier = 2;
+      label = 'BLACK (x2.0)';
+    } else if (client.points >= 1000) {
+      multiplier = 1.5;
+      label = 'PREMIUM (x1.5)';
+    }
+
+    const pointsToAdd = Math.floor((amountNum / conversionRate) * multiplier);
 
     try {
       console.log("Starting transaction for client:", client.id, "by waiter:", waiterProfile.id);
@@ -218,7 +229,7 @@ export function Waiter() {
         points_earned: pointsToAdd,
         branch: selectedBranch,
         invoice_number: invoiceNumber || null,
-        description: `Consumo ${selectedBranch} - $${amountNum.toLocaleString('es-AR')}${invoiceNumber ? ` (Fact: ${invoiceNumber})` : ''}`
+        description: `Consumo ${selectedBranch} - $${amountNum.toLocaleString('es-AR')}${invoiceNumber ? ` (Fact: ${invoiceNumber})` : ''}${label ? ` - Cat: ${label}` : ''}`
       }).select().single();
 
       if (txError) {
@@ -479,9 +490,30 @@ export function Waiter() {
                   <div className="bg-love/5 rounded-[1.5rem] md:rounded-[2rem] p-4 md:p-6 text-love border-2 border-love/5 flex justify-between items-center group">
                     <div>
                       <p className="text-[9px] md:text-[10px] font-black uppercase tracking-widest opacity-60 mb-1">Puntos a Asignar</p>
-                      <p className="text-4xl md:text-5xl font-black italic">
-                        +{amount ? Math.floor(parseFloat(amount) / (settings?.points_conversion_rate || 1000)) : 0}
-                      </p>
+                      {(() => {
+                        let mult = 1;
+                        let catLabel = "";
+                        if (client.points >= 2000) {
+                          mult = 2;
+                          catLabel = "BLACK (x2)";
+                        } else if (client.points >= 1000) {
+                          mult = 1.5;
+                          catLabel = "PREMIUM (x1.5)";
+                        }
+                        const calculated = amount ? Math.floor((parseFloat(amount) / (settings?.points_conversion_rate || 1000)) * mult) : 0;
+                        return (
+                          <>
+                            <p className="text-4 shadow-sm font-black italic text-4xl md:text-5xl">
+                              +{calculated}
+                            </p>
+                            {mult > 1 && (
+                              <p className="text-[8px] md:text-[9px] font-extrabold uppercase bg-love text-white px-2 py-0.5 rounded-full inline-block mt-1 tracking-wider">
+                                Multiplicador {catLabel}
+                              </p>
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
                     <Receipt size={48} className="opacity-10 group-hover:scale-110 transition-transform md:size-16" />
                   </div>
