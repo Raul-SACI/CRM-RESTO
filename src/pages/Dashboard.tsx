@@ -620,11 +620,11 @@ export function Dashboard() {
           </div>
           
           <p className="text-slate-500 dark:text-slate-400 text-xs mt-2 max-w-2xl font-medium">
-            ¡Suma puntos con tus consumos y haz avanzar tu autito CRAFT! Al llegar a <span className="font-bold text-love">1.000 pts</span> te conviertes en miembro <span className="font-bold text-love">PREMIUM (obteniendo x1.5 en tus consumos)</span> y a los <span className="font-bold text-love">2.000 pts</span> desbloqueas miembro <span className="font-bold text-love">BLACK (duplicas puntos x2.0 + máximos beneficios)</span>.
+            ¡Suma puntos con tus consumos y haz avanzar tu vasito de café CRAFT! Al llegar a <span className="font-bold text-love">1.000 pts</span> te conviertes en miembro <span className="font-bold text-love">PREMIUM (obteniendo x1.5 en tus consumos)</span> y a los <span className="font-bold text-love">2.000 pts</span> desbloqueas miembro <span className="font-bold text-love">BLACK (duplicas puntos x2.0 + máximos beneficios)</span>.
           </p>
         </div>
 
-        {/* The Asphalt Road Strip with autito */}
+        {/* The Asphalt Road Strip with the coffee cup */}
         <div className="relative py-12 md:py-16 px-4 md:px-8 bg-slate-50 dark:bg-slate-950 rounded-3xl border border-slate-100 dark:border-sky-950/20 mt-2 overflow-hidden">
           
           {/* ROAD TRACK: Looks like a real asphalt road */}
@@ -667,26 +667,50 @@ export function Dashboard() {
               })}
             </div>
 
-            {/* ANIMATED AUTO CAR: Moves smoothly based on points */}
+            {/* ANIMATED COFFEE CUP: Moves smoothly based on points */}
             <div 
               className="absolute transition-all duration-[1200ms] cubic-bezier(0.16, 1, 0.3, 1) -translate-x-1/2 z-30"
               style={{ left: `${getCarPercentage(profile.points)}%` }}
             >
               <div className="flex flex-col items-center">
-                {/* Visual Speech Bubble above the car */}
-                <div className="bg-slate-900 border border-love text-white text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-lg shadow-lg mb-2 relative animate-bounce whitespace-nowrap">
-                  <span>🚗 CRAFT RIDER</span>
+                {/* Visual Speech Bubble above the coffee cup */}
+                <div className="bg-slate-900 border border-love text-white text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-lg shadow-lg mb-2.5 relative animate-bounce whitespace-nowrap">
+                  <span>☕ CRAFT LOVER</span>
                   <div className="absolute bottom-[-4px] left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 border-r border-b border-love rotate-45" />
                 </div>
                 
-                {/* Beetle Car layout with custom colors & exhaust puffs */}
-                <div className="w-14 h-14 bg-love hover:bg-love/90 text-white rounded-full flex items-center justify-center border-4 border-slate-900 shadow-xl shadow-love/40 relative group cursor-help">
-                  <Car size={24} className="text-white transform scale-x-[-1] animate-pulse" />
-                  
-                  {/* Wheel designs or exhausts */}
-                  <span className="absolute -bottom-1 -right-1 flex h-4 w-4">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-4 w-4 bg-green-500 border border-white"></span>
+                {/* Stylized premium takeaway coffee cup */}
+                <div className="relative group cursor-help flex flex-col items-center">
+                  {/* Steam Effect */}
+                  <div className="flex gap-1 mb-1 absolute -top-4 opacity-75">
+                    <span className="w-0.5 h-2 bg-love rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-0.5 h-3 bg-red-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-0.5 h-2 bg-love rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+
+                  {/* Coffee Cup body */}
+                  <div className="relative flex flex-col items-center filter drop-shadow-[0_4px_6px_rgba(230,57,70,0.4)]">
+                    {/* Lid top */}
+                    <div className="w-8 h-1.5 bg-slate-900 rounded-t-sm z-10" />
+                    {/* Lid rim */}
+                    <div className="w-9 h-1 bg-slate-800 rounded-sm z-10 -mt-0.5" />
+                    {/* Cup container */}
+                    <div className="w-7 h-11 bg-white rounded-b-md border border-slate-200 relative overflow-hidden flex items-center justify-center -mt-0.5" style={{ clipPath: 'polygon(3% 0%, 97% 0%, 82% 100%, 18% 100%)' }}>
+                      {/* Vertical CRAFT text */}
+                      <div className="text-[7.5px] font-black tracking-wider text-love select-none flex flex-col items-center justify-center leading-[1.05] mt-0.5 font-sans">
+                        <span className="scale-y-110 font-black">C</span>
+                        <span className="scale-y-110 font-black">R</span>
+                        <span className="scale-y-110 font-black">A</span>
+                        <span className="scale-y-110 font-black">F</span>
+                        <span className="scale-y-110 font-black">T</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Pulse Indicator at bottom */}
+                  <span className="absolute -bottom-1 flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-love opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-love"></span>
                   </span>
                 </div>
               </div>
