@@ -52,7 +52,11 @@ export function Rewards() {
         
         if (!error && data) {
           setPrizes(data);
-          localStorage.setItem('rewards_cache', JSON.stringify(data));
+          try {
+            localStorage.setItem('rewards_cache', JSON.stringify(data));
+          } catch (e) {
+            console.warn("[LocalStorage] No se pudo guardar rewards_cache por límite de cuota:", e);
+          }
         }
       } catch (err) {
         console.error("Rewards fetch error:", err);

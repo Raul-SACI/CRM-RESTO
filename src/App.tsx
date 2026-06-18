@@ -244,7 +244,11 @@ export default function App() {
       setProfile(finalProfile);
       
       // Guardar en caché para la próxima vez
-      localStorage.setItem(`profile_${userId}`, JSON.stringify(finalProfile));
+      try {
+        localStorage.setItem(`profile_${userId}`, JSON.stringify(finalProfile));
+      } catch (e) {
+        console.warn("[LocalStorage] No se pudo guardar profile por límite de cuota:", e);
+      }
       
       if (!data) {
         // Si no existe, intentar crear en segundo plano

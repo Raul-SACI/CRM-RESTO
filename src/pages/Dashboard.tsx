@@ -164,7 +164,11 @@ export function Dashboard() {
         
         if (isMounted && !error && data) {
           setTransactions(data);
-          localStorage.setItem(`tx_cache_${profile.id}`, JSON.stringify(data));
+          try {
+            localStorage.setItem(`tx_cache_${profile.id}`, JSON.stringify(data));
+          } catch (e) {
+            console.warn("[LocalStorage] No se pudo guardar tx_cache por límite de cuota:", e);
+          }
         }
       };
 
@@ -239,7 +243,11 @@ export function Dashboard() {
 
           if (isMounted) {
             setAdminStats(freshStats);
-            localStorage.setItem('admin_stats_cache', JSON.stringify(freshStats));
+            try {
+              localStorage.setItem('admin_stats_cache', JSON.stringify(freshStats));
+            } catch (e) {
+              console.warn("[LocalStorage] No se pudo guardar admin_stats_cache por límite de cuota:", e);
+            }
           }
         } catch (err) {
           console.error("Admin stats error:", err);

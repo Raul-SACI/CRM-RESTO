@@ -390,6 +390,14 @@ export function Admin() {
     }
   };
 
+  const safeSetItem = (key: string, value: string) => {
+    try {
+      localStorage.setItem(key, value);
+    } catch (e: any) {
+      console.warn(`[LocalStorage] No se pudo guardar en caché el elemento "${key}" porque se superó la cuota de espacio disponible:`, e);
+    }
+  };
+
   const fetchData = async (forceRefresh = false) => {
     // 1. Cargar desde caché primero para respuesta instantánea
     const cacheKey = `admin_cache_${activeTab}`;
@@ -437,7 +445,7 @@ export function Admin() {
             return role === 'client' || role === '' || (!role && role !== 'admin' && role !== 'waiter');
           });
           setClients(filtered);
-          localStorage.setItem(cacheKey, JSON.stringify(filtered));
+          safeSetItem(cacheKey, JSON.stringify(filtered));
         }
       } else if (activeTab === 'prizes') {
         const { data, error } = await supabase
@@ -448,7 +456,7 @@ export function Admin() {
         if (error) throw error;
         
         setPrizes(data || []);
-        localStorage.setItem(cacheKey, JSON.stringify(data || []));
+        safeSetItem(cacheKey, JSON.stringify(data || []));
       } else if (activeTab === 'staff') {
         const { data, error } = await supabase
           .from('profiles')
@@ -462,7 +470,7 @@ export function Admin() {
           return role === 'waiter' || role === 'admin';
         });
         setStaff(filtered);
-        localStorage.setItem(cacheKey, JSON.stringify(filtered));
+        safeSetItem(cacheKey, JSON.stringify(filtered));
       } else if (activeTab === 'dashboard' || activeTab === 'history') {
         // Dashboard also needs clients for the registration chart
         if (activeTab === 'dashboard' || activeTab === 'history') {
@@ -496,10 +504,10 @@ export function Admin() {
           const { data: flatData, error: flatError } = await flatQuery.limit(500);
           if (flatError) throw flatError;
           setAllTransactions(flatData || []);
-          localStorage.setItem(cacheKey, JSON.stringify(flatData || []));
+          safeSetItem(cacheKey, JSON.stringify(flatData || []));
         } else {
           setAllTransactions(data || []);
-          localStorage.setItem(cacheKey, JSON.stringify(data || []));
+          safeSetItem(cacheKey, JSON.stringify(data || []));
         }
       } else if (activeTab === 'feedback') {
         let remoteFeedbacks: any[] = [];
@@ -562,12 +570,12 @@ export function Admin() {
             }
           ];
           setFeedbacks(seeded);
-          localStorage.setItem('local_program_feedback', JSON.stringify(seeded));
-          localStorage.setItem(cacheKey, JSON.stringify(seeded));
+          safeSetItem('local_program_feedback', JSON.stringify(seeded));
+          safeSetItem(cacheKey, JSON.stringify(seeded));
         } else {
           combined.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
           setFeedbacks(combined);
-          localStorage.setItem(cacheKey, JSON.stringify(combined));
+          safeSetItem(cacheKey, JSON.stringify(combined));
         }
       }
     } catch (e: any) {
@@ -591,7 +599,7 @@ export function Admin() {
       if (existingStr) {
         const parsed = JSON.parse(existingStr);
         const filtered = parsed.filter((f: any) => f.id !== id);
-        localStorage.setItem('local_program_feedback', JSON.stringify(filtered));
+        safeSetItem('local_program_feedback', JSON.stringify(filtered));
       }
     } catch (e) {
       console.error(e);
@@ -1553,7 +1561,7 @@ export function Admin() {
         )}
 
           {activeTab === 'settings' && (
-            <div className="max-w-4xl mx-auto space-y-6">
+            <div className="w-full space-y-6">
               {/* Subtab selection */}
               <div className="flex border-b border-slate-100 dark:border-slate-800 pb-0.5 overflow-x-auto no-scrollbar gap-1 mb-6">
                 <button 
@@ -1592,7 +1600,7 @@ export function Admin() {
               </div>
 
               {settingsSubTab === 'points' && (
-                <div className="max-w-2xl mx-auto">
+                <div className="w-full">
                   {!settings ? (
                     <div className="py-12 text-center text-slate-400 font-bold uppercase text-[10px] tracking-widest">
                       Cargando configuración...

@@ -99,10 +99,12 @@ export function Layout({ children }: LayoutProps) {
           </button>
         </div>
       )}
-      <header className={cn(
-        "mx-2 md:mx-6 mt-2 md:mt-6 bg-white p-3 md:p-4 rounded-xl md:rounded-2xl border border-slate-200 shadow-xl shadow-slate-200/50 flex justify-between items-center sticky z-50",
-        isSimulatingClient ? "top-14" : "top-2 md:top-6"
-      )}>
+      
+      <div className="w-full max-w-[1800px] mx-auto flex-1 flex flex-col px-4 md:px-8">
+        <header className={cn(
+          "mt-2 md:mt-6 bg-white dark:bg-slate-900 p-3 md:p-4 rounded-xl md:rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none flex justify-between items-center sticky z-50",
+          isSimulatingClient ? "top-14" : "top-2 md:top-6"
+        )}>
         <div className="flex items-center gap-2 md:gap-3">
           {designConfig.logoUrl ? (
             <img 
@@ -251,13 +253,13 @@ export function Layout({ children }: LayoutProps) {
             <LogOut size={20} />
           </button>
         </nav>
-      </header>
-      
-      <main className="flex-1 w-full max-w-4xl mx-auto p-4 md:p-6 mt-2 md:mt-4">
-        {children}
-      </main>
+        </header>
+        
+        <main className="flex-1 w-full py-4 md:py-6 mt-2 md:mt-4">
+          {children}
+        </main>
 
-      <footer className="mt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-[10px] sm:text-[11px] font-mono text-slate-400 px-8 py-6 border-t border-slate-200">
+        <footer className="mt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-[10px] sm:text-[11px] font-mono text-slate-400 py-6 border-t border-slate-200 dark:border-slate-800">
         <div className="flex flex-wrap gap-4 md:gap-6 justify-center md:justify-start uppercase tracking-tight font-black">
           <button 
             onClick={() => {
@@ -278,9 +280,10 @@ export function Layout({ children }: LayoutProps) {
         </div>
         <div className="flex gap-4 items-center font-bold">
           <span className="flex items-center gap-1 uppercase tracking-tight"><div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]"></div> DB Connected</span>
-          <span className="bg-slate-100 text-slate-500 px-2 py-0.5 rounded border border-slate-200">v1.0.4-prod</span>
+          <span className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-800">v1.0.4-prod</span>
         </div>
       </footer>
+      </div>
 
       {/* Interactive FAQ Sliding Drawer / Overlay Modal */}
       <AnimatePresence>
