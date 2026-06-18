@@ -22,7 +22,6 @@ interface Branch {
 
 export function Branches() {
   const { designConfig } = useDesign();
-  const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
 
   const branches = designConfig?.branches || [];
 
@@ -57,7 +56,6 @@ export function Branches() {
       {/* Branches Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
         {branches.map((branch) => {
-          const isMapOpen = selectedBranchId === branch.id;
           return (
             <div 
               key={branch.id}
@@ -134,10 +132,12 @@ export function Branches() {
                     <div className="flex items-center gap-2.5 pt-1">
                       <Phone size={14} className="text-love shrink-0" />
                       <div>
-                        <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">Llamar / Reservar</p>
+                        <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">Llamar / Reservar / WhatsApp</p>
                         <a 
-                          href={`tel:${branch.phone.replace(/\s+/g, '')}`} 
-                          className="font-bold text-ink dark:text-white hover:text-love transition-colors"
+                          href={`https://wa.me/${branch.phone.replace(/\D/g, '')}`} 
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-bold text-ink dark:text-white hover:text-love transition-colors flex items-center gap-1"
                         >
                           {branch.phone}
                         </a>
@@ -148,75 +148,27 @@ export function Branches() {
 
                 {/* Simulated Visual Maps & Navigation links */}
                 <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex gap-2 w-full">
-                  <button 
-                    onClick={() => setSelectedBranchId(isMapOpen ? null : branch.id)}
-                    className={cn(
-                      "flex-1 py-3 text-[10px] uppercase tracking-wider font-extrabold rounded-xl transition-all flex items-center justify-center gap-2 border",
-                      isMapOpen
-                        ? "bg-slate-900 border-slate-900 text-white"
-                        : "bg-slate-50 border-slate-200/50 dark:bg-slate-950 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-850"
-                    )}
+                  <a 
+                    href={branch.googleMapsUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 py-3 text-[10px] uppercase tracking-wider font-extrabold rounded-xl transition-all flex items-center justify-center gap-2 border bg-slate-50 border-slate-200/50 dark:bg-slate-950 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-850 active:scale-95"
                   >
                     <Map size={12} />
-                    {isMapOpen ? 'Ocultar Croquis' : 'Ver Ubicación'}
-                  </button>
+                    Ver Ubicación
+                  </a>
 
                   <a 
                     href={branch.googleMapsUrl} 
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="px-4 bg-love hover:bg-love/90 text-white rounded-xl transition-all flex items-center justify-center shadow-lg shadow-love/15"
+                    className="px-4 bg-love hover:bg-love/90 text-white rounded-xl transition-all flex items-center justify-center shadow-lg shadow-love/15 active:scale-95"
                     title="Navegar en Google Maps"
                   >
                     <Navigation size={14} />
                   </a>
                 </div>
               </div>
-
-              {/* Collapsible Animated Visual Coordinates Croquis */}
-              <AnimatePresence>
-                {isMapOpen && (
-                  <motion.div 
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    className="bg-slate-950 dark:bg-black/65 text-slate-400 overflow-hidden font-mono text-[10px] border-t border-slate-800"
-                  >
-                    <div className="p-5 space-y-3">
-                      <div className="flex justify-between items-center text-love text-[9px] uppercase font-black tracking-widest">
-                        <span>🛰️ Geoposicionamiento Activo</span>
-                        <span>Club CRAFT Local ID #{branch.id}</span>
-                      </div>
-                      
-                      {/* Stylized simulated schematic layout of standard ER city grid */}
-                      <div className="h-28 bg-slate-900/60 rounded-xl relative border border-slate-800 overflow-hidden flex items-center justify-center">
-                        {/* Street grid line decorations */}
-                        <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:16px_16px] opacity-40" />
-                        <div className="absolute h-[1px] w-full bg-slate-800/80 top-1/3" />
-                        <div className="absolute h-[1px] w-full bg-slate-800/80 top-2/3" />
-                        <div className="absolute w-[1px] h-full bg-slate-800/80 left-1/3" />
-                        <div className="absolute w-[1px] h-full bg-slate-800/80 left-2/3" />
-                        
-                        {/* Streets Name plates */}
-                        <div className="absolute top-1 right-2 bg-slate-950/80 px-2 py-0.5 rounded-md text-[8px] scale-90 border border-slate-800 text-slate-500">Calle Entre Ríos</div>
-                        <div className="absolute left-1/2 bottom-2 bg-slate-950/80 px-2 py-0.5 rounded-md text-[8px] scale-90 border border-slate-800 text-slate-500">Av. Urquiza</div>
-
-                        {/* Interactive pointer animate pin */}
-                        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10 text-center flex flex-col items-center">
-                          <span className="w-5 h-5 rounded-full bg-love/20 border border-love animate-ping absolute top-0" />
-                          <MapPin size={18} className="text-love animate-bounce" />
-                          <span className="bg-love text-white text-[8px] font-bold px-1.5 py-0.5 rounded-md mt-1.5 shadow-md">Aquí CRAFT</span>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col sm:flex-row justify-between text-[9px] text-slate-500 gap-2 font-mono">
-                        <span>Coordenadas Gps: <b>{branch.coordinates}</b></span>
-                        <span className="text-right">Provincia: <b>{branch.province} (Argentina)</b></span>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
             </div>
           );
         })}
