@@ -237,22 +237,7 @@ export function Layout({ children }: LayoutProps) {
             </NavLink>
           )}
 
-          {/* Floating Admin Brush Button */}
-          {(profile?.role === 'admin' || realProfile?.role === 'admin') && (
-            <button 
-              onClick={() => setIsVisualDesignMode(!isVisualDesignMode)}
-              className={cn(
-                "p-1.5 md:p-2 text-[9px] uppercase font-black tracking-widest rounded-full flex items-center gap-1 transition-all outline-none shrink-0 pointer border-none cursor-pointer",
-                isVisualDesignMode 
-                  ? "bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20" 
-                  : "bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400"
-              )}
-              title="Personalizar Botones"
-            >
-              <Palette size={14} className={isVisualDesignMode ? "animate-spin" : ""} />
-              <span className="hidden md:inline">{isVisualDesignMode ? "Salir" : "Diseño Botones"}</span>
-            </button>
-          )}
+          {/* Floating Theme Selector and Actions */}
           
           <button 
             onClick={toggleTheme} 

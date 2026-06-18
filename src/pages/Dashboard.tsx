@@ -35,6 +35,19 @@ export function Dashboard() {
   const [buttonBgForm, setButtonBgForm] = useState('rgba(255,255,255,0.1)');
   const [buttonTextForm, setButtonTextForm] = useState('#ffffff');
 
+  // Visual sections customization setups
+  const [isEditingRecom, setIsEditingRecom] = useState(false);
+  const [recomTitleForm, setRecomTitleForm] = useState('');
+  const [recomSubtitleForm, setRecomSubtitleForm] = useState('');
+
+  const [isEditingRuta, setIsEditingRuta] = useState(false);
+  const [rutaTitleForm, setRutaTitleForm] = useState('');
+  const [rutaSubtitleForm, setRutaSubtitleForm] = useState('');
+
+  const [isEditingTx, setIsEditingTx] = useState(false);
+  const [txTitleForm, setTxTitleForm] = useState('');
+  const [txSubtitleForm, setTxSubtitleForm] = useState('');
+
   // Visual banner slide styling setup
   const [isEditingBanner, setIsEditingBanner] = useState(false);
   const [editingBannerData, setEditingBannerData] = useState<{
@@ -360,6 +373,48 @@ export function Dashboard() {
     }
   };
 
+  const handleSaveRecomDesign = async () => {
+    try {
+      const updatedConfig = {
+        ...designConfig,
+        recomTitle: recomTitleForm,
+        recomSubtitle: recomSubtitleForm,
+      };
+      await saveDesignConfig(updatedConfig);
+      setIsEditingRecom(false);
+    } catch (e) {
+      alert("Error al guardar diseño de recomendación: " + (e as Error).message);
+    }
+  };
+
+  const handleSaveRutaDesign = async () => {
+    try {
+      const updatedConfig = {
+        ...designConfig,
+        rutaTitle: rutaTitleForm,
+        rutaSubtitle: rutaSubtitleForm,
+      };
+      await saveDesignConfig(updatedConfig);
+      setIsEditingRuta(false);
+    } catch (e) {
+      alert("Error al guardar diseño de ruta: " + (e as Error).message);
+    }
+  };
+
+  const handleSaveTxDesign = async () => {
+    try {
+      const updatedConfig = {
+        ...designConfig,
+        txTitle: txTitleForm,
+        txSubtitle: txSubtitleForm,
+      };
+      await saveDesignConfig(updatedConfig);
+      setIsEditingTx(false);
+    } catch (e) {
+      alert("Error al guardar diseño de transacciones: " + (e as Error).message);
+    }
+  };
+
   if (!profile || (loading && !adminStats && profile.role === 'admin')) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center min-h-[60vh]">
@@ -631,7 +686,22 @@ export function Dashboard() {
       </div>
 
       {/* SECCIÓN PREMIOS RECOMENDADOS (Sugerido por el cliente) */}
-      <div className="col-span-12 bg-white dark:bg-slate-900 rounded-[2rem] p-6 md:p-8 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none mb-2">
+      <div className="col-span-12 bg-white dark:bg-slate-900 rounded-[2rem] p-6 md:p-8 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none mb-2 relative group/recom">
+        
+        {(profile?.role === 'admin' || realProfile?.role === 'admin') && (
+          <button
+            onClick={() => {
+              setRecomTitleForm(designConfig?.recomTitle || "Tus Próximos Premios");
+              setRecomSubtitleForm(designConfig?.recomSubtitle || "Mira los premios preferidos de la comunidad y cuánto te falta para poder canjearlos.");
+              setIsEditingRecom(true);
+            }}
+            className="absolute top-4 right-4 bg-slate-950/80 hover:bg-slate-900 text-white p-2.5 rounded-full cursor-pointer transition-all z-20 flex items-center justify-center border border-white/20 shadow-lg active:scale-95"
+            title="Editar título y subtítulo"
+          >
+            <Pencil size={15} className="animate-pulse text-amber-300" />
+          </button>
+        )}
+
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100 dark:border-slate-800">
           <div>
             <div className="flex items-center gap-2 mb-1.5">
@@ -639,9 +709,11 @@ export function Dashboard() {
               <span className="text-[10px] uppercase font-black tracking-widest text-[#92400E] dark:text-amber-400">Recomendado para ti</span>
             </div>
             <h3 className="text-xl font-black uppercase tracking-tight text-ink dark:text-white" style={{ fontFamily: `"${designConfig?.fontHeadings || 'Inter'}", sans-serif` }}>
-              Tus Próximos Premios
+              {designConfig?.recomTitle || "Tus Próximos Premios"}
             </h3>
-            <p className="text-slate-400 text-xs mt-1 font-medium">Mira los premios preferidos de la comunidad y cuánto te falta para poder canjearlos.</p>
+            <p className="text-slate-400 text-xs mt-1 font-medium">
+              {designConfig?.recomSubtitle || "Mira los premios preferidos de la comunidad y cuánto te falta para poder canjearlos."}
+            </p>
           </div>
 
           <button 
@@ -1206,15 +1278,30 @@ export function Dashboard() {
       </div>
 
       {/* Dynamic Points Road Timeline with Animated Car (As requested) */}
-      <div className="col-span-12 order-3 bg-white dark:bg-slate-900 rounded-[2rem] p-6 md:p-8 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none flex flex-col gap-6 relative overflow-hidden">
+      <div className="col-span-12 order-3 bg-white dark:bg-slate-900 rounded-[2rem] p-6 md:p-8 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none flex flex-col gap-6 relative overflow-hidden group/ruta">
+        
+        {(profile?.role === 'admin' || realProfile?.role === 'admin') && (
+          <button
+            onClick={() => {
+              setRutaTitleForm(designConfig?.rutaTitle || "Ruta de Puntos & Beneficios");
+              setRutaSubtitleForm(designConfig?.rutaSubtitle || "Camino de Fidelidad Craft");
+              setIsEditingRuta(true);
+            }}
+            className="absolute top-4 right-4 bg-slate-950/80 hover:bg-slate-900 text-white p-2.5 rounded-full cursor-pointer transition-all z-20 flex items-center justify-center border border-white/20 shadow-lg active:scale-95"
+            title="Editar título y subtítulo"
+          >
+            <Pencil size={15} className="animate-pulse text-amber-300" />
+          </button>
+        )}
+
         <div>
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div>
               <span className="text-[10px] uppercase font-black tracking-widest text-love mb-1 flex items-center gap-1.5">
-                <Trophy size={11} className="text-yellow-500 animate-bounce" /> Camino de Fidelidad Craft
+                <Trophy size={11} className="text-yellow-500 animate-bounce" /> {designConfig?.rutaSubtitle || "Camino de Fidelidad Craft"}
               </span>
               <h3 className="text-lg md:text-xl font-black uppercase tracking-tight text-ink dark:text-white" style={{ fontFamily: `"${designConfig?.fontHeadings || 'Inter'}", sans-serif` }}>
-                Ruta de Puntos & Beneficios
+                {designConfig?.rutaTitle || "Ruta de Puntos & Beneficios"}
               </h3>
             </div>
             {/* Real-time exchange rate badge telling the client exactly what pesos each point is worth */}
@@ -1369,8 +1456,22 @@ export function Dashboard() {
       </div>
 
       {/* Redesigned & Beautiful Full-Width "Cargas y Canjes" Panel (As requested) */}
-      <div className="col-span-12 bg-white dark:bg-slate-900 rounded-[2rem] p-6 md:p-8 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none order-4">
+      <div className="col-span-12 bg-white dark:bg-slate-900 rounded-[2rem] p-6 md:p-8 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none order-4 relative group/tx">
         
+        {(profile?.role === 'admin' || realProfile?.role === 'admin') && (
+          <button
+            onClick={() => {
+              setTxTitleForm(designConfig?.txTitle || "Cargas & Canjes Realizados");
+              setTxSubtitleForm(designConfig?.txSubtitle || "Visualiza el historial detallado de tus transacciones y canjes de premios en CRAFT.");
+              setIsEditingTx(true);
+            }}
+            className="absolute top-4 right-4 bg-slate-950/80 hover:bg-slate-900 text-white p-2.5 rounded-full cursor-pointer transition-all z-20 flex items-center justify-center border border-white/20 shadow-lg active:scale-95"
+            title="Editar título y subtítulo"
+          >
+            <Pencil size={15} className="animate-pulse text-amber-300" />
+          </button>
+        )}
+
         {/* Header with Switch Tabs and Icon */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 border-b border-slate-100 dark:border-slate-800 pb-6">
           <div>
@@ -1381,9 +1482,11 @@ export function Dashboard() {
               </span>
             </div>
             <h3 className="text-xl font-black uppercase tracking-tight text-ink dark:text-white" style={{ fontFamily: `"${designConfig?.fontHeadings || 'Inter'}", sans-serif` }}>
-              Cargas & Canjes Realizados
+              {designConfig?.txTitle || "Cargas & Canjes Realizados"}
             </h3>
-            <p className="text-slate-400 text-xs mt-1 font-medium">Visualiza el historial detallado de tus transacciones y canjes de premios en CRAFT.</p>
+            <p className="text-slate-400 text-xs mt-1 font-medium">
+              {designConfig?.txSubtitle || "Visualiza el historial detallado de tus transacciones y canjes de premios en CRAFT."}
+            </p>
           </div>
 
           {/* Elegant Pill Switch Tabs */}
@@ -1547,6 +1650,218 @@ export function Dashboard() {
           </div>
         )}
       </div>
+
+      {/* Modal Editar Recomendados (Solo Admins) */}
+      <AnimatePresence>
+        {isEditingRecom && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-ink/65 backdrop-blur-xs z-[120] flex items-center justify-center p-6 overflow-y-auto"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, y: 15 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 15 }}
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 md:p-8 rounded-[2rem] w-full max-w-md shadow-2xl relative"
+            >
+              <div className="mb-6">
+                <span className="text-[9px] bg-love/10 text-love font-black uppercase tracking-widest px-2.5 py-1 rounded-full">
+                  Editor de Sección
+                </span>
+                <h3 className="text-xl font-black uppercase tracking-tight text-ink dark:text-white mt-1">
+                  Personalizar <span className="text-love">Premios Recomendados</span>
+                </h3>
+                <p className="text-slate-400 text-xs font-medium mt-1">Personaliza títulos y descripciones del bloque.</p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-450 ml-1">Título de la sección</label>
+                  <input 
+                    required
+                    placeholder="Tus Próximos Premios" 
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs outline-none focus:border-love text-ink dark:text-white font-bold" 
+                    value={recomTitleForm} 
+                    onChange={e => setRecomTitleForm(e.target.value)} 
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-450 ml-1">Subtítulo / Descripción</label>
+                  <textarea 
+                    required
+                    rows={3}
+                    placeholder="Mira los premios preferidos..." 
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs outline-none focus:border-love text-ink dark:text-white" 
+                    value={recomSubtitleForm} 
+                    onChange={e => setRecomSubtitleForm(e.target.value)} 
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-6 mt-4 border-t border-slate-100 dark:border-slate-800">
+                <button 
+                  type="button" 
+                  onClick={() => setIsEditingRecom(false)}
+                  className="flex-1 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-slate-705"
+                >
+                  Cerrar
+                </button>
+                <button 
+                  type="button" 
+                  onClick={handleSaveRecomDesign}
+                  className="flex-[2] bg-love text-white py-3 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-love/20 flex items-center justify-center gap-1.5"
+                >
+                  <Check size={11} /> Guardar Cambios
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal Editar Ruta (Solo Admins) */}
+      <AnimatePresence>
+        {isEditingRuta && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-ink/65 backdrop-blur-xs z-[120] flex items-center justify-center p-6 overflow-y-auto"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, y: 15 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 15 }}
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 md:p-8 rounded-[2rem] w-full max-w-md shadow-2xl relative"
+            >
+              <div className="mb-6">
+                <span className="text-[9px] bg-love/10 text-love font-black uppercase tracking-widest px-2.5 py-1 rounded-full">
+                  Editor de Sección
+                </span>
+                <h3 className="text-xl font-black uppercase tracking-tight text-ink dark:text-white mt-1">
+                  Personalizar <span className="text-love">Ruta de Puntos</span>
+                </h3>
+                <p className="text-slate-400 text-xs font-medium mt-1">Personaliza el título y texto superior del camino del cliente.</p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-450 ml-1">Título de la sección</label>
+                  <input 
+                    required
+                    placeholder="Ruta de Puntos & Beneficios" 
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs outline-none focus:border-love text-ink dark:text-white font-bold" 
+                    value={rutaTitleForm} 
+                    onChange={e => setRutaTitleForm(e.target.value)} 
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-455 ml-1">Subtítulo / Slogan de etiqueta</label>
+                  <input 
+                    required
+                    placeholder="Camino de Fidelidad Craft" 
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs outline-none focus:border-love text-ink dark:text-white font-bold" 
+                    value={rutaSubtitleForm} 
+                    onChange={e => setRutaSubtitleForm(e.target.value)} 
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-6 mt-4 border-t border-slate-100 dark:border-slate-800">
+                <button 
+                  type="button" 
+                  onClick={() => setIsEditingRuta(false)}
+                  className="flex-1 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-slate-705"
+                >
+                  Cerrar
+                </button>
+                <button 
+                  type="button" 
+                  onClick={handleSaveRutaDesign}
+                  className="flex-[2] bg-love text-white py-3 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-love/20 flex items-center justify-center gap-1.5"
+                >
+                  <Check size={11} /> Guardar Cambios
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal Editar Historial (Solo Admins) */}
+      <AnimatePresence>
+        {isEditingTx && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-ink/65 backdrop-blur-xs z-[120] flex items-center justify-center p-6 overflow-y-auto"
+          >
+            <motion.div 
+              initial={{ scale: 0.95, y: 15 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 15 }}
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 md:p-8 rounded-[2rem] w-full max-w-md shadow-2xl relative"
+            >
+              <div className="mb-6">
+                <span className="text-[9px] bg-love/10 text-love font-black uppercase tracking-widest px-2.5 py-1 rounded-full">
+                  Editor de Sección
+                </span>
+                <h3 className="text-xl font-black uppercase tracking-tight text-ink dark:text-white mt-1">
+                  Personalizar <span className="text-love">Historial de Movimientos</span>
+                </h3>
+                <p className="text-slate-400 text-xs font-medium mt-1">Personaliza títulos y descripciones del historial.</p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-450 ml-1">Título de la sección</label>
+                  <input 
+                    required
+                    placeholder="Cargas & Canjes Realizados" 
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs outline-none focus:border-love text-ink dark:text-white font-bold" 
+                    value={txTitleForm} 
+                    onChange={e => setTxTitleForm(e.target.value)} 
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-450 ml-1">Subtítulo / Descripción</label>
+                  <textarea 
+                    required
+                    rows={3}
+                    placeholder="Visualiza el historial detallado..." 
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs outline-none focus:border-love text-ink dark:text-white" 
+                    value={txSubtitleForm} 
+                    onChange={e => setTxSubtitleForm(e.target.value)} 
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-2 pt-6 mt-4 border-t border-slate-100 dark:border-slate-800">
+                <button 
+                  type="button" 
+                  onClick={() => setIsEditingTx(false)}
+                  className="flex-1 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-slate-705"
+                >
+                  Cerrar
+                </button>
+                <button 
+                  type="button" 
+                  onClick={handleSaveTxDesign}
+                  className="flex-[2] bg-love text-white py-3 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-love/20 flex items-center justify-center gap-1.5"
+                >
+                  <Check size={11} /> Guardar Cambios
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

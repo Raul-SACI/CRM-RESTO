@@ -70,6 +70,14 @@ export interface DesignConfig {
   pointsCardText?: string;
   profileButtonBg?: string;
   profileButtonText?: string;
+
+  // Custom section titles and subtitles
+  recomTitle?: string;
+  recomSubtitle?: string;
+  rutaTitle?: string;
+  rutaSubtitle?: string;
+  txTitle?: string;
+  txSubtitle?: string;
 }
 
 export const DEFAULT_DESIGN: DesignConfig = {
