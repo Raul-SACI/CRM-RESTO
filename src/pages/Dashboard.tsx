@@ -8,7 +8,7 @@ import {
   Flag, Sparkles, Car, Trophy, ArrowLeft, ArrowRight, Star
 } from 'lucide-react';
 import { supabase } from '@/src/lib/supabase';
-import { Transaction, SystemSettings, Profile } from '@/src/types';
+import { Transaction, SystemSettings, Profile, Prize } from '@/src/types';
 import { cn } from '@/src/lib/utils';
 import { useDesign } from '@/src/components/DesignEngine';
 import { 
@@ -25,6 +25,7 @@ export function Dashboard() {
   const [isEditing, setIsEditing] = useState(false);
   const [activeHistoryTab, setActiveHistoryTab] = useState<'all' | 'canjes'>('all');
   const [editForm, setEditForm] = useState({ fullName: '', dni: '' });
+  const [popularPrizes, setPopularPrizes] = useState<Prize[]>([]);
 
   // Sliding banners like "Pedidos Ya (Argentina)"
   const defaultBanners = [
@@ -222,10 +223,45 @@ export function Dashboard() {
         }
       };
 
+      const fetchPopularPrizes = async () => {
+        const cached = localStorage.getItem('rewards_cache');
+        if (cached && isMounted) {
+          try {
+            const allPrizes: Prize[] = JSON.parse(cached);
+            setPopularPrizes(allPrizes.filter(p => p.is_active).slice(0, 3));
+          } catch (e) {
+            console.error("Popular rewards cache error:", e);
+          }
+        }
+
+        try {
+          const { data, error } = await supabase
+            .from('catalogo_premios')
+            .select('*')
+            .eq('is_active', true)
+            .order('points_cost', { ascending: true })
+            .limit(3);
+          
+          if (isMounted && !error && data && data.length > 0) {
+            setPopularPrizes(data);
+          } else if (isMounted && (!data || data.length === 0)) {
+            const fallbackPrizes: Prize[] = [
+              { id: '1', title: 'Cóctel de Bienvenida', description: 'Cualquier cóctel de nuestra carta de autor.', points_cost: 500, image_url: 'https://images.unsplash.com/photo-1536935338788-846bb9981813?auto=format&fit=crop&q=80&w=400', is_active: true },
+              { id: '2', title: 'Tabla de Quesos Selectos', description: 'Selección de quesos regionales con miel de higos.', points_cost: 1500, image_url: 'https://images.unsplash.com/photo-1631515243349-e0cb75fb8d3a?auto=format&fit=crop&q=80&w=400', is_active: true },
+              { id: '3', title: 'Cena para Dos', description: 'Menú de 3 pasos con maridaje incluido.', points_cost: 5000, image_url: 'https://images.unsplash.com/photo-1559339352-11d035aa65de?auto=format&fit=crop&q=80&w=400', is_active: true },
+            ];
+            setPopularPrizes(fallbackPrizes);
+          }
+        } catch (err) {
+          console.error("Popular rewards fetch error:", err);
+        }
+      };
+
       if (profile.role === 'admin') {
         fetchAdminStats().finally(() => { if (isMounted) setLoading(false); });
       } else {
         fetchClientData();
+        fetchPopularPrizes();
         setLoading(false);
       }
       
@@ -494,6 +530,105 @@ export function Dashboard() {
               ))}
             </div>
           )}
+        </div>
+      </div>
+
+      {/* SECCIÓN PREMIOS RECOMENDADOS (Sugerido por el cliente) */}
+      <div className="col-span-12 bg-white dark:bg-slate-900 rounded-[2rem] p-6 md:p-8 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none mb-2">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100 dark:border-slate-800">
+          <div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <Gift size={16} className="text-love animate-pulse" />
+              <span className="text-[10px] uppercase font-black tracking-widest text-[#92400E] dark:text-amber-400">Recomendado para ti</span>
+            </div>
+            <h3 className="text-xl font-black uppercase tracking-tight text-ink dark:text-white" style={{ fontFamily: `"${designConfig?.fontHeadings || 'Inter'}", sans-serif` }}>
+              Tus Próximos Premios
+            </h3>
+            <p className="text-slate-400 text-xs mt-1 font-medium">Mira los premios preferidos de la comunidad y cuánto te falta para poder canjearlos.</p>
+          </div>
+
+          <button 
+            onClick={() => window.location.href = '#/rewards'}
+            className="px-5 py-2.5 bg-slate-50 hover:bg-love/10 dark:bg-slate-950 text-love hover:text-love border border-slate-200/50 dark:border-slate-800 text-[10px] uppercase tracking-wider font-black rounded-xl transition-all self-start md:self-center"
+          >
+            Ver más premios 🎉
+          </button>
+        </div>
+
+        {/* Grid List of 3 Recommended Prizes */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {popularPrizes.slice(0, 3).map((prize) => {
+            const progress = Math.min((profile.points / prize.points_cost) * 150 - 50 < 0 ? 10 : (profile.points / prize.points_cost) * 100, 100);
+            const needed = Math.max(prize.points_cost - profile.points, 0);
+            const canRedeem = profile.points >= prize.points_cost;
+
+            return (
+              <div 
+                key={prize.id}
+                onClick={() => window.location.href = '#/rewards'}
+                className="bg-slate-50/55 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800/60 rounded-[1.5rem] overflow-hidden flex flex-col hover:border-love/30 dark:hover:border-love/35 hover:bg-white dark:hover:bg-slate-900 transition-all duration-300 group cursor-pointer shadow-xs"
+              >
+                {/* Prize Image */}
+                <div className="relative aspect-video w-full overflow-hidden bg-slate-200/50 dark:bg-slate-800">
+                  <img 
+                    src={prize.image_url || 'https://images.unsplash.com/photo-1513151233558-d860c5398176?q=80&w=400'} 
+                    alt={prize.title}
+                    referrerPolicy="no-referrer"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  
+                  {/* Status Overlay Tag */}
+                  <div className="absolute top-3 right-3 shrink-0">
+                    {canRedeem ? (
+                      <span className="bg-emerald-500 text-white text-[8px] font-black uppercase tracking-widest px-2.5 py-1.5 rounded-lg shadow-md animate-bounce flex items-center gap-1">
+                        <Sparkles size={8} />  ¡Listo para Canje!
+                      </span>
+                    ) : (
+                      <span className="bg-black/60 text-white text-[8px] font-black uppercase tracking-widest px-2.5 py-1.5 rounded-lg backdrop-blur-xs">
+                        Te faltan {needed.toLocaleString()} pts
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Progress Bar & Description */}
+                <div className="p-5 flex-1 flex flex-col justify-between">
+                  <div>
+                    <div className="flex justify-between items-start gap-2 mb-1.5">
+                      <p className="text-xs font-black uppercase tracking-tight text-ink dark:text-white line-clamp-1 group-hover:text-love transition-colors">
+                        {prize.title}
+                      </p>
+                      <p className="text-sm font-black text-love shrink-0">
+                        {prize.points_cost} <span className="text-[9px] uppercase font-bold text-slate-400 dark:text-slate-500">pts</span>
+                      </p>
+                    </div>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 line-clamp-2 leading-relaxed mb-4 font-medium">
+                      {prize.description || 'Sin descripción detallada.'}
+                    </p>
+                  </div>
+
+                  <div>
+                    {/* Real-time progress indicators */}
+                    <div className="flex items-center justify-between text-[8px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1">
+                      <span>Progreso del canje</span>
+                      <span>{Math.round(progress)}%</span>
+                    </div>
+
+                    {/* Progress Track */}
+                    <div className="w-full h-2 bg-slate-200 dark:bg-slate-800/80 rounded-full overflow-hidden">
+                      <div 
+                        className={cn(
+                          "h-full rounded-full transition-all duration-500",
+                          canRedeem ? "bg-emerald-500 animate-pulse" : "bg-love"
+                        )}
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -767,7 +902,9 @@ export function Dashboard() {
           <div>
             <div className="flex items-center gap-2 mb-1.5">
               <History size={16} className="text-love animate-pulse" />
-              <span className="text-[10px] uppercase font-black tracking-widest text-[#A06C00] dark:text-[#FBBF24]">Mis Movimientos</span>
+              <span className="text-xs uppercase font-extrabold tracking-wider text-slate-900 dark:text-slate-100 bg-slate-100/60 dark:bg-slate-800/40 px-2.5 py-1 rounded-lg">
+                Mis Movimientos
+              </span>
             </div>
             <h3 className="text-xl font-black uppercase tracking-tight text-ink dark:text-white" style={{ fontFamily: `"${designConfig?.fontHeadings || 'Inter'}", sans-serif` }}>
               Cargas & Canjes Realizados
@@ -863,20 +1000,20 @@ export function Dashboard() {
             return filteredTx.map((tx) => (
               <div 
                 key={tx.id}
-                className="bg-slate-50/50 dark:bg-slate-950/40 p-5 rounded-2xl flex flex-col justify-between border border-slate-100 dark:border-slate-800/60 group hover:border-love/20 dark:hover:border-love/30 hover:bg-white dark:hover:bg-slate-900 transition-all shadow-xs duration-300"
+                className="bg-slate-50/50 dark:bg-slate-950/45 p-5 rounded-2xl flex flex-col justify-between border border-slate-100 dark:border-slate-800/80 group hover:border-love/30 dark:hover:border-love/40 hover:bg-white dark:hover:bg-slate-900 transition-all shadow-xs duration-350"
               >
                 <div>
                   <div className="flex justify-between items-start gap-2 mb-3">
                     <span className={cn(
                       "text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg border",
                       tx.points_earned > 0 
-                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20" 
-                        : "bg-love/10 text-love border-love/20"
+                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30" 
+                        : "bg-love/10 text-love border-love/30"
                     )}>
                       {tx.points_earned > 0 ? '📈 Carga' : '🎁 Canje'}
                     </span>
-                    <span className="text-[9px] text-slate-400 dark:text-slate-500 font-bold bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded flex items-center gap-1">
-                      <Calendar size={10} />
+                    <span className="text-[9px] text-slate-600 dark:text-slate-300 font-bold bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded flex items-center gap-1.5 shadow-2xs border border-slate-200/10">
+                      <Calendar size={10} className="text-slate-500 dark:text-slate-450" />
                       {new Date(tx.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </span>
                   </div>
@@ -885,16 +1022,16 @@ export function Dashboard() {
                     {tx.description}
                   </p>
                   
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold flex items-center gap-1 mb-3">
+                  <p className="text-[10px] text-slate-605 dark:text-slate-350 font-semibold flex items-center gap-1 mb-3">
                     📍 {tx.branch || 'Sucursal Principal'}
                   </p>
                 </div>
 
-                <div className="border-t border-slate-100/70 dark:border-slate-800/60 pt-3 flex items-center justify-between mt-2">
+                <div className="border-t border-slate-100/80 dark:border-slate-800/80 pt-3 flex items-center justify-between mt-2">
                   <div className="space-y-1">
                     {tx.redemption_code && (
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[8px] font-bold uppercase text-slate-400">Código:</span>
+                        <span className="text-[8px] font-black uppercase text-slate-500 dark:text-slate-400">Código:</span>
                         <span className="bg-ink dark:bg-slate-800 text-white dark:text-slate-200 px-2 py-0.5 rounded-md font-mono text-[9px] font-black italic tracking-widest">
                           {tx.redemption_code}
                         </span>
@@ -902,8 +1039,8 @@ export function Dashboard() {
                     )}
                     {tx.invoice_number && (
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[8px] font-bold uppercase text-slate-400">Factura:</span>
-                        <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-md font-mono text-[9px] font-bold tracking-tight">
+                        <span className="text-[8px] font-black uppercase text-slate-500 dark:text-slate-400">Factura:</span>
+                        <span className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded-md font-mono text-[9px] font-bold tracking-tight border border-slate-250/10">
                           {tx.invoice_number}
                         </span>
                       </div>
