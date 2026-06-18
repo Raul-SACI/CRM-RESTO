@@ -10,38 +10,8 @@ export function Help() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFaqIndex, setActiveFaqIndex] = useState<number | null>(null);
 
-  const faqs = [
-    {
-      q: "¿Qué es Club CRAFT?",
-      a: "Es nuestro exclusivo club de lealtad digital. Registrándote de manera 100% gratuita, acumulas puntos en cada consumo y luego puedes canjearlos por cafés, panadería, cócteles o cenas especiales de nuestro catálogo.",
-      category: "General"
-    },
-    {
-      q: "¿Cómo sumo puntos con mis visitas?",
-      a: "¡Es muy fácil! Por cada $1000 argentinos que consumas en nuestras sucursales, sumas automáticamente 1 punto base. Solo debes indicarle tu DNI registrado al camarero o cajero antes de solicitar la cuenta final.",
-      category: "Puntos"
-    },
-    {
-      q: "¿Cuáles son los niveles de puntos y sus beneficios?",
-      a: "El programa cuenta con tres niveles dinámicos según tus puntos acumulados:\n\n• Miembro Club (0 a 999 puntos): Sumas 1 punto por cada $1000.\n\n• Miembro PREMIUM (1000 a 1999 puntos): ¡Tu identificador del vasito de café de especialidad se vuelve dorado! A partir de aquí, tus consumos sumarán 1.5 puntos por cada $1000 (un 50% extra de regalo automático).\n\n• Miembro BLACK (2000+ puntos): ¡Duplicas puntos constantemente! Sumas 2 puntos por cada $1000 consumidos y accedes a convocatorias de catas de café selectas.",
-      category: "Niveles & Estatus"
-    },
-    {
-      q: "¿Cómo canjeo mis puntos por premios?",
-      a: "Entra a la pestaña 'Premios', elige la recompensa que más te guste y confirma el canje. Se descontarán tus puntos de tu saldo actual y se te brindará un cupón visual con barra. Muéstrale este código en el celular al camarero antes de pagar.",
-      category: "Canjes"
-    },
-    {
-      q: "¿Qué vigencia tienen mis puntos y cupones?",
-      a: "Tus puntos acumulados no vencen mientras registres al menos una compra anual en cualquiera de las sucursales. Sin embargo, los cupones generados para premios tienen validez exclusiva únicamente por el día de la fecha de su emisión (vencen a las 23:59 hs).",
-      category: "Vencimiento"
-    },
-    {
-      q: "¿Tiene algún costo participar?",
-      a: "Absolutamente ninguno. El registro, la permanencia y el acceso a los niveles del Club es completamente gratuito. Todo el valor se devuelve en forma de productos y experiencias exclusivas.",
-      category: "General"
-    }
-  ];
+  const faqs = designConfig?.faqs || [];
+  const termsText = designConfig?.terms || "";
 
   const filteredFaqs = faqs.filter(
     item => 
@@ -188,70 +158,27 @@ export function Help() {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.98 }}
             transition={{ duration: 0.2 }}
-            className="grid grid-cols-1 md:grid-cols-2 gap-6"
+            className="w-full bg-white dark:bg-slate-900 rounded-3xl p-6 md:p-8 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/20 dark:shadow-none"
           >
-            {/* Bento T&C Item 1 */}
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/30 dark:shadow-none flex flex-col justify-between">
-              <div>
-                <div className="w-10 h-10 bg-love/10 rounded-xl flex items-center justify-center text-love mb-4">
-                  <ShieldCheck size={20} />
-                </div>
-                <h4 className="text-xs font-black uppercase tracking-widest text-[#B45309] dark:text-amber-400 mb-2">1. Marco General y Registro</h4>
-                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-semibold">
-                  El programa de beneficios "Club CRAFT" es operado exclusivamente por la administración de la marca CRAFT. Al registrarse en la plataforma, el usuario declara haber leído, comprendido e implicado su pleno consentimiento sobre cada cláusula de este reglamento de uso activo.
-                </p>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-love/10 rounded-xl flex items-center justify-center text-love">
+                <ShieldCheck size={20} />
               </div>
-              <div className="mt-4 pt-3 border-t border-slate-150/10 text-[9px] uppercase font-black text-slate-400 flex items-center gap-1">
-                <CheckCircle size={10} className="text-emerald-500" /> Registro Libre y Gratuito
+              <div>
+                <h4 className="text-xs font-black uppercase tracking-widest text-[#B45309] dark:text-amber-400">Reglamento Oficial</h4>
+                <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mt-0.5">Bases & Condiciones de Club CRAFT</p>
               </div>
             </div>
+            
+            <p className="text-xs md:text-sm text-slate-600 dark:text-slate-350 leading-relaxed font-semibold whitespace-pre-line">
+              {termsText}
+            </p>
 
-            {/* Bento T&C Item 2 */}
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/30 dark:shadow-none flex flex-col justify-between">
-              <div>
-                <div className="w-10 h-10 bg-love/10 rounded-xl flex items-center justify-center text-love mb-4">
-                  <Award size={20} />
-                </div>
-                <h4 className="text-xs font-black uppercase tracking-widest text-[#B45309] dark:text-amber-400 mb-2">2. Personalidad de Puntos</h4>
-                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-semibold">
-                  Los puntos son individuales, estrictamente intransferibles y no son intercambiables por dinero físico. El usuario está obligado a corroborar su identidad mediante DNI original ante el personal de sucursal para validar cualquier carga o canje de puntos dentro del local.
-                </p>
-              </div>
-              <div className="mt-4 pt-3 border-t border-slate-150/10 text-[9px] uppercase font-black text-slate-400 flex items-center gap-1">
-                <CheckCircle size={10} className="text-emerald-500" /> Validez Asociada al DNI
-              </div>
-            </div>
-
-            {/* Bento T&C Item 3 */}
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/30 dark:shadow-none flex flex-col justify-between">
-              <div>
-                <div className="w-10 h-10 bg-love/10 rounded-xl flex items-center justify-center text-love mb-4">
-                  <Clock size={20} />
-                </div>
-                <h4 className="text-xs font-black uppercase tracking-widest text-[#B45309] dark:text-amber-400 mb-2">3. Expiración de Puntos y Cupones</h4>
-                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-semibold">
-                  Los puntos acumulados no vencen siempre y cuando se asocie al menos 1 visita o consumo en el término de 12 meses. Sin embargo, los cupones redimidos de premios solo tienen validez estricta para el día natural de su fecha de emisión (vencen a las 23:59 hs). Pasado ese límite, el premio se extingue sin derecho a reintegro de puntos.
-                </p>
-              </div>
-              <div className="mt-4 pt-3 border-t border-slate-150/10 text-[9px] uppercase font-black text-slate-400 flex items-center gap-1">
-                <CheckCircle size={10} className="text-emerald-500" /> Cupones caducan a medianoche
-              </div>
-            </div>
-
-            {/* Bento T&C Item 4 */}
-            <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/30 dark:shadow-none flex flex-col justify-between">
-              <div>
-                <div className="w-10 h-10 bg-love/10 rounded-xl flex items-center justify-center text-love mb-4">
-                  <Scale size={20} />
-                </div>
-                <h4 className="text-xs font-black uppercase tracking-widest text-[#B45309] dark:text-amber-400 mb-2">4. Derechos de Modificación</h4>
-                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-semibold">
-                  CRAFT se guarda el derecho soberano e incontrastable de dar por finalizado el programa, alterar la tasa de equivalencia de puntos ($1000 = 1 PTS) o remover premios de la tienda informando con al menos 15 días corridos de antelación en sus canales públicos.
-                </p>
-              </div>
-              <div className="mt-4 pt-3 border-t border-slate-150/10 text-[9px] uppercase font-black text-slate-400 flex items-center gap-1">
-                <CheckCircle size={10} className="text-emerald-500" /> Facultad de Ajuste del Catálogo
-              </div>
+            <div className="mt-8 pt-4 border-t border-slate-100 dark:border-slate-800/60 text-[9px] uppercase font-black text-slate-400 flex items-center justify-between">
+              <span className="flex items-center gap-1">
+                <CheckCircle size={10} className="text-emerald-500" /> Registro Completamente Gratuito
+              </span>
+              <span>Última revisión: Entre Ríos, AR</span>
             </div>
           </motion.div>
         )}

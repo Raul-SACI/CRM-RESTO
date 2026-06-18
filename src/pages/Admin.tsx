@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '@/src/lib/supabase';
 import { Profile, Prize, Transaction, SystemSettings } from '@/src/types';
 import { motion, AnimatePresence } from 'motion/react';
-import { Users, Gift, Settings, Search, Plus, Trash2, Pencil, Calendar, Award, History, DollarSign, Upload, Image as ImageIcon, FileSpreadsheet, UserPlus, X, Palette, Home, User, Star, MessageSquare } from 'lucide-react';
+import { Users, Gift, Settings, Search, Plus, Trash2, Pencil, Calendar, Award, History, DollarSign, Upload, Image as ImageIcon, FileSpreadsheet, UserPlus, X, Palette, Home, User, Star, MessageSquare, FileText, HelpCircle, LogOut, MapPin } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import * as XLSX from 'xlsx';
 import { BRANCHES } from '@/src/constants';
@@ -47,6 +47,40 @@ export function Admin() {
   const [savingDesign, setSavingDesign] = useState(false);
   const [designSubSection, setDesignSubSection] = useState<'branding' | 'styling' | 'colors' | 'banners' | 'css'>('branding');
   const [activeBannerIndex, setActiveBannerIndex] = useState<number>(0);
+
+  // Dynamic Settings / Ajustes tabs
+  const [settingsSubTab, setSettingsSubTab] = useState<'points' | 'help' | 'branches'>('points');
+  
+  // FAQs form editing states
+  const [editingFaqIndex, setEditingFaqIndex] = useState<number | null>(null);
+  const [faqForm, setFaqForm] = useState({ q: '', a: '', category: 'General' });
+  const [localTermsText, setLocalTermsText] = useState('');
+  
+  // Branches form editing states
+  const [editingBranchId, setEditingBranchId] = useState<string | null>(null);
+  const [branchForm, setBranchForm] = useState({
+    id: '',
+    name: '',
+    address: '',
+    city: 'Paraná',
+    province: 'Entre Ríos',
+    phone: '',
+    hoursWeekday: '07:30 a 21:30 hs',
+    hoursWeekend: '08:30 a 21:00 hs',
+    specialty: '',
+    features: [] as string[],
+    coordinates: '',
+    imageUrl: '',
+    googleMapsUrl: ''
+  });
+  const [newFeatureText, setNewFeatureText] = useState('');
+
+  // Sincronizar bases y condiciones cuando la configuración cargue
+  useEffect(() => {
+    if (designConfig?.terms) {
+      setLocalTermsText(designConfig.terms);
+    }
+  }, [designConfig]);
 
   const hexToRgbStr = (hex: string): string => {
     let c = hex.replace('#', '');
@@ -1501,56 +1535,508 @@ export function Admin() {
         )}
 
           {activeTab === 'settings' && (
-            <div className="max-w-2xl mx-auto">
-              {!settings ? (
-                <div className="py-12 text-center text-slate-400 font-bold uppercase text-[10px] tracking-widest">
-                  Cargando configuración...
-                </div>
-              ) : (
-                <div className="bg-white rounded-[2rem] p-8 border border-slate-100 shadow-xl shadow-slate-200/50">
-                  <div className="flex items-center gap-3 mb-8">
-                    <div className="w-12 h-12 bg-love/10 rounded-2xl flex items-center justify-center text-love">
-                      <Settings size={24} />
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-black uppercase tracking-tighter text-ink">Configuración del <span className="text-love">Sistema</span></h3>
-                      <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mt-1">Personaliza las reglas de lealtad</p>
-                    </div>
-                  </div>
+            <div className="max-w-4xl mx-auto space-y-6">
+              {/* Subtab selection */}
+              <div className="flex border-b border-slate-100 dark:border-slate-800 pb-0.5 overflow-x-auto no-scrollbar gap-1 mb-6">
+                <button 
+                  onClick={() => setSettingsSubTab('points')}
+                  className={cn(
+                    "px-5 py-3 text-xs uppercase font-extrabold tracking-wider border-b-2 transition-all cursor-pointer bg-transparent outline-none shrink-0",
+                    settingsSubTab === 'points' 
+                      ? "border-love text-love" 
+                      : "border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                  )}
+                >
+                  Reglas de Puntos
+                </button>
+                <button 
+                  onClick={() => setSettingsSubTab('help')}
+                  className={cn(
+                    "px-5 py-3 text-xs uppercase font-extrabold tracking-wider border-b-2 transition-all cursor-pointer bg-transparent outline-none shrink-0",
+                    settingsSubTab === 'help' 
+                      ? "border-love text-love" 
+                      : "border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                  )}
+                >
+                  Centro de Ayuda (FAQ & Términos)
+                </button>
+                <button 
+                  onClick={() => setSettingsSubTab('branches')}
+                  className={cn(
+                    "px-5 py-3 text-xs uppercase font-extrabold tracking-wider border-b-2 transition-all cursor-pointer bg-transparent outline-none shrink-0",
+                    settingsSubTab === 'branches' 
+                      ? "border-love text-love" 
+                      : "border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                  )}
+                >
+                  Sucursales
+                </button>
+              </div>
 
-                  <form onSubmit={handleUpdateSettings} className="space-y-8">
-                    <div className="space-y-3">
-                      <label className="block text-xs font-black uppercase tracking-widest text-slate-500 pl-1">Tasa de Conversión de Puntos</label>
-                      <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 flex items-center justify-between group transition-all hover:border-love/30">
-                        <div className="flex-1">
-                          <div className="flex items-baseline gap-2">
-                            <span className="text-2xl font-black text-ink">$</span>
-                            <input 
-                              type="number" 
-                              className="bg-transparent text-4xl font-black text-love outline-none w-full border-b-2 border-transparent focus:border-love transition-all"
-                              value={settings.points_conversion_rate}
-                              onChange={e => setSettings({...settings, points_conversion_rate: parseInt(e.target.value) || 0})}
-                            />
-                          </div>
-                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">equivale a 1 punto</p>
+              {settingsSubTab === 'points' && (
+                <div className="max-w-2xl mx-auto">
+                  {!settings ? (
+                    <div className="py-12 text-center text-slate-400 font-bold uppercase text-[10px] tracking-widest">
+                      Cargando configuración...
+                    </div>
+                  ) : (
+                    <div className="bg-white rounded-[2rem] p-8 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none">
+                      <div className="flex items-center gap-3 mb-8">
+                        <div className="w-12 h-12 bg-love/10 rounded-2xl flex items-center justify-center text-love">
+                          <Settings size={21} />
                         </div>
-                        <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center border border-slate-200 shadow-sm text-love">
-                          <Award size={32} />
+                        <div>
+                          <h3 className="text-xl font-black uppercase tracking-tighter text-ink dark:text-white">Configuración del <span className="text-love">Sistema</span></h3>
+                          <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mt-1">Personaliza las reglas de lealtad</p>
                         </div>
                       </div>
-                      <p className="text-[10px] text-slate-400 font-medium px-2 leading-relaxed">
-                        Este valor define cuántos pesos argentinos debe consumir el cliente para sumar 1 punto. Por ejemplo, si pones 1000, un consumo de $10.000 sumará 10 puntos.
-                      </p>
+
+                      <form onSubmit={handleUpdateSettings} className="space-y-8">
+                        <div className="space-y-3">
+                          <label className="block text-xs font-black uppercase tracking-widest text-slate-500 pl-1">Tasa de Conversión de Puntos</label>
+                          <div className="bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-3xl flex items-center justify-between group transition-all hover:border-love/30">
+                            <div className="flex-1">
+                              <div className="flex items-baseline gap-2">
+                                <span className="text-2xl font-black text-ink dark:text-slate-300">$</span>
+                                <input 
+                                  type="number" 
+                                  className="bg-transparent text-4xl font-black text-love outline-none w-full border-b-2 border-transparent focus:border-love transition-all"
+                                  value={settings.points_conversion_rate}
+                                  onChange={e => setSettings({...settings, points_conversion_rate: parseInt(e.target.value) || 0})}
+                                />
+                              </div>
+                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">equivale a 1 punto</p>
+                            </div>
+                            <div className="w-16 h-16 bg-white dark:bg-slate-950 rounded-2xl flex items-center justify-center border border-slate-205 dark:border-slate-800 shadow-sm text-love">
+                              <Award size={32} />
+                            </div>
+                          </div>
+                          <p className="text-[10px] text-slate-400 font-medium px-2 leading-relaxed">
+                            Este valor define cuántos pesos argentinos debe consumir el cliente para sumar 1 punto. Por ejemplo, si pones 1000, un consumo de $10.000 sumará 10 puntos.
+                          </p>
+                        </div>
+
+                        <button 
+                          type="submit" 
+                          disabled={updatingSettings}
+                          className="w-full bg-ink text-white dark:bg-love py-5 rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-xl shadow-ink/20 hover:bg-black transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+                        >
+                          {updatingSettings ? 'Guardando...' : 'Guardar Cambios'}
+                        </button>
+                      </form>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {settingsSubTab === 'help' && (
+                <div className="space-y-8">
+                  {/* Bases y Condiciones */}
+                  <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 md:p-8 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none text-left">
+                    <h4 className="text-sm font-black uppercase tracking-wider text-ink dark:text-white mb-4 flex items-center gap-2">
+                      <FileText size={18} className="text-love" /> Bases y Condiciones (Reglamento)
+                    </h4>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-4">Modifica el texto entero del reglamento del Club de lealtad</p>
+                    <textarea
+                      value={localTermsText}
+                      onChange={(e) => setLocalTermsText(e.target.value)}
+                      rows={8}
+                      className="w-full bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs text-slate-650 dark:text-slate-300 font-semibold leading-relaxed focus:border-love outline-none transition-all"
+                      placeholder="Introduce el reglamento aquí..."
+                    />
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          const updated = {
+                            ...designConfig,
+                            terms: localTermsText
+                          };
+                          await saveDesignConfig(updated);
+                          alert("Bases y Condiciones guardadas correctamente");
+                        } catch (err: any) {
+                          alert("Error guardando bases: " + err.message);
+                        }
+                      }}
+                      className="mt-4 px-6 py-3 bg-love text-white rounded-xl text-xs uppercase font-black tracking-widest hover:scale-[1.02] transition-all cursor-pointer border-none"
+                    >
+                      Guardar Bases y Condiciones
+                    </button>
+                  </div>
+
+                  {/* Preguntas Frecuentes */}
+                  <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 md:p-8 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none space-y-6 text-left">
+                    <h4 className="text-sm font-black uppercase tracking-wider text-ink dark:text-white flex items-center gap-2">
+                      <HelpCircle size={18} className="text-love" /> Preguntas Frecuentes (FAQs)
+                    </h4>
+                    
+                    {/* FAQ List */}
+                    <div className="grid grid-cols-1 gap-3 max-h-80 overflow-y-auto no-scrollbar pr-1">
+                      {(designConfig.faqs || []).map((faq, index) => (
+                        <div key={index} className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-100 dark:border-slate-800 flex items-center justify-between gap-4">
+                          <div className="text-left">
+                            <span className="text-[8px] bg-love/10 text-love px-2 py-0.5 rounded-full font-black uppercase tracking-widest">{faq.category}</span>
+                            <h5 className="text-xs font-black text-ink dark:text-white mt-1.5">{faq.q}</h5>
+                            <p className="text-[10px] text-slate-400 font-semibold truncate max-w-sm md:max-w-md mt-0.5">{faq.a}</p>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              onClick={() => {
+                                setEditingFaqIndex(index);
+                                setFaqForm({ q: faq.q, a: faq.a, category: faq.category });
+                              }}
+                              className="p-1.5 text-slate-400 hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/20 rounded transition-all bg-transparent border-none cursor-pointer"
+                              title="Editar pregunta"
+                            >
+                              <Palette size={14} />
+                            </button>
+                            <button
+                              onClick={async () => {
+                                if (confirm("¿Estás seguro de eliminar esta pregunta frecuente?")) {
+                                  const updatedFaqs = (designConfig.faqs || []).filter((_, i) => i !== index);
+                                  const updated = { ...designConfig, faqs: updatedFaqs };
+                                  await saveDesignConfig(updated);
+                                  alert("Pregunta eliminada de forma correcta");
+                                }
+                              }}
+                              className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-550/10 rounded transition-all bg-transparent border-none cursor-pointer"
+                              title="Eliminar pregunta"
+                            >
+                              <LogOut size={14} className="rotate-180 text-rose-500" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
 
-                    <button 
-                      type="submit" 
-                      disabled={updatingSettings}
-                      className="w-full bg-ink text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-xl shadow-ink/20 hover:bg-black transition-all active:scale-[0.98] disabled:opacity-50"
-                    >
-                      {updatingSettings ? 'Guardando...' : 'Guardar Cambios'}
-                    </button>
-                  </form>
+                    {/* FAQ Add/Edit Form */}
+                    <div className="bg-slate-50 dark:bg-slate-950 p-5 rounded-3xl border border-slate-100 dark:border-slate-800">
+                      <h5 className="text-xs font-black uppercase tracking-widest text-love mb-4 pl-0.5">
+                        {editingFaqIndex !== null ? 'Editar Pregunta Frecuente' : 'Agregar Nueva Pregunta'}
+                      </h5>
+                      <form onSubmit={async (e) => {
+                        e.preventDefault();
+                        const updatedFaqs = [...(designConfig.faqs || [])];
+                        if (editingFaqIndex !== null) {
+                          updatedFaqs[editingFaqIndex] = faqForm;
+                        } else {
+                          updatedFaqs.push(faqForm);
+                        }
+                        const updated = { ...designConfig, faqs: updatedFaqs };
+                        await saveDesignConfig(updated);
+                        setFaqForm({ q: '', a: '', category: 'General' });
+                        setEditingFaqIndex(null);
+                        alert("Preguntas Frecuentes actualizadas");
+                      }} className="space-y-4">
+                        <div className="space-y-1">
+                          <label className="text-[10px] uppercase font-black tracking-widest text-slate-400 pl-0.5">Pregunta</label>
+                          <input
+                            type="text"
+                            required
+                            value={faqForm.q}
+                            onChange={e => setFaqForm({ ...faqForm, q: e.target.value })}
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-xl text-xs text-ink dark:text-white font-bold outline-none focus:border-love"
+                            placeholder="¿Cómo canjear mis puntos?"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] uppercase font-black tracking-widest text-slate-400 pl-0.5">Respuesta</label>
+                          <textarea
+                            required
+                            value={faqForm.a}
+                            onChange={e => setFaqForm({ ...faqForm, a: e.target.value })}
+                            rows={3}
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-xl text-xs text-ink dark:text-white font-semibold outline-none focus:border-love"
+                            placeholder="Escribe la respuesta detallada..."
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] uppercase font-black tracking-widest text-slate-400 pl-0.5">Categoría</label>
+                          <input
+                            type="text"
+                            required
+                            value={faqForm.category}
+                            onChange={e => setFaqForm({ ...faqForm, category: e.target.value })}
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-xl text-xs text-ink dark:text-white font-bold outline-none focus:border-love"
+                            placeholder="General, Puntos, Canjes, etc."
+                          />
+                        </div>
+                        <div className="flex items-center gap-2 pt-2">
+                          <button
+                            type="submit"
+                            className="px-5 py-3 bg-ink text-white dark:bg-love rounded-xl text-xs uppercase font-black tracking-widest hover:scale-105 transition-all cursor-pointer border-none"
+                          >
+                            {editingFaqIndex !== null ? 'Guardar Cambios' : 'Agregar Pregunta'}
+                          </button>
+                          {editingFaqIndex !== null && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingFaqIndex(null);
+                                setFaqForm({ q: '', a: '', category: 'General' });
+                              }}
+                              className="px-5 py-3 bg-slate-200 dark:bg-slate-800 text-slate-500 rounded-xl text-xs uppercase font-black tracking-widest hover:bg-slate-300 cursor-pointer border-none"
+                            >
+                              Cancelar
+                            </button>
+                          )}
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {settingsSubTab === 'branches' && (
+                <div className="space-y-8 text-left">
+                  <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 md:p-8 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none space-y-6">
+                    <h4 className="text-sm font-black uppercase tracking-wider text-ink dark:text-white flex items-center gap-2">
+                      <MapPin size={18} className="text-love animate-bounce" /> Gestión de Sucursales
+                    </h4>
+
+                    {/* Branches List */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {(designConfig.branches || []).map((branch) => (
+                        <div key={branch.id} className="bg-slate-50 dark:bg-slate-950 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 flex flex-col justify-between gap-3 shadow-sm hover:border-love/30 transition-all">
+                          <div>
+                            <div className="flex items-start justify-between gap-2">
+                              <h5 className="text-xs font-black text-ink dark:text-white uppercase tracking-tight">{branch.name}</h5>
+                              <div className="flex items-center gap-1">
+                                <button
+                                  onClick={() => {
+                                    setEditingBranchId(branch.id);
+                                    setBranchForm({ ...branch });
+                                  }}
+                                  className="p-1 text-slate-400 hover:text-amber-500 transition-colors bg-transparent border-none cursor-pointer"
+                                  title="Editar sucursal"
+                                >
+                                  <Palette size={12} />
+                                </button>
+                                <button
+                                  onClick={async () => {
+                                    if (confirm(`¿Estás seguro de eliminar la sucursal "${branch.name}"?`)) {
+                                      const updatedBranches = (designConfig.branches || []).filter(b => b.id !== branch.id);
+                                      const updated = { ...designConfig, branches: updatedBranches };
+                                      await saveDesignConfig(updated);
+                                      alert("Sucursal eliminada de forma exitosa");
+                                    }
+                                  }}
+                                  className="p-1 text-slate-400 hover:text-red-500 transition-colors bg-transparent border-none cursor-pointer"
+                                  title="Eliminar sucursal"
+                                >
+                                  <LogOut size={12} className="rotate-180 text-rose-500" />
+                                </button>
+                              </div>
+                            </div>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase mt-1 flex items-center gap-1">
+                              <MapPin size={10} /> {branch.address}, {branch.city}
+                            </p>
+                            <p className="text-[10px] text-slate-500 font-semibold mt-1 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-2 rounded-lg">
+                              {branch.specialty}
+                            </p>
+                          </div>
+                          <div className="border-t border-slate-100 dark:border-slate-800 pt-2 flex flex-wrap gap-1">
+                            {branch.features.map(f => (
+                              <span key={f} className="text-[8px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-1.5 py-0.5 rounded-full font-bold text-slate-500">{f}</span>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Branch Form */}
+                    <div className="bg-slate-50 dark:bg-slate-950 p-5 rounded-3xl border border-slate-100 dark:border-slate-800 text-left">
+                      <h5 className="text-xs font-black uppercase tracking-widest text-[#B45309] dark:text-amber-400 mb-4 font-black">
+                        {editingBranchId ? `Editar Sucursal: ${branchForm.name}` : 'Agregar Nueva Sucursal'}
+                      </h5>
+                      <form onSubmit={async (e) => {
+                        e.preventDefault();
+                        const updatedBranches = [...(designConfig.branches || [])];
+                        const branchData = {
+                          ...branchForm,
+                          id: branchForm.id || Math.random().toString(36).substr(2, 9)
+                        };
+                        if (editingBranchId) {
+                          const idx = updatedBranches.findIndex(b => b.id === editingBranchId);
+                          if (idx !== -1) {
+                            updatedBranches[idx] = branchData;
+                          }
+                        } else {
+                          updatedBranches.push(branchData);
+                        }
+                        const updated = { ...designConfig, branches: updatedBranches };
+                        await saveDesignConfig(updated);
+                        setEditingBranchId(null);
+                        setBranchForm({
+                          id: '', name: '', address: '', city: 'Paraná', province: 'Entre Ríos',
+                          phone: '', hoursWeekday: '07:30 a 21:30 hs', hoursWeekend: '08:30 a 21:00 hs',
+                          specialty: '', features: [], coordinates: '', imageUrl: '', googleMapsUrl: ''
+                        });
+                        alert("Sucursal guardada correctamente");
+                      }} className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-1">
+                            <label className="text-[10px] uppercase font-black tracking-widest text-slate-400">Nombre de la Sucursal</label>
+                            <input
+                              type="text" required value={branchForm.name}
+                              onChange={e => setBranchForm({ ...branchForm, name: e.target.value })}
+                              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2.5 rounded-lg text-xs text-ink dark:text-white font-bold outline-none focus:border-love"
+                              placeholder="e.g. CRAFT Paraná"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] uppercase font-black tracking-widest text-slate-400">Dirección</label>
+                            <input
+                              type="text" required value={branchForm.address}
+                              onChange={e => setBranchForm({ ...branchForm, address: e.target.value })}
+                              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2.5 rounded-lg text-xs text-ink dark:text-white font-bold outline-none focus:border-love"
+                              placeholder="e.g. Pellegrini 450"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] uppercase font-black tracking-widest text-slate-400">Ciudad</label>
+                            <input
+                              type="text" required value={branchForm.city}
+                              onChange={e => setBranchForm({ ...branchForm, city: e.target.value })}
+                              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2.5 rounded-lg text-xs text-ink dark:text-white font-bold outline-none focus:border-love"
+                              placeholder="Paraná, Gualeguaychú, Concordia"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] uppercase font-black tracking-widest text-slate-400">Teléfono Corporativo</label>
+                            <input
+                              type="text" value={branchForm.phone}
+                              onChange={e => setBranchForm({ ...branchForm, phone: e.target.value })}
+                              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2.5 rounded-lg text-xs text-ink dark:text-white font-bold outline-none focus:border-love"
+                              placeholder="e.g. +54 343 456789"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] uppercase font-black tracking-widest text-slate-400">Horarios (Semana)</label>
+                            <input
+                              type="text" value={branchForm.hoursWeekday}
+                              onChange={e => setBranchForm({ ...branchForm, hoursWeekday: e.target.value })}
+                              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2.5 rounded-lg text-xs text-ink dark:text-white font-bold outline-none focus:border-love"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] uppercase font-black tracking-widest text-slate-400">Horarios (Finde)</label>
+                            <input
+                              type="text" value={branchForm.hoursWeekend}
+                              onChange={e => setBranchForm({ ...branchForm, hoursWeekend: e.target.value })}
+                              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2.5 rounded-lg text-xs text-ink dark:text-white font-bold outline-none focus:border-love"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] uppercase font-black tracking-widest text-slate-400">Especialidad</label>
+                            <input
+                              type="text" value={branchForm.specialty}
+                              onChange={e => setBranchForm({ ...branchForm, specialty: e.target.value })}
+                              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2.5 rounded-lg text-xs text-ink dark:text-white font-bold outline-none focus:border-love"
+                              placeholder="e.g. Pastelería fina y Brunch"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-[10px] uppercase font-black tracking-widest text-slate-400">Coordenadas del Mapa (Lat, Lng)</label>
+                            <input
+                              type="text" value={branchForm.coordinates}
+                              onChange={e => setBranchForm({ ...branchForm, coordinates: e.target.value })}
+                              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2.5 rounded-lg text-xs text-ink dark:text-white font-bold outline-none focus:border-love"
+                              placeholder="e.g. -31.721,-60.521"
+                            />
+                          </div>
+                          <div className="space-y-1 col-span-2">
+                            <label className="text-[10px] uppercase font-black tracking-widest text-slate-400">URL Foto Sucursal</label>
+                            <input
+                              type="text" value={branchForm.imageUrl}
+                              onChange={e => setBranchForm({ ...branchForm, imageUrl: e.target.value })}
+                              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2.5 rounded-lg text-xs text-ink dark:text-white font-bold outline-none focus:border-love"
+                              placeholder="https://"
+                            />
+                          </div>
+                          <div className="space-y-1 col-span-2">
+                            <label className="text-[10px] uppercase font-black tracking-widest text-slate-400">Link de Google Maps</label>
+                            <input
+                              type="text" value={branchForm.googleMapsUrl}
+                              onChange={e => setBranchForm({ ...branchForm, googleMapsUrl: e.target.value })}
+                              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2.5 rounded-lg text-xs text-ink dark:text-white font-bold outline-none focus:border-love"
+                              placeholder="https://maps.google.com/?q=..."
+                            />
+                          </div>
+                        </div>
+
+                        {/* Servicio pills list builder */}
+                        <div className="space-y-2 text-left">
+                          <label className="text-[10px] uppercase font-black tracking-widest text-slate-400">Servicios Incluidos</label>
+                          <div className="flex gap-2">
+                            <input
+                              type="text" value={newFeatureText}
+                              onChange={e => setNewFeatureText(e.target.value)}
+                              className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2.5 rounded-lg text-xs outline-none focus:border-love"
+                              placeholder="e.g. Workspace Silencioso, Deck Río"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (newFeatureText.trim()) {
+                                  setBranchForm({
+                                    ...branchForm,
+                                    features: [...branchForm.features, newFeatureText.trim()]
+                                  });
+                                  setNewFeatureText('');
+                                }
+                              }}
+                              className="bg-ink hover:bg-black text-white dark:bg-love px-5 py-2.5 rounded-lg text-xs uppercase font-extrabold tracking-wider transition-all cursor-pointer border-none"
+                            >
+                              Agregar
+                            </button>
+                          </div>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {branchForm.features.map((feature, i) => (
+                              <span key={i} className="text-[9px] bg-love/10 text-love px-2 py-1 rounded-full flex items-center gap-1 font-bold">
+                                {feature}
+                                <button
+                                  type="button"
+                                  onClick={() => setBranchForm({
+                                    ...branchForm,
+                                    features: branchForm.features.filter((_, fIdx) => fIdx !== i)
+                                  })}
+                                  className="text-[8px] text-rose-500 font-extrabold ml-1 bg-transparent border-none shrink-0 cursor-pointer"
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 pt-4">
+                          <button
+                            type="submit"
+                            className="px-6 py-3 bg-ink text-white dark:bg-love rounded-xl text-xs uppercase font-black tracking-widest hover:bg-black transition-all cursor-pointer border-none"
+                          >
+                            {editingBranchId ? 'Guardar Cambios' : 'Crear Sucursal'}
+                          </button>
+                          {editingBranchId && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingBranchId(null);
+                                setBranchForm({
+                                  id: '', name: '', address: '', city: 'Paraná', province: 'Entre Ríos',
+                                  phone: '', hoursWeekday: '07:30 a 21:30 hs', hoursWeekend: '08:30 a 21:00 hs',
+                                  specialty: '', features: [], coordinates: '', imageUrl: '', googleMapsUrl: ''
+                                });
+                              }}
+                              className="px-6 py-3 bg-slate-200 dark:bg-slate-800 text-slate-500 rounded-xl text-xs uppercase font-black tracking-widest hover:bg-slate-350 cursor-pointer border-none"
+                            >
+                              Cancelar
+                            </button>
+                          )}
+                        </div>
+                      </form>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

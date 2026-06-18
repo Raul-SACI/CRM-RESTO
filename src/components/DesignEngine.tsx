@@ -12,6 +12,28 @@ export interface BannerConfig {
   buttonText: string;
 }
 
+export interface Branch {
+  id: string;
+  name: string;
+  address: string;
+  city: string;
+  province: string;
+  phone: string;
+  hoursWeekday: string;
+  hoursWeekend: string;
+  specialty: string;
+  features: string[];
+  coordinates: string;
+  imageUrl: string;
+  googleMapsUrl: string;
+}
+
+export interface FaqItem {
+  q: string;
+  a: string;
+  category: string;
+}
+
 export interface DesignConfig {
   fontSans: string;
   fontHeadings: string;
@@ -30,6 +52,18 @@ export interface DesignConfig {
   logoSubtitle: string;
   customCss: string;
   banners: BannerConfig[];
+  
+  // Custom Help/FAQ & Terms Config added by user
+  faqs?: FaqItem[];
+  terms?: string;
+  
+  // Custom branches added by user
+  branches?: Branch[];
+  
+  // Custom client button colors (active/inactive styling)
+  navButtonColors?: Record<string, string>; // e.g. { '/': '#ef4444', '/rewards': '#10b981', '/help': '#3b82f6', '/branches': '#f59e0b' }
+  // Custom client button positions/order
+  navButtonOrder?: string[]; // e.g. ['/', '/rewards', '/help', '/branches']
 }
 
 export const DEFAULT_DESIGN: DesignConfig = {
@@ -70,7 +104,89 @@ export const DEFAULT_DESIGN: DesignConfig = {
       textColor: '#dbeafe',
       buttonText: 'Saber Más'
     }
-  ]
+  ],
+  faqs: [
+    {
+      q: "¿Qué es Club CRAFT?",
+      a: "Es nuestro exclusivo club de lealtad digital. Registrándote de manera 100% gratuita, acumulas puntos en cada consumo y luego puedes canjearlos por cafés, panadería, cócteles o cenas especiales de nuestro catálogo.",
+      category: "General"
+    },
+    {
+      q: "¿Cómo sumo puntos con mis visitas?",
+      a: "¡Es muy fácil! Por cada $1000 argentinos que consumas en nuestras sucursales, sumas automáticamente 1 punto base. Solo debes indicarle tu DNI registrado al camarero o cajero antes de solicitar la cuenta final.",
+      category: "Puntos"
+    },
+    {
+      q: "¿Cuáles son los niveles de puntos y sus beneficios?",
+      a: "El programa cuenta con tres niveles dinámicos según tus puntos acumulados:\n\n• Miembro Club (0 a 999 puntos): Sumas 1 punto por cada $1000.\n\n• Miembro PREMIUM (1000 a 1999 puntos): ¡Tu identificador del vasito de café de especialidad se vuelve dorado! A partir de aquí, tus consumos sumarán 1.5 puntos por cada $1000 (un 50% extra de regalo automático).\n\n• Miembro BLACK (2000+ puntos): ¡Duplicas puntos constantemente! Sumas 2 puntos por cada $1000 consumidos y accedes a convocatorias de catas de café selectas.",
+      category: "Niveles & Estatus"
+    },
+    {
+      q: "¿Cómo canjeo mis puntos por premios?",
+      a: "Entra a la pestaña 'Premios', elige la recompensa que más te guste y confirma el canje. Se descontarán tus puntos de tu saldo actual y se te brindará un cupón visual con barra. Muéstrale este código en el celular al camarero antes de pagar.",
+      category: "Canjes"
+    },
+    {
+      q: "¿Qué vigencia tienen mis puntos y cupones?",
+      a: "Tus puntos acumulados no vencen mientras registres al menos una compra anual en cualquiera de las sucursales. Sin embargo, los cupones generados para premios tienen validez exclusiva únicamente por el día de la fecha de su emisión (vencen a las 23:59 hs).",
+      category: "Vencimiento"
+    }
+  ],
+  terms: "El programa de beneficios 'Club CRAFT' es operado exclusivamente por la administración de la marca CRAFT. Al registrarse en la plataforma, el usuario declara haber leído, comprendido e implicado su pleno consentimiento sobre cada cláusula de este reglamento de uso activo.\n\nLos puntos son individuales, estrictamente intransferibles y no son intercambiables por dinero físico. El usuario está obligado a corroborar su identidad mediante DNI original ante el personal de sucursal para validar cualquier carga o canje de puntos dentro del local.\n\nLos puntos acumulados no vencen siempre y cuando se asocie al menos 1 visita o consumo en el término de 12 meses. Sin embargo, los cupones redimidos de premios solo tienen validez estricta para el día natural de su fecha de emisión (vencen a las 23:59 hs). Pasado ese límite, el premio se extingue sin derecho a reintegro de puntos.\n\nCRAFT se guarda el derecho soberano de dar por finalizado el programa, alterar la tasa de equivalencia de puntos ($1000 = 1 PTS) o remover premios de la tienda informando con al menos 15 días corridos de antelación en sus canales públicos.",
+  branches: [
+    {
+      id: '1',
+      name: 'CRAFT Centro',
+      address: 'Urquiza 1024 (Esq. San Martín)',
+      city: 'Paraná',
+      province: 'Entre Ríos',
+      phone: '+54 343 4221155',
+      hoursWeekday: '07:00 a 21:00 hs',
+      hoursWeekend: '08:30 a 20:30 hs',
+      specialty: 'Café de Especialidad & Pastelería Fina Europea',
+      features: ['Wifi de Alta Velocidad', 'Pet Friendly', 'Área de Coworking Silencioso', 'Take Away'],
+      coordinates: '-31.733190, -60.529810',
+      imageUrl: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=600',
+      googleMapsUrl: 'https://maps.google.com/?q=-31.733190,-60.529810'
+    },
+    {
+      id: '2',
+      name: 'CRAFT Perón',
+      address: 'Av. Francisco Ramírez 2450',
+      city: 'Paraná',
+      province: 'Entre Ríos',
+      phone: '+54 343 4351166',
+      hoursWeekday: '07:30 a 22:30 hs',
+      hoursWeekend: '08:00 a 23:30 hs',
+      specialty: 'Brunch Completo & Tragos de Autor',
+      features: ['Estacionamiento Propio', 'Pet Friendly', 'Patio al Aire Libre', 'Música en Vivo'],
+      coordinates: '-31.745120, -60.512640',
+      imageUrl: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&q=80&w=600',
+      googleMapsUrl: 'https://maps.google.com/?q=-31.745120,-60.512640'
+    },
+    {
+      id: '3',
+      name: 'CRAFT Costanera',
+      address: 'Av. Laurencena y Morse (Puerto)',
+      city: 'Paraná',
+      province: 'Entre Ríos',
+      phone: '+54 343 4902233',
+      hoursWeekday: '08:00 a 13:00 hs y de 16:30 a 23:00 hs',
+      hoursWeekend: '08:00 a 00:30 hs (Corrido)',
+      specialty: 'Licuados Premium & Tapas frente al Río Paraná',
+      features: ['Deck de Madera al Río', 'Pet Friendly', 'Carga de Autos Eléctricos', 'Take Away'],
+      coordinates: '-31.721450, -60.521890',
+      imageUrl: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&q=80&w=600',
+      googleMapsUrl: 'https://maps.google.com/?q=-31.721450,-60.521890'
+    }
+  ],
+  navButtonColors: {
+    '/': '#ef4444',
+    '/rewards': '#ef4444',
+    '/help': '#ef4444',
+    '/branches': '#ef4444'
+  },
+  navButtonOrder: ['/', '/rewards', '/help', '/branches']
 };
 
 // Quick Color Presets

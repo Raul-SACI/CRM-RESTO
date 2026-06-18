@@ -24,68 +24,7 @@ export function Branches() {
   const { designConfig } = useDesign();
   const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
 
-  const branches: Branch[] = [
-    {
-      id: '1',
-      name: 'CRAFT Centro',
-      address: 'Urquiza 1024 (Esq. San Martín)',
-      city: 'Paraná',
-      province: 'Entre Ríos',
-      phone: '+54 343 4221155',
-      hoursWeekday: '07:00 a 21:00 hs',
-      hoursWeekend: '08:30 a 20:30 hs',
-      specialty: 'Café de Especialidad & Pastelería Fina Europea',
-      features: ['Wifi de Alta Velocidad', 'Pet Friendly', 'Área de Coworking Silencioso', 'Take Away'],
-      coordinates: '-31.733190, -60.529810',
-      imageUrl: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=600',
-      googleMapsUrl: 'https://maps.google.com/?q=-31.733190,-60.529810'
-    },
-    {
-      id: '2',
-      name: 'CRAFT Perón',
-      address: 'Av. Francisco Ramírez 2450',
-      city: 'Paraná',
-      province: 'Entre Ríos',
-      phone: '+54 343 4351166',
-      hoursWeekday: '07:30 a 22:30 hs',
-      hoursWeekend: '08:00 a 23:30 hs',
-      specialty: 'Brunch Completo & Tragos de Autor',
-      features: ['Estacionamiento Propio', 'Pet Friendly', 'Patio al Aire Libre', 'Música en Vivo'],
-      coordinates: '-31.745120, -60.512640',
-      imageUrl: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&q=80&w=600',
-      googleMapsUrl: 'https://maps.google.com/?q=-31.745120,-60.512640'
-    },
-    {
-      id: '3',
-      name: 'CRAFT Costanera',
-      address: 'Av. Laurencena y Morse (Puerto)',
-      city: 'Paraná',
-      province: 'Entre Ríos',
-      phone: '+54 343 4902233',
-      hoursWeekday: '08:00 a 13:00 hs y de 16:30 a 23:00 hs',
-      hoursWeekend: '08:00 a 00:30 hs (Corrido)',
-      specialty: 'Licuados Premium & Tapas frente al Río Paraná',
-      features: ['Deck de Madera al Río', 'Pet Friendly', 'Carga de Autos Eléctricos', 'Take Away'],
-      coordinates: '-31.721450, -60.521890',
-      imageUrl: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&q=80&w=600',
-      googleMapsUrl: 'https://maps.google.com/?q=-31.721450,-60.521890'
-    },
-    {
-      id: '4',
-      name: 'CRAFT Gualeguaychú',
-      address: 'Costanera Morrogh Bernard y Bolívar',
-      city: 'Gualeguaychú',
-      province: 'Entre Ríos',
-      phone: '+54 3446 423344',
-      hoursWeekday: '08:00 a 12:30 hs y de 17:00 a 22:30 hs',
-      hoursWeekend: '08:00 a 23:30 hs (Corrido)',
-      specialty: 'Café de Autor & Cocina Saludable de Estación',
-      features: ['Mesas al Aire Libre', 'Pet Friendly', 'Bici Soportes Seguros', 'Take Away'],
-      coordinates: '-33.009450, -58.508120',
-      imageUrl: 'https://images.unsplash.com/photo-1521017432531-fbd92d768814?auto=format&fit=crop&q=80&w=600',
-      googleMapsUrl: 'https://maps.google.com/?q=-33.009450,-58.508120'
-    }
-  ];
+  const branches = designConfig?.branches || [];
 
   return (
     <motion.div 
