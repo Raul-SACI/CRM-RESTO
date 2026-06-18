@@ -18,7 +18,7 @@ import {
 } from 'recharts';
 
 export function Dashboard() {
-  const { profile } = useAuth();
+  const { profile, realProfile } = useAuth();
   const { designConfig, saveDesignConfig } = useDesign();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [settings, setSettings] = useState<SystemSettings | null>(null);
@@ -519,7 +519,7 @@ export function Dashboard() {
       <div className="col-span-12 order-first mb-2">
         <div className="relative w-full overflow-hidden rounded-[2rem] h-[200px] md:h-[260px] shadow-xl border border-slate-200/50 bg-slate-900 group">
           {/* Admin edit visual button */}
-          {profile?.role === 'admin' && (
+          {(profile?.role === 'admin' || realProfile?.role === 'admin') && (
             <button
               onClick={() => {
                 const b = bannerList[currentSlide];
@@ -742,7 +742,7 @@ export function Dashboard() {
       >
         <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-white/10 rounded-full blur-3xl group-hover/card:scale-110 transition-transform duration-700 pointer-events-none" />
         
-        {profile?.role === 'admin' && (
+        {(profile?.role === 'admin' || realProfile?.role === 'admin') && (
           <button
             onClick={(e) => {
               e.stopPropagation();

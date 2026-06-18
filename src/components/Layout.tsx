@@ -12,7 +12,7 @@ interface LayoutProps {
 }
 
 export function Layout({ children }: LayoutProps) {
-  const { profile, signOut, isSimulatingClient, setIsSimulatingClient } = useAuth();
+  const { profile, realProfile, signOut, isSimulatingClient, setIsSimulatingClient } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { designConfig, saveDesignConfig } = useDesign();
   const navigate = useNavigate();
@@ -225,20 +225,20 @@ export function Layout({ children }: LayoutProps) {
             );
           })}
 
-          {(profile?.role === 'waiter' || profile?.role === 'admin') && (
+          {(profile?.role === 'waiter' || profile?.role === 'admin' || realProfile?.role === 'admin') && (
             <NavLink to="/waiter" className={({ isActive }) => `px-3 md:px-4 py-1.5 md:py-2 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-tighter transition-all shrink-0 ${isActive ? 'bg-love text-white shadow-lg shadow-love/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400'}`}>
               Carga de Puntos
             </NavLink>
           )}
 
-          {profile?.role === 'admin' && (
+          {(profile?.role === 'admin' || realProfile?.role === 'admin') && (
             <NavLink to="/admin" className={({ isActive }) => `px-3 md:px-4 py-1.5 md:py-2 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-tighter transition-all shrink-0 ${isActive ? 'bg-love text-white shadow-lg shadow-love/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400'}`}>
               Admin
             </NavLink>
           )}
 
           {/* Floating Admin Brush Button */}
-          {profile?.role === 'admin' && (
+          {(profile?.role === 'admin' || realProfile?.role === 'admin') && (
             <button 
               onClick={() => setIsVisualDesignMode(!isVisualDesignMode)}
               className={cn(
