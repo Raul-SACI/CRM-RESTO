@@ -810,59 +810,77 @@ export function Admin() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50">
+    <div className="flex flex-col lg:flex-row gap-6 md:gap-8 items-start w-full">
+      {/* Menú Lateral Izquierdo (Admin Sidebar) */}
+      <div className="w-full lg:w-64 xl:w-72 shrink-0 bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none flex flex-col gap-6 lg:sticky lg:top-24">
         <div>
-          <h2 className="text-2xl font-black uppercase tracking-tighter italic text-ink">CLUB <span className="text-love">CRAFT</span></h2>
-          <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400 font-black">Panel Central Administrativo</p>
+          <h2 className="text-xl md:text-2xl font-black uppercase tracking-tighter italic text-ink dark:text-white">
+            CLUB <span className="text-love">CRAFT</span>
+          </h2>
+          <p className="text-[9px] md:text-[10px] uppercase tracking-[0.2em] text-slate-400 font-black">
+            Panel Administrativo
+          </p>
         </div>
         
-        <div className="flex flex-wrap gap-3 items-center">
-          <button
-            onClick={() => {
-              setIsSimulatingClient(true);
-              window.location.hash = '#/';
-            }}
-            className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-slate-950/15 active:scale-95"
-            title="Ver la aplicación exactamente como la ve un cliente"
-          >
-            <User size={13} className="text-love animate-pulse" />
-            Vista Cliente
-          </button>
+        <button
+          onClick={() => {
+            setIsSimulatingClient(true);
+            window.location.hash = '#/';
+          }}
+          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-950 hover:bg-slate-900 dark:bg-slate-800 dark:hover:bg-slate-700 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-slate-950/15 active:scale-95"
+          title="Ver la aplicación exactamente como la ve un cliente"
+        >
+          <User size={13} className="text-love animate-pulse" />
+          Vista Cliente
+        </button>
 
-          <div className="flex flex-wrap p-1 bg-slate-100 rounded-xl border border-slate-200 overflow-x-auto">
-            {['dashboard', 'clients', 'prizes', 'staff', 'history', 'settings', 'design', 'feedback'].map((tab) => {
-              const labels: Record<string, string> = {
-                dashboard: 'Dashboard',
-                clients: 'Clientes',
-                prizes: 'Premios',
-                staff: 'Staff',
-                history: 'Movimientos',
-                settings: 'Ajustes',
-                design: 'Diseño',
-                feedback: 'Opiniones'
-              };
-              return (
-                <button 
-                  key={tab}
-                  onClick={() => setActiveTab(tab as any)}
-                  className={cn(
-                    "px-4 py-2 rounded-lg text-[10px] font-bold uppercase transition-all whitespace-nowrap", 
-                    activeTab === tab ? "bg-love text-white shadow-lg shadow-love/20" : "text-slate-400 hover:text-ink"
-                  )}
-                >
-                  {labels[tab]}
-                </button>
-              );
-            })}
-          </div>
+        <div className="flex flex-row lg:flex-col p-1 lg:p-0 bg-slate-100 dark:bg-slate-950 lg:bg-transparent rounded-2xl border border-slate-200 dark:border-slate-800 lg:border-none overflow-x-auto lg:overflow-x-visible lg:space-y-1.5 scrollbar-hide lg:w-full">
+          {['dashboard', 'clients', 'prizes', 'staff', 'history', 'settings', 'design', 'feedback'].map((tab) => {
+            const labels: Record<string, string> = {
+              dashboard: 'Dashboard',
+              clients: 'Clientes',
+              prizes: 'Premios',
+              staff: 'Staff',
+              history: 'Movimientos',
+              settings: 'Ajustes',
+              design: 'Diseño',
+              feedback: 'Opiniones'
+            };
+            const icons: Record<string, React.ReactNode> = {
+              dashboard: <Award size={14} />,
+              clients: <Users size={14} />,
+              prizes: <Gift size={14} />,
+              staff: <UserPlus size={14} />,
+              history: <History size={14} />,
+              settings: <Settings size={14} />,
+              design: <Palette size={14} />,
+              feedback: <MessageSquare size={14} />
+            };
+            return (
+              <button 
+                key={tab}
+                onClick={() => setActiveTab(tab as any)}
+                className={cn(
+                  "flex items-center gap-2.5 px-4 lg:px-5 py-2.5 lg:py-3.5 rounded-xl text-[10px] md:text-sm font-black uppercase tracking-wider transition-all whitespace-nowrap lg:w-full lg:justify-start", 
+                  activeTab === tab 
+                    ? "bg-love text-white shadow-lg shadow-love/30 scale-[1.02]" 
+                    : "text-slate-405 dark:text-slate-400 hover:text-ink dark:hover:text-white lg:hover:bg-slate-50 lg:dark:hover:bg-slate-800/50"
+                )}
+              >
+                {icons[tab]}
+                <span>{labels[tab]}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {loading ? (
-        <div className="py-20 text-center animate-pulse text-slate-200 uppercase font-black tracking-widest text-[10px] italic">Cargando datos...</div>
-      ) : (
-        <>
+      {/* Área de Contenido Principal - Derecha */}
+      <div className="flex-1 w-full space-y-6">
+        {loading ? (
+          <div className="py-20 text-center animate-pulse text-slate-450 dark:text-slate-505 uppercase font-black tracking-widest text-[10px] italic bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-100 dark:border-slate-800 p-8 shadow-sm">Cargando datos del panel...</div>
+        ) : (
+          <>
           {activeTab === 'dashboard' && (
             <div className="space-y-6">
               {/* Filters */}
@@ -3048,6 +3066,7 @@ export function Admin() {
           </motion.div>
         )}
       </AnimatePresence>
+      </div>
     </div>
   );
 }
