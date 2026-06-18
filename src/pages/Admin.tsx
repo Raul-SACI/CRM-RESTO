@@ -116,6 +116,25 @@ export function Admin() {
     reader.readAsDataURL(file);
   };
 
+  const handleBranchFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert("La imagen es muy pesada (máx 5MB)");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setBranchForm(prev => ({
+        ...prev,
+        imageUrl: reader.result as string
+      }));
+    };
+    reader.readAsDataURL(file);
+  };
+
   useEffect(() => {
     if (activeTab === 'design' && designConfig) {
       setLocalDesign(JSON.parse(JSON.stringify(designConfig)));
@@ -1972,13 +1991,66 @@ export function Admin() {
                             />
                           </div>
                           <div className="space-y-1 col-span-2">
-                            <label className="text-[10px] uppercase font-black tracking-widest text-slate-400">URL Foto Sucursal</label>
-                            <input
-                              type="text" value={branchForm.imageUrl}
-                              onChange={e => setBranchForm({ ...branchForm, imageUrl: e.target.value })}
-                              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2.5 rounded-lg text-xs text-ink dark:text-white font-bold outline-none focus:border-love"
-                              placeholder="https://"
-                            />
+                            <label className="text-[10px] uppercase font-black tracking-widest text-slate-400">Foto de la Sucursal</label>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start pt-1">
+                              {/* Drag & Drop or Upload Box */}
+                              <div className="md:col-span-2">
+                                <label 
+                                  htmlFor="branch-photo-file-input"
+                                  className="border-2 border-dashed border-slate-200 dark:border-slate-800 hover:border-love dark:hover:border-love rounded-2xl p-6 flex flex-col items-center justify-center gap-2 cursor-pointer transition-colors bg-slate-50/50 dark:bg-slate-950/20 text-center h-full min-h-[96px]"
+                                >
+                                  <Upload size={18} className="text-slate-400" />
+                                  <span className="text-xs font-bold text-slate-600 dark:text-slate-350">Subir una foto de la sucursal</span>
+                                  <span className="text-[9px] text-slate-400">Formatos: PNG, JPG, WEBP (Máx 5MB)</span>
+                                </label>
+                                <input 
+                                  type="file" 
+                                  id="branch-photo-file-input"
+                                  accept="image/*"
+                                  onChange={handleBranchFileChange}
+                                  className="hidden"
+                                />
+                              </div>
+
+                              {/* Preview Area */}
+                              <div className="flex flex-col items-center justify-center border border-slate-200 dark:border-slate-800 rounded-2xl p-3 bg-slate-50 dark:bg-slate-950/40 h-full min-h-[96px] relative overflow-hidden group">
+                                {branchForm.imageUrl ? (
+                                  <>
+                                    <img 
+                                      src={branchForm.imageUrl} 
+                                      alt="Vista previa sucursal" 
+                                      className="w-full h-16 object-cover rounded-xl"
+                                      referrerPolicy="no-referrer"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => setBranchForm(prev => ({ ...prev, imageUrl: '' }))}
+                                      className="absolute top-1.5 right-1.5 bg-rose-500 hover:bg-rose-600 text-white p-1 rounded-full shadow-md transition-all active:scale-90 border-none cursor-pointer"
+                                      title="Quitar foto"
+                                    >
+                                      <X size={10} />
+                                    </button>
+                                  </>
+                                ) : (
+                                  <div className="text-center p-3 text-slate-400">
+                                    <ImageIcon size={20} className="mx-auto opacity-40 mb-1" />
+                                    <p className="text-[8px] font-black uppercase tracking-tight">Sin Foto Cargada</p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Manual URL link input as alternative */}
+                            <div className="space-y-1 mt-2">
+                              <label className="text-[9px] uppercase font-bold tracking-wider text-slate-400">O ingresa URL de la foto sucursal</label>
+                              <input
+                                type="text" value={branchForm.imageUrl}
+                                onChange={e => setBranchForm({ ...branchForm, imageUrl: e.target.value })}
+                                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2.5 rounded-lg text-xs text-ink dark:text-white font-bold outline-none focus:border-love"
+                                placeholder="https://"
+                              />
+                            </div>
                           </div>
                           <div className="space-y-1 col-span-2">
                             <label className="text-[10px] uppercase font-black tracking-widest text-slate-400">Link de Google Maps</label>
