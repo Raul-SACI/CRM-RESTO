@@ -12,6 +12,8 @@ import { Dashboard } from '@/src/pages/Dashboard';
 import { Waiter } from '@/src/pages/Waiter';
 import { Admin } from '@/src/pages/Admin';
 import { Rewards } from '@/src/pages/Rewards';
+import { Help } from '@/src/pages/Help';
+import { Branches } from '@/src/pages/Branches';
 import { Layout } from '@/src/components/Layout';
 import { motion, AnimatePresence } from 'motion/react';
 import { DesignProvider } from '@/src/components/DesignEngine';
@@ -87,6 +89,16 @@ function AppRoutes() {
         <Route 
           path="/rewards" 
           element={user ? <Layout><Rewards /></Layout> : <Navigate to="/auth" state={{ from: location }} replace />} 
+        />
+
+        <Route 
+          path="/help" 
+          element={user ? <Layout><Help /></Layout> : <Navigate to="/auth" state={{ from: location }} replace />} 
+        />
+
+        <Route 
+          path="/branches" 
+          element={user ? <Layout><Branches /></Layout> : <Navigate to="/auth" state={{ from: location }} replace />} 
         />
         
         <Route 
