@@ -1915,103 +1915,96 @@ export function Admin() {
                                     <Trash2 size={16} />
                                   </button>
 
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-1">
-                                      <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400">Título Promocional</label>
-                                      <input
-                                        type="text"
-                                        className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-ink font-bold"
-                                        value={localDesign.banners[activeBannerIndex].title}
-                                        onChange={(e) => {
-                                          const updated = [...localDesign.banners];
-                                          updated[activeBannerIndex].title = e.target.value;
-                                          setLocalDesign({ ...localDesign, banners: updated });
-                                        }}
-                                      />
+                                  <div className="space-y-4">
+                                    <div className="p-4 bg-love/5 border border-love/20 rounded-2xl">
+                                      <p className="text-[10px] font-bold uppercase tracking-widest text-love mb-1">📢 Banner con diseño incluido</p>
+                                      <p className="text-[11px] text-slate-600 dark:text-slate-400 font-semibold leading-relaxed">
+                                        Sube tu banner diseñado completo con títulos y tipografías incluidos. En la app del cliente se mostrará la gráfica limpia y solo se configurará y posicionará el botón interactivo sobre ella.
+                                      </p>
                                     </div>
 
-                                    <div className="space-y-1">
-                                      <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400">Texto del Botón (CTA)</label>
-                                      <input
-                                        type="text"
-                                        className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-ink"
-                                        value={localDesign.banners[activeBannerIndex].buttonText}
-                                        onChange={(e) => {
-                                          const updated = [...localDesign.banners];
-                                          updated[activeBannerIndex].buttonText = e.target.value;
-                                          setLocalDesign({ ...localDesign, banners: updated });
-                                        }}
-                                      />
-                                    </div>
-                                  </div>
+                                    <div className="space-y-3">
+                                      <div className="space-y-1">
+                                        <label className="text-[8px] font-black uppercase tracking-widest text-slate-400">Imagen URL del Banner Completo</label>
+                                        <input
+                                          type="text"
+                                          placeholder="https://ejemplo.com/tu-banner.png"
+                                          className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-mono text-ink font-bold"
+                                          value={localDesign.banners[activeBannerIndex].imageUrl}
+                                          onChange={(e) => {
+                                            const updated = [...localDesign.banners];
+                                            updated[activeBannerIndex].imageUrl = e.target.value;
+                                            setLocalDesign({ ...localDesign, banners: updated });
+                                          }}
+                                        />
+                                      </div>
 
-                                  <div className="space-y-1">
-                                    <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400">Subtítulo o Descripción de Campaña</label>
-                                    <input
-                                      type="text"
-                                      className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-ink"
-                                      value={localDesign.banners[activeBannerIndex].subtitle}
-                                      onChange={(e) => {
-                                        const updated = [...localDesign.banners];
-                                        updated[activeBannerIndex].subtitle = e.target.value;
-                                        setLocalDesign({ ...localDesign, banners: updated });
-                                      }}
-                                    />
-                                  </div>
+                                      <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-1">
+                                          <label className="text-[8px] font-black uppercase tracking-widest text-slate-400">Texto del Botón Acción</label>
+                                          <input
+                                            type="text"
+                                            placeholder="Canjear Premio"
+                                            className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-ink font-bold"
+                                            value={localDesign.banners[activeBannerIndex].buttonText}
+                                            onChange={(e) => {
+                                              const updated = [...localDesign.banners];
+                                              updated[activeBannerIndex].buttonText = e.target.value;
+                                              setLocalDesign({ ...localDesign, banners: updated });
+                                            }}
+                                          />
+                                        </div>
 
-                                  <div className="space-y-1">
-                                    <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400">Imagen URL (Banner banner background o fotito)</label>
-                                    <input
-                                      type="text"
-                                      className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-mono text-ink"
-                                      value={localDesign.banners[activeBannerIndex].imageUrl}
-                                      onChange={(e) => {
-                                        const updated = [...localDesign.banners];
-                                        updated[activeBannerIndex].imageUrl = e.target.value;
-                                        setLocalDesign({ ...localDesign, banners: updated });
-                                      }}
-                                    />
-                                  </div>
+                                        <div className="space-y-1">
+                                          <label className="text-[8px] font-black uppercase tracking-widest text-slate-400">Enlace o Link de Destino</label>
+                                          <input
+                                            type="text"
+                                            placeholder="#/rewards"
+                                            className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-ink font-bold"
+                                            value={localDesign.banners[activeBannerIndex].linkUrl}
+                                            onChange={(e) => {
+                                              const updated = [...localDesign.banners];
+                                              updated[activeBannerIndex].linkUrl = e.target.value;
+                                              setLocalDesign({ ...localDesign, banners: updated });
+                                            }}
+                                          />
+                                        </div>
+                                      </div>
 
-                                  <div className="grid grid-cols-3 gap-2">
-                                    <div>
-                                      <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400">Color Fondo Banner</label>
-                                      <input
-                                        type="text"
-                                        className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs font-mono text-ink"
-                                        value={localDesign.banners[activeBannerIndex].bgColor}
-                                        onChange={(e) => {
-                                          const updated = [...localDesign.banners];
-                                          updated[activeBannerIndex].bgColor = e.target.value;
-                                          setLocalDesign({ ...localDesign, banners: updated });
-                                        }}
-                                      />
-                                    </div>
-                                    <div>
-                                      <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400">Color Letra Banner</label>
-                                      <input
-                                        type="text"
-                                        className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs font-mono text-ink"
-                                        value={localDesign.banners[activeBannerIndex].textColor}
-                                        onChange={(e) => {
-                                          const updated = [...localDesign.banners];
-                                          updated[activeBannerIndex].textColor = e.target.value;
-                                          setLocalDesign({ ...localDesign, banners: updated });
-                                        }}
-                                      />
-                                    </div>
-                                    <div>
-                                      <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400">Link de Redirección</label>
-                                      <input
-                                        type="text"
-                                        className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1 text-xs text-ink"
-                                        value={localDesign.banners[activeBannerIndex].linkUrl}
-                                        onChange={(e) => {
-                                          const updated = [...localDesign.banners];
-                                          updated[activeBannerIndex].linkUrl = e.target.value;
-                                          setLocalDesign({ ...localDesign, banners: updated });
-                                        }}
-                                      />
+                                      {/* Collapsible reference fields */}
+                                      <div className="border-t border-slate-100 pt-3 mt-3">
+                                        <p className="text-[8px] font-black text-rose-500 uppercase tracking-widest mb-2">⚙️ Campos de Referencia Interna u Opcionales (No tapan el banner)</p>
+                                        <div className="grid grid-cols-2 gap-3">
+                                          <div className="space-y-1">
+                                            <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400">Referencia Título</label>
+                                            <input
+                                              type="text"
+                                              className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-xs text-slate-500 font-semibold"
+                                              value={localDesign.banners[activeBannerIndex].title}
+                                              onChange={(e) => {
+                                                const updated = [...localDesign.banners];
+                                                updated[activeBannerIndex].title = e.target.value;
+                                                setLocalDesign({ ...localDesign, banners: updated });
+                                              }}
+                                            />
+                                          </div>
+
+                                          <div className="space-y-1">
+                                            <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400">Sugerencia Color de Botón</label>
+                                            <input
+                                              type="text"
+                                              className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-xs font-mono text-slate-500 font-semibold"
+                                              value={localDesign.banners[activeBannerIndex].bgColor || '#E63946'}
+                                              onChange={(e) => {
+                                                const updated = [...localDesign.banners];
+                                                updated[activeBannerIndex].bgColor = e.target.value;
+                                                setLocalDesign({ ...localDesign, banners: updated });
+                                              }}
+                                            />
+                                          </div>
+                                        </div>
+                                        <p className="text-[8px] text-slate-400 mt-1 pl-0.5">El título descriptivo sirve para identificar campañas publicitarias en tu listado interno.</p>
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
@@ -2088,34 +2081,44 @@ export function Admin() {
                         <div className="space-y-3 flex-1 overflow-y-auto no-scrollbar pb-12">
                           {localDesign.banners.length > 0 && (
                             <div 
-                              className="rounded-2xl p-4 text-white relative overflow-hidden shadow-md flex flex-col justify-between"
+                              className="rounded-2xl relative overflow-hidden shadow-md flex items-end p-3"
                               style={{ 
-                                backgroundColor: localDesign.banners[activeBannerIndex]?.bgColor || '#7c2d12',
-                                color: localDesign.banners[activeBannerIndex]?.textColor || '#ffedd5',
-                                minHeight: '130px'
+                                minHeight: '130px',
+                                backgroundColor: '#1e293b'
                               }}
                             >
-                              <div className="relative z-10">
-                                <h4 className="text-xs font-black uppercase tracking-tight" style={{ fontFamily: `"${localDesign.fontHeadings}", sans-serif` }}>
-                                  {localDesign.banners[activeBannerIndex]?.title}
-                                </h4>
-                                <p className="text-[8px] opacity-90 mt-1">
-                                  {localDesign.banners[activeBannerIndex]?.subtitle}
-                                </p>
-                              </div>
+                              {/* Designed Image Full Background */}
+                              {localDesign.banners[activeBannerIndex]?.imageUrl ? (
+                                <>
+                                  <img 
+                                    referrerPolicy="no-referrer" 
+                                    src={localDesign.banners[activeBannerIndex]?.imageUrl} 
+                                    className="absolute inset-0 w-full h-full object-cover" 
+                                    alt="Banner promocional" 
+                                  />
+                                  {/* Gentle shadow overlay for text/button readability */}
+                                  <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/50 to-transparent pointer-events-none" />
+                                </>
+                              ) : (
+                                <div className="absolute inset-0 flex flex-col justify-center p-3 text-center" style={{ backgroundColor: localDesign.banners[activeBannerIndex]?.bgColor || '#7c2d12', color: localDesign.banners[activeBannerIndex]?.textColor || '#ffedd5' }}>
+                                  <p className="text-[10px] font-black uppercase text-white">{localDesign.banners[activeBannerIndex]?.title}</p>
+                                </div>
+                              )}
 
-                              <div className="flex justify-between items-end mt-4 relative z-10">
-                                <span className="text-[7px] bg-white/20 px-2 py-1 rounded font-bold uppercase tracking-wider backdrop-blur-sm">
-                                  {localDesign.banners[activeBannerIndex]?.buttonText}
-                                </span>
-                                <span className="text-[7px] opacity-50 font-mono">Promo {activeBannerIndex + 1}/{localDesign.banners.length}</span>
-                              </div>
-
-                              {/* Abstract shape */}
-                              <div className="absolute right-0 bottom-0 top-0 w-1/2 opacity-30 pointer-events-none">
-                                {localDesign.banners[activeBannerIndex]?.imageUrl && (
-                                  <img referrerPolicy="no-referrer" src={localDesign.banners[activeBannerIndex]?.imageUrl} className="w-full h-full object-cover rounded-l-full" alt="" />
+                              {/* Interactivo overlay button and indicators */}
+                              <div className="relative z-10 w-full flex justify-between items-center">
+                                {localDesign.banners[activeBannerIndex]?.buttonText ? (
+                                  <span className="text-[7.5px] bg-red-500 text-white font-black uppercase tracking-wider px-2.5 py-1.5 rounded-md shadow-md">
+                                    {localDesign.banners[activeBannerIndex]?.buttonText}
+                                  </span>
+                                ) : (
+                                  <span className="text-[7.5px] bg-white/20 text-white font-black uppercase tracking-wider px-2 py-1 rounded-md">
+                                    Ver más
+                                  </span>
                                 )}
+                                <span className="text-[6.5px] text-white/90 font-mono bg-black/40 px-1.5 py-0.5 rounded font-black">
+                                  PROMO {activeBannerIndex + 1}/{localDesign.banners.length}
+                                </span>
                               </div>
                             </div>
                           )}

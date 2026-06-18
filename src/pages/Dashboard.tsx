@@ -426,45 +426,40 @@ export function Dashboard() {
             >
               <img 
                 src={bannerList[currentSlide].imageUrl} 
-                alt={bannerList[currentSlide].title}
+                alt={bannerList[currentSlide].title || "Promoción"}
                 referrerPolicy="no-referrer"
-                className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-[4000ms] ease-out opacity-75"
+                className="absolute inset-0 w-full h-full object-cover group-hover:scale-102 transition-transform duration-[4000ms] ease-out"
               />
-              <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-900/85 to-transparent" />
+              {/* Subtle bottom shadow overlay to ensure button contrast regardless of the design, keeping the rest of the image fully bright */}
+              <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/50 to-transparent pointer-events-none" />
               
-              <div className="absolute inset-0 flex flex-col justify-between p-6 md:p-8 z-10 max-w-2xl">
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="bg-love text-white text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shadow-lg shadow-love/30 flex items-center gap-1">
-                      <Sparkles size={8} className="animate-spin" /> PROMO CRAFT
+              <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-8 z-10">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div>
+                    {bannerList[currentSlide].buttonText && (
+                      <a 
+                        href={bannerList[currentSlide].linkUrl || '#'}
+                        className="inline-block bg-love hover:bg-love/90 text-white font-black text-[9px] md:text-[10px] uppercase tracking-widest px-6 py-3 rounded-xl transition-all shadow-lg shadow-love/30 active:scale-95 font-sans"
+                      >
+                        {bannerList[currentSlide].buttonText}
+                      </a>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2 self-start sm:self-center">
+                    <span className="bg-black/40 text-white/90 text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full backdrop-blur-xs">
+                      PROMO CRAFT
                     </span>
                     {profile.points >= 2000 ? (
-                      <span className="bg-purple-600 text-purple-100 text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full">
-                        CLUB BLACK ACTIVO
+                      <span className="bg-purple-600 border border-purple-400 text-purple-100 text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shadow">
+                        CLUB BLACK
                       </span>
                     ) : profile.points >= 1000 ? (
-                      <span className="bg-amber-500 text-amber-950 text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full">
-                        CLUB PREMIUM ACTIVO
+                      <span className="bg-amber-500 border border-amber-400 text-amber-950 text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shadow">
+                        CLUB PREMIUM
                       </span>
                     ) : null}
                   </div>
-                  <h3 className="text-xl md:text-3.5xl font-black text-white leading-tight uppercase tracking-tighter" style={{ fontFamily: `"${designConfig?.fontHeadings || 'Inter'}", sans-serif` }}>
-                    {bannerList[currentSlide].title}
-                  </h3>
-                  <p className="text-xs md:text-sm text-slate-300 mt-2 font-medium leading-relaxed max-w-md line-clamp-2">
-                    {bannerList[currentSlide].subtitle}
-                  </p>
-                </div>
-                
-                <div className="flex items-center gap-4">
-                  {bannerList[currentSlide].buttonText && (
-                    <a 
-                      href={bannerList[currentSlide].linkUrl || '#'}
-                      className="bg-love hover:bg-love/90 text-white font-black text-[9px] md:text-[10px] uppercase tracking-widest px-6 py-3 rounded-xl transition-all shadow-lg shadow-love/30 active:scale-95 font-sans"
-                    >
-                      {bannerList[currentSlide].buttonText}
-                    </a>
-                  )}
                 </div>
               </div>
             </motion.div>
@@ -604,7 +599,7 @@ export function Dashboard() {
       {/* Dynamic Points Road Timeline with Animated Car (As requested) */}
       <div className="col-span-12 order-3 bg-white dark:bg-slate-900 rounded-[2rem] p-6 md:p-8 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none flex flex-col gap-6 relative overflow-hidden">
         <div>
-          <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center justify-between flex-wrap gap-3">
             <div>
               <span className="text-[10px] uppercase font-black tracking-widest text-love mb-1 flex items-center gap-1.5">
                 <Trophy size={11} className="text-yellow-500 animate-bounce" /> Camino de Fidelidad Craft
@@ -613,15 +608,12 @@ export function Dashboard() {
                 Ruta de Puntos & Beneficios
               </h3>
             </div>
-            <div className="bg-slate-100 dark:bg-slate-800 px-4 py-2 rounded-2xl border border-slate-200/60 dark:border-slate-700 font-bold text-xs flex items-center gap-2 text-ink dark:text-slate-300">
-              <span>Tu Saldo:</span>
-              <span className="text-love font-black italic">{profile.points.toLocaleString()} PTS</span>
+            {/* Real-time exchange rate badge telling the client exactly what pesos each point is worth */}
+            <div className="bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 px-4 py-2 rounded-2xl border border-emerald-100 dark:border-emerald-900/30 font-black text-[10px] uppercase tracking-wider flex items-center gap-2 self-start md:self-auto shadow-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Suma de Puntos: 1 Punto = ${ (settings?.points_conversion_rate || 1000).toLocaleString('es-AR') } Consumidos</span>
             </div>
           </div>
-          
-          <p className="text-slate-500 dark:text-slate-400 text-xs mt-2 max-w-2xl font-medium">
-            ¡Suma puntos con tus consumos y haz avanzar tu vasito de café CRAFT! Al llegar a <span className="font-bold text-love">1.000 pts</span> te conviertes en miembro <span className="font-bold text-love">PREMIUM (obteniendo x1.5 en tus consumos)</span> y a los <span className="font-bold text-love">2.000 pts</span> desbloqueas miembro <span className="font-bold text-love">BLACK (duplicas puntos x2.0 + máximos beneficios)</span>.
-          </p>
         </div>
 
         {/* The Asphalt Road Strip with the coffee cup */}
@@ -767,78 +759,166 @@ export function Dashboard() {
         </div>
       </div>
 
-      {/* Recent Activity Card - Side Bento */}
-      <div className="md:col-span-4 bg-white rounded-3xl p-6 border border-slate-100 shadow-xl shadow-slate-200/50 order-4">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex gap-4">
+      {/* Redesigned & Beautiful Full-Width "Cargas y Canjes" Panel (As requested) */}
+      <div className="col-span-12 bg-white dark:bg-slate-900 rounded-[2rem] p-6 md:p-8 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none order-4">
+        
+        {/* Header with Switch Tabs and Icon */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 border-b border-slate-100 dark:border-slate-800 pb-6">
+          <div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <History size={16} className="text-love animate-pulse" />
+              <span className="text-[10px] uppercase font-black tracking-widest text-[#A06C00] dark:text-[#FBBF24]">Mis Movimientos</span>
+            </div>
+            <h3 className="text-xl font-black uppercase tracking-tight text-ink dark:text-white" style={{ fontFamily: `"${designConfig?.fontHeadings || 'Inter'}", sans-serif` }}>
+              Cargas & Canjes Realizados
+            </h3>
+            <p className="text-slate-400 text-xs mt-1 font-medium">Visualiza el historial detallado de tus transacciones y canjes de premios en CRAFT.</p>
+          </div>
+
+          {/* Elegant Pill Switch Tabs */}
+          <div className="flex bg-slate-50 dark:bg-slate-950 p-1.5 rounded-2xl border border-slate-200/50 dark:border-slate-800/80 self-start md:self-center">
             <button 
               onClick={() => setActiveHistoryTab('all')}
               className={cn(
-                "uppercase tracking-widest text-[10px] font-black transition-all",
-                activeHistoryTab === 'all' ? "text-ink border-b-2 border-love pb-1" : "text-slate-400"
+                "px-5 py-2 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all",
+                activeHistoryTab === 'all' 
+                  ? "bg-white dark:bg-slate-800 text-love shadow-sm font-black" 
+                  : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
               )}
             >
-              Cargas
+              📈 Puntos Cargados
             </button>
             <button 
               onClick={() => setActiveHistoryTab('canjes')}
               className={cn(
-                "uppercase tracking-widest text-[10px] font-black transition-all",
-                activeHistoryTab === 'canjes' ? "text-ink border-b-2 border-love pb-1" : "text-slate-400"
+                "px-5 py-2 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all",
+                activeHistoryTab === 'canjes' 
+                  ? "bg-white dark:bg-slate-800 text-love shadow-sm font-black" 
+                  : "text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
               )}
             >
-              Canjes
+              🎁 Premios Canjeados
             </button>
           </div>
-          <History size={14} className="text-slate-500" />
         </div>
-        
-        <div className="space-y-3">
+
+        {/* Micro-Metrics Grid to enrich user insight and make it friendly */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <div className="bg-emerald-50/50 dark:bg-emerald-950/10 p-4 rounded-2xl border border-emerald-100/40 dark:border-emerald-950/30 flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+              <TrendingUp size={16} />
+            </div>
+            <div>
+              <p className="text-[8px] font-bold uppercase tracking-wider text-slate-400">Total Acumulado</p>
+              <p className="text-base font-black italic text-emerald-600 dark:text-emerald-400">
+                {transactions.filter(t => t.points_earned > 0).reduce((sum, tx) => sum + tx.points_earned, 0).toLocaleString()} PTS
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-rose-50/50 dark:bg-rose-950/10 p-4 rounded-2xl border border-rose-100/40 dark:border-rose-950/30 flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-orange-500/10 flex items-center justify-center text-love shrink-0">
+              <Gift size={16} />
+            </div>
+            <div>
+              <p className="text-[8px] font-bold uppercase tracking-wider text-slate-400">Puntos Canjeados</p>
+              <p className="text-base font-black italic text-love">
+                {Math.abs(transactions.filter(t => t.points_earned < 0).reduce((sum, tx) => sum + tx.points_earned, 0)).toLocaleString()} PTS
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-blue-50/50 dark:bg-blue-950/10 p-4 rounded-2xl border border-blue-100/40 dark:border-blue-950/30 flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
+              <Award size={16} />
+            </div>
+            <div>
+              <p className="text-[8px] font-bold uppercase tracking-wider text-slate-400">Estatus del Perfil</p>
+              <p className="text-xs font-black uppercase text-blue-600 dark:text-blue-400">
+                {profile.points >= 2000 ? "CLUB BLACK (x2.0)" : profile.points >= 1000 ? "CLUB PREMIUM (x1.5)" : "SOCIO INTERMEDIO (x1.0)"}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Beautiful Grid List of Transactions */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {loading ? (
-            <div className="text-center py-8 text-slate-200 animate-pulse uppercase tracking-[0.2em] text-[10px] font-black">Cargando...</div>
+            <div className="col-span-12 text-center py-12 text-slate-300 dark:text-slate-700 animate-pulse uppercase tracking-[0.2em] text-xs font-black">
+              Cargando historial...
+            </div>
           ) : (() => {
             const filteredTx = transactions.filter(tx => 
               activeHistoryTab === 'all' ? tx.points_earned > 0 : tx.points_earned < 0
             );
             
             if (filteredTx.length === 0) {
-              return <div className="text-center text-slate-400 text-[10px] font-bold uppercase py-12 italic border-2 border-dashed border-slate-50 rounded-2xl">Sin {activeHistoryTab === 'all' ? 'cargas' : 'canjes'}</div>;
+              return (
+                <div className="col-span-12 text-center text-slate-400 dark:text-slate-500 text-xs font-bold uppercase py-16 italic border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-3xl">
+                  Sin {activeHistoryTab === 'all' ? 'cargas de puntos registradas' : 'premios canjeados aún'}
+                </div>
+              );
             }
 
             return filteredTx.map((tx) => (
               <div 
                 key={tx.id}
-                className="bg-slate-50 p-4 rounded-2xl flex justify-between items-center border border-slate-100 group hover:border-love/20 transition-all font-sans"
+                className="bg-slate-50/50 dark:bg-slate-950/40 p-5 rounded-2xl flex flex-col justify-between border border-slate-100 dark:border-slate-800/60 group hover:border-love/20 dark:hover:border-love/30 hover:bg-white dark:hover:bg-slate-900 transition-all shadow-xs duration-300"
               >
-                <div className="min-w-0">
-                  <p className="text-[11px] font-black uppercase text-ink truncate tracking-tight">{tx.description}</p>
-                  <p className="text-[9px] text-slate-400 uppercase font-black tracking-widest mt-1 font-mono">
-                    {new Date(tx.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })} • {tx.branch}
+                <div>
+                  <div className="flex justify-between items-start gap-2 mb-3">
+                    <span className={cn(
+                      "text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg border",
+                      tx.points_earned > 0 
+                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20" 
+                        : "bg-love/10 text-love border-love/20"
+                    )}>
+                      {tx.points_earned > 0 ? '📈 Carga' : '🎁 Canje'}
+                    </span>
+                    <span className="text-[9px] text-slate-400 dark:text-slate-500 font-bold bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded flex items-center gap-1">
+                      <Calendar size={10} />
+                      {new Date(tx.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    </span>
+                  </div>
+
+                  <p className="text-xs font-black uppercase text-ink dark:text-white line-clamp-2 tracking-tight leading-snug mb-1">
+                    {tx.description}
                   </p>
-                  {tx.redemption_code && (
-                    <div className="mt-2 flex items-center gap-2">
-                       <span className="text-[8px] font-black uppercase text-slate-300">Código:</span>
-                       <span className="bg-ink text-white px-2 py-0.5 rounded-md font-mono text-[9px] font-black italic tracking-widest">
-                         {tx.redemption_code}
-                       </span>
-                    </div>
-                  )}
-                  {tx.invoice_number && (
-                    <div className="mt-2 flex items-center gap-2">
-                       <span className="text-[8px] font-black uppercase text-slate-300">Factura:</span>
-                       <span className="bg-slate-200 text-ink px-2 py-0.5 rounded-md font-mono text-[9px] font-black tracking-widest">
-                         {tx.invoice_number}
-                       </span>
-                    </div>
-                  )}
+                  
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold flex items-center gap-1 mb-3">
+                    📍 {tx.branch || 'Sucursal Principal'}
+                  </p>
                 </div>
-                <div className="text-right ml-4 shrink-0">
-                  <p className={cn(
-                    "font-black italic text-base",
-                    tx.points_earned > 0 ? "text-green-500" : "text-love"
-                  )}>
-                    {tx.points_earned > 0 ? '+' : ''}{tx.points_earned}
-                  </p>
+
+                <div className="border-t border-slate-100/70 dark:border-slate-800/60 pt-3 flex items-center justify-between mt-2">
+                  <div className="space-y-1">
+                    {tx.redemption_code && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[8px] font-bold uppercase text-slate-400">Código:</span>
+                        <span className="bg-ink dark:bg-slate-800 text-white dark:text-slate-200 px-2 py-0.5 rounded-md font-mono text-[9px] font-black italic tracking-widest">
+                          {tx.redemption_code}
+                        </span>
+                      </div>
+                    )}
+                    {tx.invoice_number && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[8px] font-bold uppercase text-slate-400">Factura:</span>
+                        <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-md font-mono text-[9px] font-bold tracking-tight">
+                          {tx.invoice_number}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="text-right">
+                    <p className={cn(
+                      "font-black italic text-lg leading-none",
+                      tx.points_earned > 0 ? "text-emerald-500" : "text-love"
+                    )}>
+                      {tx.points_earned > 0 ? '+' : ''}{tx.points_earned.toLocaleString()}
+                      <span className="text-[9px] uppercase font-bold tracking-tighter not-italic ml-0.5">pts</span>
+                    </p>
+                  </div>
                 </div>
               </div>
             ));
@@ -846,36 +926,15 @@ export function Dashboard() {
         </div>
         
         {transactions.length > 0 && (
-          <button 
-            className="w-full mt-6 py-3 text-[9px] font-black uppercase tracking-[0.2rem] text-slate-400 border-t border-slate-50 hover:text-love transition-colors"
-            onClick={() => window.location.href = '#/rewards'}
-          >
-            Ir a Premios <ChevronRight size={10} className="inline ml-1" />
-          </button>
+          <div className="border-t border-slate-100 dark:border-slate-800/80 mt-8 pt-4 flex justify-end">
+            <button 
+              className="px-6 py-3 text-[10px] font-black uppercase tracking-wider text-slate-400 hover:text-love transition-colors flex items-center gap-1.5"
+              onClick={() => window.location.href = '#/rewards'}
+            >
+              Ir a la Tienda de Premios <ChevronRight size={12} />
+            </button>
+          </div>
         )}
-      </div>
-
-      {/* Info Card - Square Bento */}
-      <div className="md:col-span-8 bg-white rounded-3xl p-6 border border-slate-100 relative overflow-hidden group shadow-xl shadow-slate-200/50 order-5">
-        <div className="flex flex-col h-full justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]"></div>
-              <h2 className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Estado del Sistema</h2>
-            </div>
-            <p className="text-ink text-sm font-bold mb-1">Tu perfil está verificado y activo.</p>
-            <p className="text-slate-500 text-[11px] leading-relaxed font-medium">
-              Sumas 1 punto por cada $ { (settings?.points_conversion_rate || 1000).toLocaleString('es-AR') } consumidos. Si eres <span className="font-bold text-love">CLUB PREMIUM (1.000+ pts)</span> multiplicas tus puntos ganados por <span className="font-bold text-love">1.5x</span>, y si eres <span className="font-bold text-love">CLUB BLACK (2.000+ pts)</span> los <span className="font-bold text-love">duplicas (2x)</span> automáticamente.
-            </p>
-          </div>
-          <div className="mt-6 flex gap-3 text-[10px] uppercase font-bold tracking-widest">
-            <span className="bg-love/10 text-love px-3 py-1.5 rounded-lg border border-love/20">Programa Premium</span>
-            <span className="bg-slate-100 text-slate-400 px-3 py-1.5 rounded-lg border border-slate-200">Válido en sucursal</span>
-          </div>
-        </div>
-        <div className="absolute top-1/2 -right-12 -translate-y-1/2 opacity-[0.03] pointer-events-none group-hover:scale-110 transition-transform duration-1000 text-ink">
-           <Award size={200} />
-        </div>
       </div>
     </motion.div>
   );
