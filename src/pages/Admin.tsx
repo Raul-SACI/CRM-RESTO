@@ -59,6 +59,29 @@ export function Admin() {
     return `${r}, ${g}, ${b}`;
   };
 
+  const handleBannerFileChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert("La imagen es muy pesada (máx 5MB)");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (localDesign) {
+        const updated = [...localDesign.banners];
+        updated[index] = {
+          ...updated[index],
+          imageUrl: reader.result as string
+        };
+        setLocalDesign({ ...localDesign, banners: updated });
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   useEffect(() => {
     if (activeTab === 'design' && designConfig) {
       setLocalDesign(JSON.parse(JSON.stringify(designConfig)));
@@ -1924,19 +1947,75 @@ export function Admin() {
                                     </div>
 
                                     <div className="space-y-3">
-                                      <div className="space-y-1">
-                                        <label className="text-[8px] font-black uppercase tracking-widest text-slate-400">Imagen URL del Banner Completo</label>
-                                        <input
-                                          type="text"
-                                          placeholder="https://ejemplo.com/tu-banner.png"
-                                          className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-mono text-ink font-bold"
-                                          value={localDesign.banners[activeBannerIndex].imageUrl}
-                                          onChange={(e) => {
-                                            const updated = [...localDesign.banners];
-                                            updated[activeBannerIndex].imageUrl = e.target.value;
-                                            setLocalDesign({ ...localDesign, banners: updated });
-                                          }}
-                                        />
+                                      <div className="space-y-2">
+                                        <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Importar Archivo de Gráfica (Alta Calidad)</label>
+                                        
+                                        {/* Drag & Drop high-fidelity Uploader Zone */}
+                                        <div className="relative">
+                                          <input 
+                                            type="file" 
+                                            accept="image/*" 
+                                            id={`banner-file-input-${activeBannerIndex}`}
+                                            onChange={(e) => handleBannerFileChange(e, activeBannerIndex)}
+                                            className="hidden" 
+                                          />
+                                          
+                                          {localDesign.banners[activeBannerIndex].imageUrl ? (
+                                            <div className="relative group rounded-2xl border-2 border-emerald-500/30 overflow-hidden bg-slate-50 dark:bg-slate-900 aspect-video flex flex-col justify-end p-4">
+                                              <img 
+                                                src={localDesign.banners[activeBannerIndex].imageUrl} 
+                                                className="absolute inset-0 w-full h-full object-cover" 
+                                                alt="Banner subido" 
+                                                referrerPolicy="no-referrer"
+                                              />
+                                              {/* Ambient overlay */}
+                                              <label 
+                                                htmlFor={`banner-file-input-${activeBannerIndex}`}
+                                                className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center text-white gap-2 cursor-pointer"
+                                              >
+                                                <Upload size={24} className="animate-pulse" />
+                                                <span className="text-[10px] font-black uppercase tracking-widest">Reemplazar Archivo</span>
+                                              </label>
+                                              
+                                              {/* Beautiful status pill */}
+                                              <div className="relative z-10 bg-emerald-500 text-white text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl shadow-lg flex items-center gap-1.5 self-start backdrop-blur-xs">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
+                                                Gráfica Cargada Correctamente (Alta Calidad)
+                                              </div>
+                                            </div>
+                                          ) : (
+                                            <label 
+                                              htmlFor={`banner-file-input-${activeBannerIndex}`}
+                                              className="w-full aspect-video rounded-2xl border-2 border-dashed border-slate-300 hover:border-love/60 dark:border-slate-700 dark:hover:border-love/50 flex flex-col items-center justify-center cursor-pointer transition-all bg-slate-50/50 dark:bg-slate-900/50 p-6 text-center hover:bg-love/5 group"
+                                            >
+                                              <div className="w-12 h-12 rounded-2xl bg-love/10 dark:bg-love/25 text-love flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
+                                                <Upload size={20} />
+                                              </div>
+                                              <p className="text-xs font-bold text-ink dark:text-white uppercase tracking-tight mb-1">Cargar Imagen de Banner</p>
+                                              <p className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold max-w-xs leading-relaxed">
+                                                Arrastra tu diseño o <span className="text-love font-bold underline">haz clic para buscar</span> en tu computadora. Soporta PNG, JPG (Más alta calidad).
+                                              </p>
+                                            </label>
+                                          )}
+                                        </div>
+
+                                        <div className="flex justify-between items-center px-1">
+                                          <label htmlFor={`banner-file-input-${activeBannerIndex}`} className="text-[9px] font-black text-love uppercase tracking-widest cursor-pointer hover:underline flex items-center gap-1">
+                                            <Upload size={10} /> {localDesign.banners[activeBannerIndex].imageUrl ? "Reemplazar Gráfica" : "Elegir archivo"}
+                                          </label>
+                                          {localDesign.banners[activeBannerIndex].imageUrl && (
+                                            <button 
+                                              onClick={() => {
+                                                const updated = [...localDesign.banners];
+                                                updated[activeBannerIndex].imageUrl = "";
+                                                setLocalDesign({ ...localDesign, banners: updated });
+                                              }}
+                                              className="text-[9px] font-black text-slate-400 hover:text-love uppercase tracking-widest transition-colors"
+                                            >
+                                              Quitar Imagen
+                                            </button>
+                                          )}
+                                        </div>
                                       </div>
 
                                       <div className="grid grid-cols-2 gap-4">
