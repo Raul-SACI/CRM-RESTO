@@ -64,6 +64,12 @@ export interface DesignConfig {
   navButtonColors?: Record<string, string>; // e.g. { '/': '#ef4444', '/rewards': '#10b981', '/help': '#3b82f6', '/branches': '#f59e0b' }
   // Custom client button positions/order
   navButtonOrder?: string[]; // e.g. ['/', '/rewards', '/help', '/branches']
+  
+  // Custom Card/Button visual styling
+  pointsCardBg?: string;
+  pointsCardText?: string;
+  profileButtonBg?: string;
+  profileButtonText?: string;
 }
 
 export const DEFAULT_DESIGN: DesignConfig = {

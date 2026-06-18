@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   CreditCard, Award, TrendingUp, History, Users, 
   Gift, Calendar, ChevronRight, BarChart3, PieChart,
-  Flag, Sparkles, Car, Trophy, ArrowLeft, ArrowRight, Star
+  Flag, Sparkles, Car, Trophy, ArrowLeft, ArrowRight, Star,
+  Pencil, Check
 } from 'lucide-react';
 import { supabase } from '@/src/lib/supabase';
 import { Transaction, SystemSettings, Profile, Prize } from '@/src/types';
@@ -18,7 +19,7 @@ import {
 
 export function Dashboard() {
   const { profile } = useAuth();
-  const { designConfig } = useDesign();
+  const { designConfig, saveDesignConfig } = useDesign();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [settings, setSettings] = useState<SystemSettings | null>(null);
   const [loading, setLoading] = useState(true);
@@ -26,6 +27,27 @@ export function Dashboard() {
   const [activeHistoryTab, setActiveHistoryTab] = useState<'all' | 'canjes'>('all');
   const [editForm, setEditForm] = useState({ fullName: '', dni: '' });
   const [popularPrizes, setPopularPrizes] = useState<Prize[]>([]);
+
+  // Visual points card styling setup
+  const [isEditingPointsCard, setIsEditingPointsCard] = useState(false);
+  const [cardBgForm, setCardBgForm] = useState('#ef4444');
+  const [cardTextForm, setCardTextForm] = useState('#ffffff');
+  const [buttonBgForm, setButtonBgForm] = useState('rgba(255,255,255,0.1)');
+  const [buttonTextForm, setButtonTextForm] = useState('#ffffff');
+
+  // Visual banner slide styling setup
+  const [isEditingBanner, setIsEditingBanner] = useState(false);
+  const [editingBannerData, setEditingBannerData] = useState<{
+    index: number;
+    id: string;
+    title: string;
+    subtitle: string;
+    imageUrl: string;
+    linkUrl: string;
+    bgColor: string;
+    textColor: string;
+    buttonText: string;
+  } | null>(null);
 
   // Sliding banners like "Pedidos Ya (Argentina)"
   const defaultBanners = [
@@ -292,6 +314,52 @@ export function Dashboard() {
     }
   };
 
+  const handleSavePointsCardDesign = async () => {
+    try {
+      const updatedConfig = {
+        ...designConfig,
+        pointsCardBg: cardBgForm,
+        pointsCardText: cardTextForm,
+        profileButtonBg: buttonBgForm,
+        profileButtonText: buttonTextForm,
+      };
+      await saveDesignConfig(updatedConfig);
+      setIsEditingPointsCard(false);
+    } catch (e) {
+      alert("Error al guardar diseño de tarjeta: " + (e as Error).message);
+    }
+  };
+
+  const handleSaveBannerDesign = async () => {
+    if (!editingBannerData) return;
+    try {
+      const currentBanners = [...bannerList];
+      const targetIndex = editingBannerData.index;
+      
+      currentBanners[targetIndex] = {
+        id: editingBannerData.id,
+        title: editingBannerData.title,
+        subtitle: editingBannerData.subtitle,
+        imageUrl: editingBannerData.imageUrl,
+        linkUrl: editingBannerData.linkUrl,
+        bgColor: editingBannerData.bgColor,
+        textColor: editingBannerData.textColor,
+        buttonText: editingBannerData.buttonText,
+      };
+
+      const updatedConfig = {
+        ...designConfig,
+        banners: currentBanners
+      };
+
+      await saveDesignConfig(updatedConfig);
+      setIsEditingBanner(false);
+      setEditingBannerData(null);
+    } catch (e) {
+      alert("Error al guardar diseño de banner: " + (e as Error).message);
+    }
+  };
+
   if (!profile || (loading && !adminStats && profile.role === 'admin')) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center min-h-[60vh]">
@@ -450,6 +518,31 @@ export function Dashboard() {
       {/* Sliding Promotion Banners (Pedidos Ya Argentina Vibe) */}
       <div className="col-span-12 order-first mb-2">
         <div className="relative w-full overflow-hidden rounded-[2rem] h-[200px] md:h-[260px] shadow-xl border border-slate-200/50 bg-slate-900 group">
+          {/* Admin edit visual button */}
+          {profile?.role === 'admin' && (
+            <button
+              onClick={() => {
+                const b = bannerList[currentSlide];
+                setEditingBannerData({
+                  index: currentSlide,
+                  id: b.id,
+                  title: b.title || '',
+                  subtitle: b.subtitle || '',
+                  imageUrl: b.imageUrl || '',
+                  linkUrl: b.linkUrl || '',
+                  bgColor: b.bgColor || '#ef4444',
+                  textColor: b.textColor || '#ffffff',
+                  buttonText: b.buttonText || '',
+                });
+                setIsEditingBanner(true);
+              }}
+              className="absolute top-4 right-4 bg-slate-950/80 hover:bg-slate-950 text-white p-2.5 rounded-full cursor-pointer transition-all z-30 flex items-center justify-center border border-white/20 shadow-lg active:scale-95"
+              title="Editar banner actual"
+            >
+              <Pencil size={15} className="animate-pulse text-amber-300" />
+            </button>
+          )}
+
           {/* Active Banner Slide */}
           <AnimatePresence mode="wait">
             <motion.div
@@ -469,13 +562,17 @@ export function Dashboard() {
               {/* Subtle bottom shadow overlay to ensure button contrast regardless of the design, keeping the rest of the image fully bright */}
               <div className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/50 to-transparent pointer-events-none" />
               
-              <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-8 z-10">
+              <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-8 z-10 animate-fade-in">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div>
                     {bannerList[currentSlide].buttonText && (
                       <a 
                         href={bannerList[currentSlide].linkUrl || '#'}
-                        className="inline-block bg-love hover:bg-love/90 text-white font-black text-[9px] md:text-[10px] uppercase tracking-widest px-6 py-3 rounded-xl transition-all shadow-lg shadow-love/30 active:scale-95 font-sans"
+                        style={{
+                          backgroundColor: bannerList[currentSlide].bgColor || undefined,
+                          color: bannerList[currentSlide].textColor || undefined,
+                        }}
+                        className="inline-block bg-love hover:bg-opacity-90 text-white font-black text-[9px] md:text-[10px] uppercase tracking-widest px-6 py-3 rounded-xl transition-all shadow-lg active:scale-95 font-sans"
                       >
                         {bannerList[currentSlide].buttonText}
                       </a>
@@ -633,8 +730,35 @@ export function Dashboard() {
       </div>
 
       {/* Points Balance Card - Large Bento */}
-      <div className="md:col-span-9 bg-love rounded-3xl p-8 flex flex-col justify-between border-4 border-slate-900/5 relative overflow-hidden group shadow-red order-1 text-white">
-        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-white/10 rounded-full blur-3xl group-hover:scale-110 transition-transform duration-700" />
+      <div 
+        style={{
+          backgroundColor: designConfig?.pointsCardBg || undefined,
+          color: designConfig?.pointsCardText || undefined,
+        }}
+        className={cn(
+          "md:col-span-9 rounded-3xl p-8 flex flex-col justify-between border-4 border-slate-900/5 relative overflow-hidden group/card shadow-red order-1",
+          designConfig?.pointsCardBg ? "" : "bg-love text-white"
+        )}
+      >
+        <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-white/10 rounded-full blur-3xl group-hover/card:scale-110 transition-transform duration-700 pointer-events-none" />
+        
+        {profile?.role === 'admin' && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setCardBgForm(designConfig?.pointsCardBg || '#ef4444');
+              setCardTextForm(designConfig?.pointsCardText || '#ffffff');
+              setButtonBgForm(designConfig?.profileButtonBg || 'rgba(255,255,255,0.1)');
+              setButtonTextForm(designConfig?.profileButtonText || '#ffffff');
+              setIsEditingPointsCard(true);
+            }}
+            className="absolute top-4 right-4 bg-slate-950/80 hover:bg-slate-900 text-white p-2.5 rounded-full cursor-pointer transition-all z-20 flex items-center justify-center border border-white/25 shadow-lg active:scale-95"
+            title="Editar diseño de tarjeta"
+          >
+            <Pencil size={15} className="animate-pulse text-amber-300" />
+          </button>
+        )}
+
         <div className="relative">
           <h2 className="text-xs md:text-sm uppercase font-bold tracking-widest opacity-80 mb-2">Saldo Actual Fidelidad</h2>
           <div className="flex items-baseline gap-2">
@@ -652,7 +776,14 @@ export function Dashboard() {
           </div>
           <button 
             onClick={() => setIsEditing(true)}
-            className="bg-white/10 hover:bg-white/20 px-4 py-2 rounded-xl transition-all border border-white/10 active:scale-95"
+            style={{
+              backgroundColor: designConfig?.profileButtonBg || undefined,
+              color: designConfig?.profileButtonText || undefined,
+            }}
+            className={cn(
+              "px-4 py-2 rounded-xl transition-all border border-white/10 active:scale-95",
+              designConfig?.profileButtonBg ? "" : "bg-white/10 hover:bg-white/20 text-white"
+            )}
           >
             Editar Perfil
           </button>
@@ -711,6 +842,349 @@ export function Dashboard() {
                     </button>
                   </div>
                 </form>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Modal Editar Diseño Tarjeta (Solo Admins) */}
+        <AnimatePresence>
+          {isEditingPointsCard && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-ink/65 backdrop-blur-xs z-[110] flex items-center justify-center p-6 overflow-y-auto"
+            >
+              <motion.div 
+                initial={{ scale: 0.95, y: 15 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.95, y: 15 }}
+                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 md:p-8 rounded-[2rem] w-full max-w-md shadow-2xl relative"
+              >
+                <div className="mb-6">
+                  <span className="text-[9px] bg-amber-500/10 text-amber-600 font-black uppercase tracking-widest px-2.5 py-1 rounded-full">
+                    Editor Visual de Tarjeta
+                  </span>
+                  <h3 className="text-xl font-black uppercase tracking-tight text-ink dark:text-white mt-1">
+                    Personalizar <span className="text-love">Mi Tarjeta de Puntos</span>
+                  </h3>
+                  <p className="text-slate-400 text-xs font-medium mt-1">Personaliza colores en tiempo real para todos los clientes.</p>
+                </div>
+
+                <div className="space-y-4">
+                  {/* Card Background Color */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Color Fondo de Tarjeta</label>
+                    <div className="flex gap-2">
+                      <input 
+                        type="color" 
+                        className="w-10 h-10 rounded-lg cursor-pointer border border-slate-200 dark:border-slate-700 bg-transparent" 
+                        value={cardBgForm} 
+                        onChange={e => setCardBgForm(e.target.value)} 
+                      />
+                      <input 
+                        placeholder="#ef4444" 
+                        className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-sm outline-none focus:border-love text-ink dark:text-white font-mono" 
+                        value={cardBgForm} 
+                        onChange={e => setCardBgForm(e.target.value)} 
+                      />
+                    </div>
+                    {/* Presets */}
+                    <div className="flex flex-wrap gap-1.5 pt-1.5">
+                      {['#ef4444', '#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#0f172a', '#7c2d12', '#1e293b'].map(c => (
+                        <button
+                          key={c}
+                          type="button"
+                          onClick={() => setCardBgForm(c)}
+                          className="w-6 h-6 rounded-full border border-white hover:scale-110 transition-transform shadow-xs"
+                          style={{ backgroundColor: c }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Card Text Color */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Color de Texto Tarjeta</label>
+                    <div className="flex gap-2">
+                      <input 
+                        type="color" 
+                        className="w-10 h-10 rounded-lg cursor-pointer border border-slate-200 dark:border-slate-700 bg-transparent" 
+                        value={cardTextForm} 
+                        onChange={e => setCardTextForm(e.target.value)} 
+                      />
+                      <input 
+                        placeholder="#ffffff" 
+                        className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-sm outline-none focus:border-love text-ink dark:text-white font-mono" 
+                        value={cardTextForm} 
+                        onChange={e => setCardTextForm(e.target.value)} 
+                      />
+                    </div>
+                    <div className="flex gap-1.5 pt-1.5">
+                      {['#ffffff', '#fecdd3', '#fed7aa', '#fef08a', '#e2e8f0', '#0f172a'].map(c => (
+                        <button
+                          key={c}
+                          type="button"
+                          onClick={() => setCardTextForm(c)}
+                          className="px-2.5 py-1 text-[9px] uppercase font-bold rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 hover:bg-slate-100 text-slate-600 dark:text-slate-300"
+                        >
+                          {c === '#ffffff' ? 'Blanco' : c === '#0f172a' ? 'Oscuro' : c}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Button Background Color */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Color de Fondo - Botón "Editar Perfil"</label>
+                    <div className="flex gap-2">
+                      <input 
+                        type="color" 
+                        className="w-10 h-10 rounded-lg cursor-pointer border border-slate-200 dark:border-slate-700 bg-transparent" 
+                        value={buttonBgForm.startsWith('rgba') ? '#ffffff' : buttonBgForm} 
+                        onChange={e => setButtonBgForm(e.target.value)} 
+                      />
+                      <input 
+                        placeholder="rgba(255,255,255,0.12)" 
+                        className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-sm outline-none focus:border-love text-ink dark:text-white font-mono" 
+                        value={buttonBgForm} 
+                        onChange={e => setButtonBgForm(e.target.value)} 
+                      />
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 pt-1.5">
+                      {['rgba(255,255,255,0.15)', 'rgba(255,255,255,0.25)', '#0f172a', '#ef4444', '#10b981', '#3b82f6', 'transparent'].map(c => (
+                        <button
+                          key={c}
+                          type="button"
+                          onClick={() => setButtonBgForm(c)}
+                          className="px-2 py-1 text-[9px] uppercase font-bold rounded-lg border border-slate-200/50 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-300"
+                        >
+                          {c === 'transparent' ? 'Transparente' : c.includes('rgba') ? 'Luminoso' : c}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Button Text Color */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Color de Texto - Botón "Editar Perfil"</label>
+                    <div className="flex gap-2">
+                      <input 
+                        type="color" 
+                        className="w-10 h-10 rounded-lg cursor-pointer border border-slate-200 dark:border-slate-700 bg-transparent" 
+                        value={buttonTextForm} 
+                        onChange={e => setButtonTextForm(e.target.value)} 
+                      />
+                      <input 
+                        placeholder="#ffffff" 
+                        className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-sm outline-none focus:border-love text-ink dark:text-white font-mono" 
+                        value={buttonTextForm} 
+                        onChange={e => setButtonTextForm(e.target.value)} 
+                      />
+                    </div>
+                    <div className="flex gap-1.5 pt-1.5">
+                      {['#ffffff', '#0f172a', '#ef4444', '#10b981', '#f59e0b'].map(c => (
+                        <button
+                          key={c}
+                          type="button"
+                          onClick={() => setButtonTextForm(c)}
+                          className="px-2.5 py-1 text-[9px] uppercase font-bold rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-300"
+                        >
+                          {c === '#ffffff' ? 'Blanco' : c === '#0f172a' ? 'Oscuro' : c}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-6 mt-4 border-t border-slate-100 dark:border-slate-800">
+                  <button 
+                    type="button" 
+                    onClick={() => setIsEditingPointsCard(false)}
+                    className="flex-1 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-slate-700"
+                  >
+                    Cerrar
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={handleSavePointsCardDesign}
+                    className="flex-[2] bg-love text-white py-3 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-love/20 flex items-center justify-center gap-1.5"
+                  >
+                    <Check size={11} /> Guardar Cambios
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Modal Editar Banner (Solo Admins) */}
+        <AnimatePresence>
+          {isEditingBanner && editingBannerData && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-ink/65 backdrop-blur-xs z-[110] flex items-center justify-center p-6 overflow-y-auto"
+            >
+              <motion.div 
+                initial={{ scale: 0.95, y: 15 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.95, y: 15 }}
+                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 md:p-8 rounded-[2rem] w-full max-w-md shadow-2xl relative my-8"
+              >
+                <div className="mb-6">
+                  <span className="text-[9px] bg-love/10 text-love font-black uppercase tracking-widest px-2.5 py-1 rounded-full">
+                    Editor de Slide / Banner {editingBannerData.index + 1}
+                  </span>
+                  <h3 className="text-xl font-black uppercase tracking-tight text-ink dark:text-white mt-1">
+                    Personalizar <span className="text-love">Banner Promocional</span>
+                  </h3>
+                  <p className="text-slate-400 text-xs font-medium mt-1">Modifica la información, el botón y los colores de este slide.</p>
+                </div>
+
+                <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 scrollbar-hide">
+                  {/* Banner Title */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Título del Banner</label>
+                    <input 
+                      required
+                      placeholder="Título promocional" 
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs outline-none focus:border-love text-ink dark:text-white font-bold" 
+                      value={editingBannerData.title} 
+                      onChange={e => setEditingBannerData({...editingBannerData, title: e.target.value})} 
+                    />
+                  </div>
+
+                  {/* Banner Subtitle */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Subtítulo o Descripción</label>
+                    <textarea 
+                      required
+                      rows={2}
+                      placeholder="Detalle de la promoción..." 
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs outline-none focus:border-love text-ink dark:text-white" 
+                      value={editingBannerData.subtitle} 
+                      onChange={e => setEditingBannerData({...editingBannerData, subtitle: e.target.value})} 
+                    />
+                  </div>
+
+                  {/* Image URL */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">URL de la Imagen</label>
+                    <input 
+                      required
+                      placeholder="https://..." 
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs outline-none focus:border-love text-ink dark:text-white font-mono text-[10px]" 
+                      value={editingBannerData.imageUrl} 
+                      onChange={e => setEditingBannerData({...editingBannerData, imageUrl: e.target.value})} 
+                    />
+                  </div>
+
+                  {/* Link URL */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Enlace del Botón (Link)</label>
+                    <input 
+                      placeholder="#/rewards o enlace externo..." 
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs outline-none focus:border-love text-ink dark:text-white font-mono text-[10px]" 
+                      value={editingBannerData.linkUrl} 
+                      onChange={e => setEditingBannerData({...editingBannerData, linkUrl: e.target.value})} 
+                    />
+                  </div>
+
+                  {/* Button Text */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Texto del Botón</label>
+                    <input 
+                      placeholder="Ej: Canjear Premio" 
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs outline-none focus:border-love text-ink dark:text-white font-bold" 
+                      value={editingBannerData.buttonText} 
+                      onChange={e => setEditingBannerData({...editingBannerData, buttonText: e.target.value})} 
+                    />
+                  </div>
+
+                  {/* Button Background Color (uses bgColor) */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Color Fondo Botón Banner</label>
+                    <div className="flex gap-2">
+                      <input 
+                        type="color" 
+                        className="w-10 h-10 rounded-lg cursor-pointer border border-slate-200 dark:border-slate-700 bg-transparent" 
+                        value={editingBannerData.bgColor} 
+                        onChange={e => setEditingBannerData({...editingBannerData, bgColor: e.target.value})} 
+                      />
+                      <input 
+                        placeholder="#ef4444" 
+                        className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs outline-none focus:border-love text-ink dark:text-white font-mono" 
+                        value={editingBannerData.bgColor} 
+                        onChange={e => setEditingBannerData({...editingBannerData, bgColor: e.target.value})} 
+                      />
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {['#ef4444', '#10b981', '#3b82f6', '#f59e0b', '#0f172a', '#7c2d12', '#1e293b'].map(c => (
+                        <button
+                          key={c}
+                          type="button"
+                          onClick={() => setEditingBannerData({...editingBannerData, bgColor: c})}
+                          className="w-5 h-5 rounded-full border border-white hover:scale-110 transition-transform shadow-xs"
+                          style={{ backgroundColor: c }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Button Text Color (uses textColor) */}
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Color Texto Botón Banner</label>
+                    <div className="flex gap-2">
+                      <input 
+                        type="color" 
+                        className="w-10 h-10 rounded-lg cursor-pointer border border-slate-200 dark:border-slate-700 bg-transparent" 
+                        value={editingBannerData.textColor} 
+                        onChange={e => setEditingBannerData({...editingBannerData, textColor: e.target.value})} 
+                      />
+                      <input 
+                        placeholder="#ffffff" 
+                        className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs outline-none focus:border-love text-ink dark:text-white font-mono" 
+                        value={editingBannerData.textColor} 
+                        onChange={e => setEditingBannerData({...editingBannerData, textColor: e.target.value})} 
+                      />
+                    </div>
+                    <div className="flex gap-1">
+                      {['#ffffff', '#0f172a', '#fed7aa', '#f8fafc', '#ef4444'].map(c => (
+                        <button
+                          key={c}
+                          type="button"
+                          onClick={() => setEditingBannerData({...editingBannerData, textColor: c})}
+                          className="px-2.5 py-1 text-[8px] uppercase font-bold rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 text-slate-600 dark:text-slate-300"
+                        >
+                          {c === '#ffffff' ? 'Blanco' : c === '#0f172a' ? 'Oscuro' : c}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-6 mt-4 border-t border-slate-100 dark:border-slate-800">
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      setIsEditingBanner(false);
+                      setEditingBannerData(null);
+                    }}
+                    className="flex-1 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-slate-700"
+                  >
+                    Cerrar
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={handleSaveBannerDesign}
+                    className="flex-[2] bg-love text-white py-3 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-love/20 flex items-center justify-center gap-1.5"
+                  >
+                    <Check size={11} /> Guardar Cambios
+                  </button>
+                </div>
               </motion.div>
             </motion.div>
           )}
