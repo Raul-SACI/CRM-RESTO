@@ -2069,7 +2069,7 @@ export function Dashboard() {
             <div>
               <p className="text-[8px] font-bold uppercase tracking-wider text-slate-400">Estatus del Perfil</p>
               <p className="text-xs font-black uppercase text-blue-600 dark:text-blue-400">
-                {profile.points >= 2000 ? "CLUB BLACK (x2.0)" : profile.points >= 1000 ? "CLUB PREMIUM (x1.5)" : "SOCIO INTERMEDIO (x1.0)"}
+                {clientTier.name} (x{clientTier.multiplier})
               </p>
             </div>
           </div>

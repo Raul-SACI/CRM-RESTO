@@ -272,6 +272,53 @@ export function Waiter() {
     }
   };
 
+  const getClientActiveTier = (clientObj: Profile, txsList: any[]) => {
+    // Calc total historical points ever loaded
+    const totalPuntosCargados = txsList
+      .filter(t => t.points_earned > 0)
+      .reduce((sum, tx) => sum + tx.points_earned, 0);
+    const rawPuntosCargados = Math.max(clientObj.points || 0, totalPuntosCargados);
+
+    // Calc inactivity
+    const creditTxs = txsList.filter(t => t.points_earned > 0);
+    let daysSinceLastCredit = 999;
+    if (creditTxs.length > 0) {
+      const lastTx = creditTxs.reduce((latest: any, current: any) => {
+        return new Date(current.created_at) > new Date(latest.created_at) ? current : latest;
+      });
+      const lastDate = new Date(lastTx.created_at);
+      const diffTime = Math.abs(new Date().getTime() - lastDate.getTime());
+      daysSinceLastCredit = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    } else if (clientObj.created_at) {
+      const regDate = new Date(clientObj.created_at);
+      const diffTime = Math.abs(new Date().getTime() - regDate.getTime());
+      daysSinceLastCredit = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    }
+
+    const inactivityLimit = designConfig?.categoryInactivityDays || 60;
+    const isCategoryReset = daysSinceLastCredit > inactivityLimit;
+    const categoryPoints = isCategoryReset ? 0 : rawPuntosCargados;
+
+    const tiers = designConfig?.loyaltyTiers || [
+      { id: 'tier-fan', name: 'CRAFT FAN', minPoints: 1, maxPoints: 499, multiplier: 1.0, benefits: "Acceso a Club Craft." },
+      { id: 'tier-gold', name: 'CRAFT GOLD', minPoints: 500, maxPoints: 999, multiplier: 1.5, benefits: "Multiplicador de puntos x1.5" },
+      { id: 'tier-black', name: 'CRAFT BLACK', minPoints: 1000, maxPoints: 999999, multiplier: 2.0, benefits: "Multiplicador de puntos x2.0" }
+    ];
+
+    let multiplier = 1.0;
+    let name = 'CRAFT FAN';
+    const sortedTiers = [...tiers].sort((a, b) => b.minPoints - a.minPoints);
+    for (const tier of sortedTiers) {
+      if (categoryPoints >= tier.minPoints) {
+        multiplier = tier.multiplier;
+        name = tier.name;
+        break;
+      }
+    }
+
+    return { multiplier, name, categoryPoints, daysSinceLastCredit, isCategoryReset };
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!client || !amount || !waiterProfile) return;
@@ -293,50 +340,9 @@ export function Waiter() {
       return;
     }
 
-    // Calc total historical points ever loaded
-    const totalPuntosCargados = clientTransactions
-      .filter(t => t.points_earned > 0)
-      .reduce((sum, tx) => sum + tx.points_earned, 0);
-    const rawPuntosCargados = Math.max(client.points || 0, totalPuntosCargados);
-
-    // Calc inactivity
-    const creditTxs = clientTransactions.filter(t => t.points_earned > 0);
-    let daysSinceLastCredit = 999;
-    if (creditTxs.length > 0) {
-      const lastTx = creditTxs.reduce((latest, current) => {
-        return new Date(current.created_at) > new Date(latest.created_at) ? current : latest;
-      });
-      const lastDate = new Date(lastTx.created_at);
-      const diffTime = Math.abs(new Date().getTime() - lastDate.getTime());
-      daysSinceLastCredit = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    } else if (client.created_at) {
-      const regDate = new Date(client.created_at);
-      const diffTime = Math.abs(new Date().getTime() - regDate.getTime());
-      daysSinceLastCredit = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    }
-
-    const inactivityLimit = designConfig?.categoryInactivityDays || 60;
-    const isCategoryReset = daysSinceLastCredit > inactivityLimit;
-    const categoryPoints = isCategoryReset ? 0 : rawPuntosCargados;
-
-    const tiers = designConfig?.loyaltyTiers || [
-      { id: 'tier-fan', name: 'CRAFT FAN', minPoints: 1, maxPoints: 499, multiplier: 1.0, benefits: "Acceso a Club Craft." },
-      { id: 'tier-gold', name: 'CRAFT GOLD', minPoints: 500, maxPoints: 999, multiplier: 1.5, benefits: "Multiplicador de puntos x1.5" },
-      { id: 'tier-black', name: 'CRAFT BLACK', minPoints: 1000, maxPoints: 999999, multiplier: 2.0, benefits: "Multiplicador de puntos x2.0" }
-    ];
-
-    let multiplier = 1.0;
-    let label = 'CRAFT FAN';
-    const sortedTiers = [...tiers].sort((a, b) => b.minPoints - a.minPoints);
-    for (const tier of sortedTiers) {
-      if (categoryPoints >= tier.minPoints) {
-        multiplier = tier.multiplier;
-        label = `${tier.name} (x${tier.multiplier})`;
-        break;
-      }
-    }
-
-    const pointsToAdd = Math.floor((amountNum / conversionRate) * multiplier);
+    const activeTier = getClientActiveTier(client, clientTransactions);
+    const pointsToAdd = Math.floor((amountNum / conversionRate) * activeTier.multiplier);
+    const label = `${activeTier.name} (x${activeTier.multiplier})`;
 
     try {
       console.log("Starting transaction for client:", client.id, "by waiter:", waiterProfile.id);
@@ -673,24 +679,16 @@ export function Waiter() {
                     <div>
                       <p className="text-[9px] md:text-[10px] font-black uppercase tracking-widest opacity-60 mb-1">Puntos a Asignar</p>
                       {(() => {
-                        let mult = 1;
-                        let catLabel = "";
-                        if (client.points >= 2000) {
-                          mult = 2;
-                          catLabel = "BLACK (x2)";
-                        } else if (client.points >= 1000) {
-                          mult = 1.5;
-                          catLabel = "PREMIUM (x1.5)";
-                        }
-                        const calculated = amount ? Math.floor((parseFloat(amount) / (settings?.points_conversion_rate || 1000)) * mult) : 0;
+                        const activeTier = getClientActiveTier(client, clientTransactions);
+                        const calculated = amount ? Math.floor((parseFloat(amount) / (settings?.points_conversion_rate || 1000)) * activeTier.multiplier) : 0;
                         return (
                           <>
                             <p className="text-4 shadow-sm font-black italic text-4xl md:text-5xl">
                               +{calculated}
                             </p>
-                            {mult > 1 && (
+                            {activeTier.multiplier > 1 && (
                               <p className="text-[8px] md:text-[9px] font-extrabold uppercase bg-love text-white px-2 py-0.5 rounded-full inline-block mt-1 tracking-wider">
-                                Multiplicador {catLabel}
+                                Multiplicador {activeTier.name} (x{activeTier.multiplier})
                               </p>
                             )}
                           </>
