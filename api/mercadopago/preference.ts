@@ -23,11 +23,16 @@ export default async function handler(req: any, res: any) {
       return res.status(400).json({ error: "Faltan parámetros requeridos combo o client_id" });
     }
 
-    const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
+    let accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
+    if (accessToken) {
+      accessToken = accessToken.replace(/['"]/g, "").trim();
+    }
+
     const baseUrl = app_url || process.env.APP_URL || "https://crm-resto.vercel.app";
+    const currencyId = process.env.MERCADO_PAGO_CURRENCY || "ARS";
 
     // If no Mercado Pago Access Token is configured, return Sandbox Mode with Demo values
-    if (!accessToken || accessToken === "your-access-token" || accessToken.trim() === "") {
+    if (!accessToken || accessToken === "your-access-token" || accessToken === "" || accessToken.trim() === "") {
       console.warn("Mercado Pago token is missing or default. Returning Sandbox trial config.");
       
       const simulatedSuccessUrl = `${baseUrl}/#/dashboard?payment_status=success&combo_id=${combo.id}&combo_title=${encodeURIComponent(combo.title)}&totalUses=${combo.totalUses}&price=${combo.price}&demo=true`;
@@ -40,10 +45,10 @@ export default async function handler(req: any, res: any) {
       });
     }
 
-    console.log(`[Vercel Serverless] Creando preferencia Mercado Pago para combo: ${combo.title}`);
+    console.log(`[Vercel Serverless] Creando preferencia Mercado Pago para combo: ${combo.title} (Moneda: ${currencyId})`);
 
     // Call Mercado Pago API directly with secure headers
-    const response = await fetch("https://api.mercadopago.com/v1/checkout/preferences", {
+    const response = await fetch("https://api.mercadopago.com/checkout/preferences", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${accessToken}`,
@@ -56,7 +61,7 @@ export default async function handler(req: any, res: any) {
             title: combo.title,
             quantity: 1,
             unit_price: Number(combo.price),
-            currency_id: "ARS",
+            currency_id: currencyId,
             description: `Abono Prepago: ${combo.title} - ${combo.totalUses} usos`,
             category_id: "hospitality"
           }
