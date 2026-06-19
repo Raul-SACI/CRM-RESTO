@@ -2555,166 +2555,21 @@ export function Dashboard() {
                     </>
                   )}
                 </button>
-                <div className="flex items-center gap-3">
-                  <div className="h-[1px] bg-slate-100 dark:bg-slate-800 flex-1" />
-                  <span className="text-[10px] font-black uppercase text-slate-450 tracking-widest px-2 shrink-0">O Tarjeta de Crédito</span>
-                  <div className="h-[1px] bg-slate-100 dark:bg-slate-800 flex-1" />
-                </div>
-              </div>
 
-              {/* Payment Simulated Form */}
-              <form 
-                onSubmit={async (e) => {
-                  e.preventDefault();
-                  
-                  if (cardForm.number.replace(/\s/g, '').length < 13) {
-                    alert("Por favor, introduce un número de tarjeta válido");
-                    return;
-                  }
-                  
-                  setPaymentProcessing(true);
-                  await new Promise(resolve => setTimeout(resolve, 1500));
-                  
-                  try {
-                    const bonusPoints = Math.floor(selectedComboForPurchase.price / (settings?.points_conversion_rate || 1000));
-                    const newPurchaseTx = {
-                      id: 'tx_local_' + Date.now(),
-                      client_id: profile.id,
-                      waiter_id: profile.id,
-                      amount: selectedComboForPurchase.price,
-                      points_earned: bonusPoints,
-                      branch: 'VENTA ONLINE',
-                      invoice_number: 'PAGO_MP_' + Math.floor(Math.random() * 900000 + 100000),
-                      created_at: new Date().toISOString(),
-                      description: `COMPRA_COMBO: ${selectedComboForPurchase.id}_${selectedComboForPurchase.totalUses}|${selectedComboForPurchase.title}`
-                    };
+                <button 
+                  type="button" 
+                  onClick={() => setIsCheckoutModalOpen(false)}
+                  className="w-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-300 py-3.5 rounded-2xl font-bold text-xs uppercase tracking-widest cursor-pointer border-none transition-colors"
+                >
+                  Cancelar
+                </button>
 
-                    const existingStr = localStorage.getItem(`local_txs_${profile.id}`);
-                    const existing = existingStr ? JSON.parse(existingStr) : [];
-                    existing.push(newPurchaseTx);
-                    localStorage.setItem(`local_txs_${profile.id}`, JSON.stringify(existing));
-
-                    await supabase.from('transactions').insert({
-                      client_id: profile.id,
-                      waiter_id: profile.id,
-                      amount: selectedComboForPurchase.price,
-                      points_earned: bonusPoints,
-                      branch: 'VENTA ONLINE',
-                      invoice_number: newPurchaseTx.invoice_number,
-                      description: `COMPRA_COMBO: ${selectedComboForPurchase.id}_${selectedComboForPurchase.totalUses}|${selectedComboForPurchase.title}`
-                    });
-
-                    if (profile) {
-                      await supabase
-                        .from('profiles')
-                        .update({ points: profile.points + bonusPoints })
-                        .eq('id', profile.id);
-                    }
-
-                    fetchClientData();
-                    setIsCheckoutModalOpen(false);
-                    setSelectedComboForPurchase(null);
-                    setCardForm({ number: '', name: '', expiry: '', cvc: '' });
-                    
-                    alert(`Compra exitosa. El combo "${selectedComboForPurchase.title}" ha sido añadido a tu perfil. Sumaste +${bonusPoints} puntos por tu compra!`);
-                  } catch (err: any) {
-                    console.error(err);
-                    alert("Aprobado con éxito en modo experimental.");
-                    setIsCheckoutModalOpen(false);
-                  } finally {
-                    setPaymentProcessing(false);
-                  }
-                }}
-                className="space-y-4 text-left"
-              >
-                <div className="space-y-1">
-                  <label className="text-[9px] uppercase font-black text-slate-400 tracking-widest pl-1">Número de Tarjeta</label>
-                  <input
-                    required
-                    placeholder="4500 1234 5678 9012"
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-xs outline-none focus:border-love text-ink dark:text-white font-mono font-black"
-                    value={cardForm.number}
-                    onChange={(e) => {
-                      let val = e.target.value.replace(/\D/g, '');
-                      let formatted = val.match(/.{1,4}/g)?.join(' ') || val;
-                      setCardForm({ ...cardForm, number: formatted.slice(0, 19) });
-                    }}
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[9px] uppercase font-black text-slate-400 tracking-widest pl-1">Titular de la Tarjeta</label>
-                  <input
-                    required
-                    placeholder="JUAN PEREZ"
-                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-xs outline-none focus:border-love text-ink dark:text-white font-bold uppercase"
-                    value={cardForm.name}
-                    onChange={(e) => setCardForm({ ...cardForm, name: e.target.value.toUpperCase() })}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="text-[9px] uppercase font-black text-slate-400 tracking-widest pl-1">Vencimiento</label>
-                    <input
-                      required
-                      placeholder="MM/AA"
-                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-xs outline-none focus:border-love text-ink dark:text-white font-bold"
-                      value={cardForm.expiry}
-                      onChange={(e) => {
-                        let val = e.target.value.replace(/\D/g, '');
-                        if (val.length > 2) {
-                          val = val.slice(0, 2) + '/' + val.slice(2, 4);
-                        }
-                        setCardForm({ ...cardForm, expiry: val.slice(0, 5) });
-                      }}
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[9px] uppercase font-black text-slate-400 tracking-widest pl-1">CVC / Clave</label>
-                    <input
-                      required
-                      type="password"
-                      placeholder="•••"
-                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-xs outline-none focus:border-love text-ink dark:text-white font-mono font-black"
-                      value={cardForm.cvc}
-                      onChange={(e) => setCardForm({ ...cardForm, cvc: e.target.value.replace(/\D/g, '').slice(0, 3) })}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-1.5 text-[8px] font-black uppercase tracking-widest text-slate-450 justify-center">
+                <div className="flex items-center gap-1.5 text-[8px] font-black uppercase tracking-widest text-slate-450 justify-center pt-2">
                   <span>🔒 Transacción Encriptada SSL</span>
                   <span>•</span>
-                  <span>Mercado Pago Garantizado</span>
+                  <span>Mercado Pago Oficial</span>
                 </div>
-
-                <div className="flex gap-2 pt-4">
-                  <button 
-                    type="button" 
-                    onClick={() => setIsCheckoutModalOpen(false)}
-                    disabled={paymentProcessing}
-                    className="flex-1 bg-slate-100 dark:bg-slate-800 text-slate-500 py-3 rounded-xl font-bold text-xs uppercase tracking-widest cursor-pointer border-none"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={paymentProcessing}
-                    className="flex-[2] bg-love text-white font-black py-3 rounded-xl text-xs uppercase tracking-widest cursor-pointer border-none shadow-lg shadow-love/20 flex items-center justify-center gap-2"
-                  >
-                    {paymentProcessing ? (
-                      <>
-                        <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        Procesando...
-                      </>
-                    ) : (
-                      `Pagar $${selectedComboForPurchase.price.toLocaleString('es-AR')}`
-                    )}
-                  </button>
-                </div>
-              </form>
+              </div>
             </motion.div>
           </motion.div>
         )}
