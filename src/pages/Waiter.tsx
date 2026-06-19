@@ -9,17 +9,22 @@ import { Profile, SystemSettings } from '@/src/types';
 import { BRANCHES } from '@/src/constants';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import { extractDataFromReceipt, ExtractedReceiptItem } from '@/src/services/gemini';
+import { useDesign } from '@/src/components/DesignEngine';
 
 import { numberToWords } from '@/src/lib/numberToWords';
 
 export function Waiter() {
   const { profile: waiterProfile } = useAuth();
+  const { designConfig } = useDesign();
   const [searchParams] = useSearchParams();
   const [dni, setDni] = useState('');
   const [amount, setAmount] = useState('');
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [selectedBranch, setSelectedBranch] = useState(BRANCHES[0]);
   const [client, setClient] = useState<Profile | null>(null);
+  const [clientTransactions, setClientTransactions] = useState<any[]>([]);
+  const [deductingComboId, setDeductingComboId] = useState<string | null>(null);
+  const [scannedComboId, setScannedComboId] = useState<string | null>(null);
   const [settings, setSettings] = useState<SystemSettings | null>(null);
   const [loading, setLoading] = useState(false);
   const [searching, setSearching] = useState(false);
@@ -41,7 +46,21 @@ export function Waiter() {
     if (showScanner) {
       setTimeout(() => {
         scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 }, false);
-        scanner.render((decodedText: string) => {
+        scanner.render(async (decodedText: string) => {
+          if (decodedText.startsWith('COMBO_USE:')) {
+            const parts = decodedText.replace('COMBO_USE:', '').split('|client_id:');
+            const comboId = parts[0];
+            const clientId = parts[1];
+            
+            setShowScanner(false);
+            scanner.clear();
+            
+            setDni(clientId);
+            setScannedComboId(comboId);
+            searchClient(clientId);
+            return;
+          }
+
           let cleanDni = decodedText;
           if (cleanDni.includes('dni=')) {
             cleanDni = cleanDni.split('dni=')[1].split('&')[0];
@@ -138,6 +157,7 @@ export function Waiter() {
       if (data) {
         setClient(data);
         setStatus(null);
+        fetchClientTransactions(data.id);
       } else {
         setClient(null);
         setStatus({ type: 'error', message: 'Cliente no registrado en la base' });
@@ -153,6 +173,72 @@ export function Waiter() {
       clearTimeout(safetyTimeout);
       setSearching(false);
     }
+  };
+
+  const fetchClientTransactions = async (clientId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('client_id', clientId)
+        .order('created_at', { ascending: false })
+        .limit(100);
+      if (!error && data) {
+        setClientTransactions(data);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const getClientCombos = () => {
+    const avCombos = (designConfig as any)?.combos || [];
+    const balances: Record<string, { title: string; totalPurchased: number; totalUsed: number; imageUrl?: string }> = {};
+
+    clientTransactions.forEach((tx) => {
+      if (tx.description && tx.description.startsWith('COMPRA_COMBO:')) {
+        const parts = tx.description.replace('COMPRA_COMBO:', '').trim().split('|');
+        const comboPart = parts[0]; 
+        const title = parts[1] || 'Combo';
+        const lastUnderscore = comboPart.lastIndexOf('_');
+        if (lastUnderscore !== -1) {
+          const id = comboPart.slice(0, lastUnderscore);
+          const uses = parseInt(comboPart.slice(lastUnderscore + 1)) || 0;
+          
+          if (!balances[id]) {
+            const matchedMeta = avCombos.find((c: any) => c.id === id);
+            balances[id] = { title, totalPurchased: 0, totalUsed: 0, imageUrl: matchedMeta?.imageUrl };
+          }
+          balances[id].totalPurchased += uses;
+        }
+      } else if (tx.description && tx.description.startsWith('CONSUMO_COMBO:')) {
+        const parts = tx.description.replace('CONSUMO_COMBO:', '').trim().split('|');
+        const comboPart = parts[0]; 
+        const title = parts[1] || 'Combo';
+        const lastUnderscore = comboPart.lastIndexOf('_');
+        if (lastUnderscore !== -1) {
+          const id = comboPart.slice(0, lastUnderscore);
+          const uses = parseInt(comboPart.slice(lastUnderscore + 1)) || 0;
+          
+          if (!balances[id]) {
+            const matchedMeta = avCombos.find((c: any) => c.id === id);
+            balances[id] = { title, totalPurchased: 0, totalUsed: 0, imageUrl: matchedMeta?.imageUrl };
+          }
+          balances[id].totalUsed += uses;
+        }
+      }
+    });
+
+    return Object.entries(balances)
+      .map(([id, item]) => ({
+        id,
+        title: item.title,
+        totalPurchased: item.totalPurchased,
+        totalUsed: item.totalUsed,
+        imageUrl: item.imageUrl,
+        remaining: Math.max(0, item.totalPurchased - item.totalUsed),
+      }))
+      .filter(b => b.totalPurchased > 0);
   };
 
   const handleReceiptScan = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -404,6 +490,69 @@ export function Waiter() {
                       <X size={20} />
                     </button>
                   </div>
+
+                  {/* Combos/Abonos Prepago del Cliente */}
+                  {(() => {
+                    const clientCombos = getClientCombos();
+                    if (clientCombos.length === 0) return null;
+                    return (
+                      <div className="bg-slate-50 dark:bg-slate-950 p-5 rounded-3xl border border-slate-100 dark:border-slate-800 space-y-4">
+                        <h4 className="text-[9px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-1.5 pl-1">
+                          🎁 Combos & Pases Prepago del Cliente
+                        </h4>
+                        <div className="space-y-3">
+                          {clientCombos.map((combo) => (
+                            <div key={combo.id} className="flex items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-2xs">
+                              <div className="flex items-center gap-3">
+                                {combo.imageUrl ? (
+                                  <img src={combo.imageUrl} alt="" className="w-10 h-10 rounded-xl object-cover" />
+                                ) : (
+                                  <div className="w-10 h-10 bg-slate-150 dark:bg-slate-800 rounded-xl flex items-center justify-center font-bold text-slate-350 text-xs">Abo</div>
+                                )}
+                                <div className="space-y-0.5 text-left">
+                                  <p className="text-[11px] font-black uppercase text-ink dark:text-white leading-tight">{combo.title}</p>
+                                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wide">Quedan {combo.remaining} consumos de {combo.totalPurchased}</p>
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                disabled={combo.remaining <= 0 || deductingComboId === combo.id}
+                                onClick={async () => {
+                                  if (confirm(`¿Confirmas descontar 1 uso de "${combo.title}" del saldo del cliente?`)) {
+                                    setDeductingComboId(combo.id);
+                                    try {
+                                      const { error } = await supabase.from('transactions').insert({
+                                        client_id: client.id,
+                                        waiter_id: waiterProfile?.id || client.id,
+                                        amount: 0,
+                                        points_earned: 0,
+                                        branch: selectedBranch || 'Sucursal Principal',
+                                        description: `CONSUMO_COMBO: ${combo.id}_1|${combo.title}`
+                                      });
+
+                                      if (!error) {
+                                        setStatus({ type: 'success', message: `¡Consumo validado! Descontando 1 uso de "${combo.title}" con éxito.` });
+                                        fetchClientTransactions(client.id);
+                                      } else {
+                                        alert("Error al descontar consumo: " + error.message);
+                                      }
+                                    } catch (err: any) {
+                                      console.error(err);
+                                    } finally {
+                                      setDeductingComboId(null);
+                                    }
+                                  }
+                                }}
+                                className="py-2.5 px-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-[9px] font-black uppercase tracking-widest disabled:opacity-20 transition-all cursor-pointer border-none shadow-sm flex items-center gap-1.5"
+                              >
+                                {deductingComboId === combo.id ? 'Procesando...' : 'Descontar 1'}
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   <div className="space-y-4 pt-4 border-t-2 border-dashed border-slate-100">
                     <label className="block text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Sucursal de Carga</label>

@@ -34,6 +34,16 @@ export interface FaqItem {
   category: string;
 }
 
+export interface ComboConfig {
+  id: string;
+  title: string;
+  description: string;
+  price: number;
+  totalUses: number;
+  imageUrl?: string;
+  isActive: boolean;
+}
+
 export interface DesignConfig {
   fontSans: string;
   fontHeadings: string;
@@ -59,6 +69,9 @@ export interface DesignConfig {
   
   // Custom branches added by user
   branches?: Branch[];
+
+  // Custom combos prepago added by user
+  combos?: ComboConfig[];
   
   // Custom client button colors (active/inactive styling)
   navButtonColors?: Record<string, string>; // e.g. { '/': '#ef4444', '/rewards': '#10b981', '/help': '#3b82f6', '/branches': '#f59e0b' }
@@ -192,6 +205,35 @@ export const DEFAULT_DESIGN: DesignConfig = {
       coordinates: '-31.721450, -60.521890',
       imageUrl: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&q=80&w=600',
       googleMapsUrl: 'https://maps.google.com/?q=-31.721450,-60.521890'
+    }
+  ],
+  combos: [
+    {
+      id: 'combo-1',
+      title: 'Pase de Almuerzos',
+      description: '5 Menús de canje de mediodía a elección en cualquier sucursal. Incluye bebida y postre.',
+      price: 65000,
+      totalUses: 5,
+      imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=600&auto=format&fit=crop',
+      isActive: true
+    },
+    {
+      id: 'combo-2',
+      title: 'Pack Especialidad Espresso',
+      description: '10 cafés de especialidad o lattes a elección de nuestra carta Barista. Ahorra 30% en cada taza.',
+      price: 30000,
+      totalUses: 10,
+      imageUrl: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=80&w=600&auto=format&fit=crop',
+      isActive: true
+    },
+    {
+      id: 'combo-3',
+      title: 'Abono Brunch Premium (3)',
+      description: '3 Brunchs completos de fin de semana para dos personas. Ideal para regalar o compartir.',
+      price: 42000,
+      totalUses: 3,
+      imageUrl: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?q=80&w=600&auto=format&fit=crop',
+      isActive: true
     }
   ],
   navButtonColors: {

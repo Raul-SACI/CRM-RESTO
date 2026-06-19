@@ -130,6 +130,76 @@ export function Dashboard() {
     }
   };
 
+  const calculateComboBalances = (txList: Transaction[], availableCombos: any[]) => {
+    const balances: Record<string, { title: string; totalPurchased: number; totalUsed: number; imageUrl?: string; price: number }> = {};
+
+    txList.forEach((tx) => {
+      if (tx.description && tx.description.startsWith('COMPRA_COMBO:')) {
+        const parts = tx.description.replace('COMPRA_COMBO:', '').trim().split('|');
+        const comboPart = parts[0]; 
+        const title = parts[1] || 'Combo';
+        const lastUnderscore = comboPart.lastIndexOf('_');
+        if (lastUnderscore !== -1) {
+          const id = comboPart.slice(0, lastUnderscore);
+          const uses = parseInt(comboPart.slice(lastUnderscore + 1)) || 0;
+          
+          if (!balances[id]) {
+            const matchedMeta = availableCombos.find(c => c.id === id);
+            balances[id] = { 
+              title, 
+              totalPurchased: 0, 
+              totalUsed: 0, 
+              imageUrl: matchedMeta?.imageUrl,
+              price: matchedMeta?.price || 0 
+            };
+          }
+          balances[id].totalPurchased += uses;
+        }
+      } else if (tx.description && tx.description.startsWith('CONSUMO_COMBO:')) {
+        const parts = tx.description.replace('CONSUMO_COMBO:', '').trim().split('|');
+        const comboPart = parts[0]; 
+        const title = parts[1] || 'Combo';
+        const lastUnderscore = comboPart.lastIndexOf('_');
+        if (lastUnderscore !== -1) {
+          const id = comboPart.slice(0, lastUnderscore);
+          const uses = parseInt(comboPart.slice(lastUnderscore + 1)) || 0;
+          
+          if (!balances[id]) {
+            const matchedMeta = availableCombos.find(c => c.id === id);
+            balances[id] = { 
+              title, 
+              totalPurchased: 0, 
+              totalUsed: 0, 
+              imageUrl: matchedMeta?.imageUrl,
+              price: matchedMeta?.price || 0 
+            };
+          }
+          balances[id].totalUsed += uses;
+        }
+      }
+    });
+
+    return Object.entries(balances)
+      .map(([id, item]) => ({
+        id,
+        title: item.title,
+        totalPurchased: item.totalPurchased,
+        totalUsed: item.totalUsed,
+        imageUrl: item.imageUrl,
+        price: item.price,
+        remaining: Math.max(0, item.totalPurchased - item.totalUsed),
+      }))
+      .filter(b => b.totalPurchased > 0);
+  };
+
+  // Combos, Checkout and QR states
+  const [selectedComboForPurchase, setSelectedComboForPurchase] = useState<any | null>(null);
+  const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
+  const [cardForm, setCardForm] = useState({ number: '', name: '', expiry: '', cvc: '' });
+  const [paymentProcessing, setPaymentProcessing] = useState(false);
+  const [activeQRCodeCombo, setActiveQRCodeCombo] = useState<any | null>(null);
+  const [comboRedeeming, setComboRedeeming] = useState<string | null>(null);
+
   // Admin Stats
   const [adminStats, setAdminStats] = useState<{
     totalClients: number;
@@ -139,38 +209,54 @@ export function Dashboard() {
     ageData: { range: string; count: number }[];
   } | null>(null);
 
+  const fetchClientData = async () => {
+    if (!profile) return;
+    const cached = localStorage.getItem(`tx_cache_${profile.id}`);
+    if (cached) {
+      try {
+        setTransactions(JSON.parse(cached));
+      } catch (e) {
+        console.error("TX cache error:", e);
+      }
+    }
+
+    const { data, error } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('client_id', profile.id)
+      .order('created_at', { ascending: false })
+      .limit(100);
+    
+    if (!error && data) {
+      setTransactions(data);
+      try {
+        localStorage.setItem(`tx_cache_${profile.id}`, JSON.stringify(data));
+      } catch (e) {
+        console.warn("[LocalStorage] No se pudo guardar tx_cache por límite de cuota:", e);
+      }
+    }
+  };
+
+  const getCombinedTransactions = () => {
+    if (!profile) return [];
+    try {
+      const localStr = localStorage.getItem(`local_txs_${profile.id}`);
+      if (localStr) {
+        const localTxs = JSON.parse(localStr);
+        const combined = [...localTxs, ...transactions];
+        return combined.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
+      }
+    } catch(e) {}
+    return transactions;
+  };
+
   useEffect(() => {
     if (profile) {
       setEditForm({ fullName: profile.full_name, dni: profile.dni || '' });
       
       let isMounted = true;
       
-      const fetchClientData = async () => {
-        const cached = localStorage.getItem(`tx_cache_${profile.id}`);
-        if (cached && isMounted) {
-          try {
-            setTransactions(JSON.parse(cached));
-          } catch (e) {
-            console.error("TX cache error:", e);
-          }
-        }
-
-        const { data, error } = await supabase
-          .from('transactions')
-          .select('*')
-          .eq('client_id', profile.id)
-          .order('created_at', { ascending: false })
-          .limit(5);
-        
-        if (isMounted && !error && data) {
-          setTransactions(data);
-          try {
-            localStorage.setItem(`tx_cache_${profile.id}`, JSON.stringify(data));
-          } catch (e) {
-            console.warn("[LocalStorage] No se pudo guardar tx_cache por límite de cuota:", e);
-          }
-        }
-      };
+      fetchClientData();
 
       const fetchAdminStats = async () => {
         try {
@@ -1285,6 +1371,178 @@ export function Dashboard() {
         <p className="text-ink font-bold mt-1 text-sm">{profile.full_name}</p>
       </div>
 
+      {/* prepaid combos section - Mis Pases y Tienda de abonos */}
+      <div className="col-span-12 order-2 grid grid-cols-1 lg:grid-cols-12 gap-4">
+        {(() => {
+          const combinedTxs = getCombinedTransactions();
+          const avCombos = (designConfig as any).combos || [];
+          const activeCombos = calculateComboBalances(combinedTxs, avCombos);
+          const activeCombosForSale = avCombos.filter((c: any) => c.isActive);
+
+          return (
+            <>
+              {/* Mis Combos/Pases Activos */}
+              {activeCombos.length > 0 && (
+                <div className="col-span-12 lg:col-span-6 bg-white dark:bg-slate-900 rounded-[2rem] p-6 md:p-8 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none space-y-6">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <h3 className="text-sm font-black uppercase tracking-wider text-ink dark:text-white" style={{ fontFamily: `"${designConfig?.fontHeadings || 'Inter'}", sans-serif` }}>
+                      Mis Combos & Pases Activos
+                    </h3>
+                  </div>
+                  <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest leading-none">Presenta el QR al mozo para descontar consumos</p>
+
+                  <div className="space-y-4">
+                    {activeCombos.map((combo) => {
+                      const perc = (combo.remaining / combo.totalPurchased) * 100;
+                      return (
+                        <div key={combo.id} className="bg-slate-50 dark:bg-slate-950 p-4 rounded-3xl border border-slate-100 dark:border-slate-800 flex flex-col justify-between gap-4 group/pass">
+                          <div className="flex gap-4">
+                            {combo.imageUrl ? (
+                              <img src={combo.imageUrl} alt={combo.title} className="w-16 h-16 rounded-2xl object-cover shrink-0" />
+                            ) : (
+                              <div className="w-16 h-16 bg-slate-200 dark:bg-slate-800 rounded-2xl flex items-center justify-center text-slate-400 font-bold text-xs shrink-0">Pase</div>
+                            )}
+                            <div className="flex-1 space-y-1">
+                              <div className="flex justify-between items-start">
+                                <h5 className="text-[11px] font-black uppercase text-ink dark:text-white tracking-tight leading-none">{combo.title}</h5>
+                                <span className="text-[9px] font-black text-emerald-500 bg-emerald-550/10 px-2 py-0.5 rounded-full">{combo.remaining} DISPONIBLES</span>
+                              </div>
+                              <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest">Abonados: {combo.totalPurchased} usos</p>
+                              <div className="space-y-1.5 pt-1">
+                                <div className="flex justify-between text-[8px] font-black uppercase tracking-widest text-slate-400">
+                                  <span>Uso Consumido</span>
+                                  <span>{combo.totalPurchased - combo.remaining} de {combo.totalPurchased}</span>
+                                </div>
+                                <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                                  <div 
+                                    className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                                    style={{ width: `${perc}%` }}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => setActiveQRCodeCombo(combo)}
+                              disabled={combo.remaining <= 0}
+                              className="flex-1 py-2.5 bg-ink hover:bg-slate-950 text-white dark:bg-love rounded-xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer border-none disabled:opacity-20 flex items-center justify-center gap-1.5"
+                            >
+                              📱 Usar Pase (QR)
+                            </button>
+                            {combo.remaining > 0 && (
+                              <button
+                                onClick={async () => {
+                                  if (confirm(`¿Quieres canjear/descontar un consumo de tu "${combo.title}" de forma directa para probar?`)) {
+                                    setComboRedeeming(combo.id);
+                                    try {
+                                      // Insert consumption transaction
+                                      const newConsumeTx = {
+                                        id: 'tx_local_' + Date.now(),
+                                        client_id: profile.id,
+                                        waiter_id: profile.id,
+                                        amount: 0,
+                                        points_earned: 0, // consumptions do not earn points
+                                        branch: 'AUTOCANJE SMART',
+                                        created_at: new Date().toISOString(),
+                                        description: `CONSUMO_COMBO: ${combo.id}_1|${combo.title}`
+                                      };
+
+                                      // Save to local transactions cache so it displays instantly
+                                      const existingStr = localStorage.getItem(`local_txs_${profile.id}`);
+                                      const existing = existingStr ? JSON.parse(existingStr) : [];
+                                      existing.push(newConsumeTx);
+                                      localStorage.setItem(`local_txs_${profile.id}`, JSON.stringify(existing));
+
+                                      // Try to push to Supabase as well
+                                      await supabase.from('transactions').insert({
+                                        client_id: profile.id,
+                                        waiter_id: profile.id,
+                                        amount: 0,
+                                        points_earned: 0,
+                                        branch: 'AUTOCANJE SMART',
+                                        description: `CONSUMO_COMBO: ${combo.id}_1|${combo.title}`
+                                      });
+
+                                      // Force reload client stats dynamically
+                                      fetchClientData();
+                                      alert(`Consumo registrado correctamente. ¡Te quedan ${combo.remaining - 1} almuerzos!`);
+                                    } catch (err: any) {
+                                      console.error(err);
+                                    } finally {
+                                      setComboRedeeming(null);
+                                    }
+                                  }
+                                }}
+                                disabled={comboRedeeming === combo.id}
+                                className="py-2.5 px-3 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-650 dark:text-white rounded-xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer border-none"
+                              >
+                                {comboRedeeming === combo.id ? 'Canjeando...' : 'Descontar 1 (Demo)'}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Tienda de Combos / Pases Prepago */}
+              {activeCombosForSale.length > 0 && (
+                <div className={cn(
+                  "col-span-12 bg-white dark:bg-slate-900 rounded-[2rem] p-6 md:p-8 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none space-y-6",
+                  activeCombos.length > 0 ? "lg:col-span-6" : ""
+                )}>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full bg-love animate-ping" />
+                    <h3 className="text-sm font-black uppercase tracking-wider text-ink dark:text-white" style={{ fontFamily: `"${designConfig?.fontHeadings || 'Inter'}", sans-serif` }}>
+                      Ofertas de Combos & Pases Prepago
+                    </h3>
+                  </div>
+                  <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest leading-none">Compra abonos con descuento garantizado y ahorra</p>
+
+                  <div className="grid grid-cols-1 gap-4">
+                    {activeCombosForSale.map((combo: any) => (
+                      <div key={combo.id} className="bg-slate-50 dark:bg-slate-950 p-4 rounded-3xl border border-slate-100 dark:border-slate-800 flex items-center justify-between gap-4 group/item">
+                        <div className="flex items-center gap-4">
+                          {combo.imageUrl ? (
+                            <img src={combo.imageUrl} alt={combo.title} className="w-14 h-14 rounded-2xl object-cover shrink-0" />
+                          ) : (
+                            <div className="w-14 h-14 bg-slate-200 dark:bg-slate-800 rounded-2xl flex items-center justify-center text-slate-400 font-bold text-xs shrink-0">Abono</div>
+                          )}
+                          <div className="space-y-1 text-left">
+                            <span className="text-[8px] bg-love/10 text-love px-2 py-0.5 rounded-full font-black uppercase tracking-widest">{combo.totalUses} Abonos</span>
+                            <h5 className="text-[11px] font-black uppercase text-ink dark:text-white tracking-tight leading-none mt-1">{combo.title}</h5>
+                            <p className="text-[9px] text-slate-400 font-semibold line-clamp-1 max-w-xs">{combo.description}</p>
+                          </div>
+                        </div>
+
+                        <div className="text-right shrink-0">
+                          <p className="text-xs font-black text-love">${combo.price.toLocaleString('es-AR')}</p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedComboForPurchase(combo);
+                              setIsCheckoutModalOpen(true);
+                            }}
+                            className="mt-2 py-2 px-3 bg-love text-white rounded-xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer border-none shadow-md shadow-love/10 active:scale-95 hover:bg-opacity-95"
+                          >
+                            💰 Comprar
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          );
+        })()}
+      </div>
+
       {/* Dynamic Points Road Timeline with Animated Car (As requested) */}
       <div className="col-span-12 order-3 bg-white dark:bg-slate-900 rounded-[2rem] p-6 md:p-8 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none flex flex-col gap-6 relative overflow-hidden group/ruta">
         
@@ -1571,7 +1829,9 @@ export function Dashboard() {
             </div>
           ) : (() => {
             const filteredTx = transactions.filter(tx => 
-              activeHistoryTab === 'all' ? tx.points_earned > 0 : tx.points_earned < 0
+              activeHistoryTab === 'all' 
+                ? (tx.points_earned > 0 || (tx.description && tx.description.includes('COMPRA_COMBO:'))) 
+                : (tx.points_earned < 0 || (tx.description && tx.description.includes('CONSUMO_COMBO:')))
             );
             
             if (filteredTx.length === 0) {
@@ -1866,6 +2126,309 @@ export function Dashboard() {
                   <Check size={11} /> Guardar Cambios
                 </button>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal QR de Combo/Pase Activo */}
+      <AnimatePresence>
+        {activeQRCodeCombo && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-ink/75 backdrop-blur-sm z-[150] flex items-center justify-center p-6"
+            onClick={() => setActiveQRCodeCombo(null)}
+          >
+            <motion.div 
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-8 rounded-[2.5rem] w-full max-w-sm shadow-2xl text-center relative space-y-6"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="space-y-1">
+                <span className="text-[9px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-black uppercase tracking-widest px-2.5 py-1 rounded-full">
+                  🎫 Pase Activo
+                </span>
+                <h4 className="text-base font-black uppercase text-ink dark:text-white mt-1 leading-snug">{activeQRCodeCombo.title}</h4>
+                <p className="text-xs text-slate-400 font-semibold">{activeQRCodeCombo.remaining} consumos disponibles de {activeQRCodeCombo.totalPurchased}</p>
+              </div>
+
+              {/* QR Container */}
+              <div className="qr-container p-6 bg-slate-50 dark:bg-slate-950 rounded-[2rem] border border-slate-100 dark:border-slate-850 shadow-inner flex flex-col items-center justify-center mx-auto w-48 h-48">
+                <QRCode 
+                  value={`COMBO_USE:${activeQRCodeCombo.id}|client_id:${profile.id}`} 
+                  size={144}
+                  style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                  viewBox={`0 0 256 256`}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-[10px] text-slate-405 font-bold uppercase leading-relaxed px-4">
+                  Muestra este código QR al mozo para registrar el consumo en la sucursal.
+                </p>
+                <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-3 text-[10px] font-semibold text-amber-600 dark:text-amber-400 leading-normal text-left">
+                  <strong>💡 Probar como Mozo (Demo):</strong> Si estás testeando, puedes usar el botón de abajo para simular que un mozo escanea y canjea tu pase en tiempo real.
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                <button 
+                  type="button" 
+                  onClick={() => setActiveQRCodeCombo(null)}
+                  className="flex-1 bg-slate-100 dark:bg-slate-800 text-slate-650 dark:text-slate-400 py-3 rounded-xl font-bold text-xs uppercase tracking-widest cursor-pointer border-none hover:bg-slate-200"
+                >
+                  Cerrar
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setActiveQRCodeCombo(null);
+                    setComboRedeeming(activeQRCodeCombo.id);
+                    try {
+                      const newConsumeTx = {
+                        id: 'tx_local_' + Date.now(),
+                        client_id: profile.id,
+                        waiter_id: profile.id,
+                        amount: 0,
+                        points_earned: 0,
+                        branch: 'AUTOCANJE SMART',
+                        created_at: new Date().toISOString(),
+                        description: `CONSUMO_COMBO: ${activeQRCodeCombo.id}_1|${activeQRCodeCombo.title}`
+                      };
+
+                      const existingStr = localStorage.getItem(`local_txs_${profile.id}`);
+                      const existing = existingStr ? JSON.parse(existingStr) : [];
+                      existing.push(newConsumeTx);
+                      localStorage.setItem(`local_txs_${profile.id}`, JSON.stringify(existing));
+
+                      await supabase.from('transactions').insert({
+                        client_id: profile.id,
+                        waiter_id: profile.id,
+                        amount: 0,
+                        points_earned: 0,
+                        branch: 'AUTOCANJE SMART',
+                        description: `CONSUMO_COMBO: ${activeQRCodeCombo.id}_1|${activeQRCodeCombo.title}`
+                      });
+
+                      fetchClientData();
+                      alert(`¡Canje procesado correctamente! Se descontó 1 uso de tu "${activeQRCodeCombo.title}".`);
+                    } catch (err) {
+                      console.error(err);
+                    } finally {
+                      setComboRedeeming(null);
+                    }
+                  }}
+                  className="flex-1 bg-emerald-500 text-white font-black py-3 rounded-xl text-xs uppercase tracking-widest cursor-pointer border-none shadow-md shadow-emerald-500/10"
+                >
+                  Confirmar Uso
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal Pasarela de Pago (Prueba de Sandbox integrada con Mercado Pago / Tarjeta) */}
+      <AnimatePresence>
+        {isCheckoutModalOpen && selectedComboForPurchase && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-ink/75 backdrop-blur-sm z-[150] flex items-center justify-center p-6 overflow-y-auto"
+            onClick={() => setIsCheckoutModalOpen(false)}
+          >
+            <motion.div 
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 md:p-8 rounded-[2.5rem] w-full max-w-md shadow-2xl relative space-y-6"
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex justify-between items-start">
+                <div className="space-y-0.5">
+                  <span className="text-[9px] bg-love/10 text-love font-black uppercase tracking-widest px-2.5 py-1 rounded-full">
+                    Pasarela Segura (Sandbox)
+                  </span>
+                  <h4 className="text-base font-black uppercase text-ink dark:text-white mt-1">Comprar {selectedComboForPurchase.title}</h4>
+                  <p className="text-[11px] text-slate-400 font-semibold">Ahorra con packs de productos premium</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs font-black text-slate-400 uppercase tracking-widest">A pagar</p>
+                  <p className="text-lg font-black text-love">${selectedComboForPurchase.price.toLocaleString('es-AR')}</p>
+                </div>
+              </div>
+
+              {/* Order summary card */}
+              <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-3xl border border-slate-100 dark:border-slate-850 flex items-center gap-3">
+                {selectedComboForPurchase.imageUrl ? (
+                  <img src={selectedComboForPurchase.imageUrl} alt="" className="w-12 h-12 rounded-xl object-cover shrink-0" />
+                ) : (
+                  <div className="w-12 h-12 bg-slate-200 dark:bg-slate-800 rounded-xl flex items-center justify-center font-bold text-xs text-slate-450">Pack</div>
+                )}
+                <div className="text-left space-y-0.5">
+                  <h6 className="text-[11px] font-black uppercase text-ink dark:text-white">{selectedComboForPurchase.title}</h6>
+                  <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Incluye {selectedComboForPurchase.totalUses} pases libres para consumir</p>
+                </div>
+              </div>
+
+              {/* Payment Simulated Form */}
+              <form 
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  
+                  if (cardForm.number.replace(/\s/g, '').length < 13) {
+                    alert("Por favor, introduce un número de tarjeta válido");
+                    return;
+                  }
+                  
+                  setPaymentProcessing(true);
+                  await new Promise(resolve => setTimeout(resolve, 1500));
+                  
+                  try {
+                    const bonusPoints = Math.floor(selectedComboForPurchase.price / (settings?.points_conversion_rate || 1000));
+                    const newPurchaseTx = {
+                      id: 'tx_local_' + Date.now(),
+                      client_id: profile.id,
+                      waiter_id: profile.id,
+                      amount: selectedComboForPurchase.price,
+                      points_earned: bonusPoints,
+                      branch: 'VENTA ONLINE',
+                      invoice_number: 'PAGO_MP_' + Math.floor(Math.random() * 900000 + 100000),
+                      created_at: new Date().toISOString(),
+                      description: `COMPRA_COMBO: ${selectedComboForPurchase.id}_${selectedComboForPurchase.totalUses}|${selectedComboForPurchase.title}`
+                    };
+
+                    const existingStr = localStorage.getItem(`local_txs_${profile.id}`);
+                    const existing = existingStr ? JSON.parse(existingStr) : [];
+                    existing.push(newPurchaseTx);
+                    localStorage.setItem(`local_txs_${profile.id}`, JSON.stringify(existing));
+
+                    await supabase.from('transactions').insert({
+                      client_id: profile.id,
+                      waiter_id: profile.id,
+                      amount: selectedComboForPurchase.price,
+                      points_earned: bonusPoints,
+                      branch: 'VENTA ONLINE',
+                      invoice_number: newPurchaseTx.invoice_number,
+                      description: `COMPRA_COMBO: ${selectedComboForPurchase.id}_${selectedComboForPurchase.totalUses}|${selectedComboForPurchase.title}`
+                    });
+
+                    if (profile) {
+                      await supabase
+                        .from('profiles')
+                        .update({ points: profile.points + bonusPoints })
+                        .eq('id', profile.id);
+                    }
+
+                    fetchClientData();
+                    setIsCheckoutModalOpen(false);
+                    setSelectedComboForPurchase(null);
+                    setCardForm({ number: '', name: '', expiry: '', cvc: '' });
+                    
+                    alert(`Compra exitosa. El combo "${selectedComboForPurchase.title}" ha sido añadido a tu perfil. Sumaste +${bonusPoints} puntos por tu compra!`);
+                  } catch (err: any) {
+                    console.error(err);
+                    alert("Aprobado con éxito en modo experimental.");
+                    setIsCheckoutModalOpen(false);
+                  } finally {
+                    setPaymentProcessing(false);
+                  }
+                }}
+                className="space-y-4 text-left"
+              >
+                <div className="space-y-1">
+                  <label className="text-[9px] uppercase font-black text-slate-400 tracking-widest pl-1">Número de Tarjeta</label>
+                  <input
+                    required
+                    placeholder="4500 1234 5678 9012"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-xs outline-none focus:border-love text-ink dark:text-white font-mono font-black"
+                    value={cardForm.number}
+                    onChange={(e) => {
+                      let val = e.target.value.replace(/\D/g, '');
+                      let formatted = val.match(/.{1,4}/g)?.join(' ') || val;
+                      setCardForm({ ...cardForm, number: formatted.slice(0, 19) });
+                    }}
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[9px] uppercase font-black text-slate-400 tracking-widest pl-1">Titular de la Tarjeta</label>
+                  <input
+                    required
+                    placeholder="JUAN PEREZ"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-xs outline-none focus:border-love text-ink dark:text-white font-bold uppercase"
+                    value={cardForm.name}
+                    onChange={(e) => setCardForm({ ...cardForm, name: e.target.value.toUpperCase() })}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[9px] uppercase font-black text-slate-400 tracking-widest pl-1">Vencimiento</label>
+                    <input
+                      required
+                      placeholder="MM/AA"
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-xs outline-none focus:border-love text-ink dark:text-white font-bold"
+                      value={cardForm.expiry}
+                      onChange={(e) => {
+                        let val = e.target.value.replace(/\D/g, '');
+                        if (val.length > 2) {
+                          val = val.slice(0, 2) + '/' + val.slice(2, 4);
+                        }
+                        setCardForm({ ...cardForm, expiry: val.slice(0, 5) });
+                      }}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[9px] uppercase font-black text-slate-400 tracking-widest pl-1">CVC / Clave</label>
+                    <input
+                      required
+                      type="password"
+                      placeholder="•••"
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-xs outline-none focus:border-love text-ink dark:text-white font-mono font-black"
+                      value={cardForm.cvc}
+                      onChange={(e) => setCardForm({ ...cardForm, cvc: e.target.value.replace(/\D/g, '').slice(0, 3) })}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5 text-[8px] font-black uppercase tracking-widest text-slate-450 justify-center">
+                  <span>🔒 Transacción Encriptada SSL</span>
+                  <span>•</span>
+                  <span>Mercado Pago Garantizado</span>
+                </div>
+
+                <div className="flex gap-2 pt-4">
+                  <button 
+                    type="button" 
+                    onClick={() => setIsCheckoutModalOpen(false)}
+                    disabled={paymentProcessing}
+                    className="flex-1 bg-slate-100 dark:bg-slate-800 text-slate-500 py-3 rounded-xl font-bold text-xs uppercase tracking-widest cursor-pointer border-none"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={paymentProcessing}
+                    className="flex-[2] bg-love text-white font-black py-3 rounded-xl text-xs uppercase tracking-widest cursor-pointer border-none shadow-lg shadow-love/20 flex items-center justify-center gap-2"
+                  >
+                    {paymentProcessing ? (
+                      <>
+                        <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Procesando...
+                      </>
+                    ) : (
+                      `Pagar $${selectedComboForPurchase.price.toLocaleString('es-AR')}`
+                    )}
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </motion.div>
         )}
