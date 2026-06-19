@@ -91,6 +91,18 @@ export interface DesignConfig {
   rutaSubtitle?: string;
   txTitle?: string;
   txSubtitle?: string;
+
+  // Custom Loyalty & Category settings
+  loyaltyTiers?: {
+    id: string;
+    name: string;
+    minPoints: number;
+    maxPoints: number;
+    multiplier: number;
+    benefits: string;
+  }[];
+  pointsExpirationMonths?: number;
+  categoryInactivityDays?: number;
 }
 
 export const DEFAULT_DESIGN: DesignConfig = {
@@ -108,6 +120,34 @@ export const DEFAULT_DESIGN: DesignConfig = {
   bgCardDark: '#0f172a',
   logoUrl: '',
   logoText: 'CLUB CRAFT',
+  pointsExpirationMonths: 3,
+  categoryInactivityDays: 60,
+  loyaltyTiers: [
+    {
+      id: 'tier-fan',
+      name: 'CRAFT FAN',
+      minPoints: 1,
+      maxPoints: 499,
+      multiplier: 1.0,
+      benefits: 'Acceso a Club Craft. Sumas 1 punto base por cada peso consumido según la tasa.'
+    },
+    {
+      id: 'tier-gold',
+      name: 'CRAFT GOLD',
+      minPoints: 500,
+      maxPoints: 999,
+      multiplier: 1.5,
+      benefits: 'Multiplicador de puntos x1.5 de regalo en consumos. Premios especiales.'
+    },
+    {
+      id: 'tier-black',
+      name: 'CRAFT BLACK',
+      minPoints: 1000,
+      maxPoints: 999999,
+      multiplier: 2.0,
+      benefits: 'Multiplicador de puntos x2.0 en cada consumo. Invitaciones a eventos y degustaciones de autor.'
+    }
+  ],
   logoSubtitle: 'Management & Loyalty',
   customCss: '',
   banners: [

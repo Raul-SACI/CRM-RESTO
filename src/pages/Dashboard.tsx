@@ -118,17 +118,105 @@ export function Dashboard() {
     setCurrentSlide((prev) => (prev - 1 + bannerList.length) % bannerList.length);
   };
 
+  const getCombinedTransactions = () => {
+    if (!profile) return [];
+    try {
+      const localStr = localStorage.getItem(`local_txs_${profile.id}`);
+      if (localStr) {
+        const localTxs = JSON.parse(localStr);
+        const combined = [...localTxs, ...transactions];
+        return combined.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
+      }
+    } catch(e) {}
+    return transactions;
+  };
+
   const getCarPercentage = (pts: number) => {
+    const activeTiers = designConfig?.loyaltyTiers || [
+      { id: 'tier-fan', name: 'CRAFT FAN', minPoints: 1, maxPoints: 499, multiplier: 1.0, benefits: "Acceso a Club Craft. Sumas 1 punto base por cada peso consumido según la tasa." },
+      { id: 'tier-gold', name: 'CRAFT GOLD', minPoints: 500, maxPoints: 999, multiplier: 1.5, benefits: "Multiplicador de puntos x1.5 de regalo en consumos. Premios especiales." },
+      { id: 'tier-black', name: 'CRAFT BLACK', minPoints: 1000, maxPoints: 999999, multiplier: 2.0, benefits: "Multiplicador de puntos x2.0 en cada consumo. Invitaciones a eventos y degustaciones de autor." }
+    ];
+    const goldMin = activeTiers[1]?.minPoints || 500;
+    const blackMin = activeTiers[2]?.minPoints || 1000;
+    
     if (pts <= 0) return 10;
-    if (pts >= 2000) return 90;
-    if (pts <= 500) {
-      return 10 + (pts / 500) * 25;
-    } else if (pts <= 1000) {
-      return 35 + ((pts - 500) / 500) * 30;
+    if (pts >= blackMin) return 90;
+    if (pts <= goldMin) {
+      return 10 + (pts / goldMin) * 25;
     } else {
-      return 65 + ((pts - 1000) / 1000) * 25;
+      return 35 + ((pts - goldMin) / (blackMin - goldMin)) * 30;
     }
   };
+
+  // Dynamic Loyalty Tier calculation based on "puntos cargados" and inactivity
+  const clientTxs = getCombinedTransactions();
+  const totalPuntosCargados = clientTxs
+    .filter(t => t.points_earned > 0)
+    .reduce((sum, tx) => sum + tx.points_earned, 0);
+  const rawPuntosCargados = Math.max(profile?.points || 0, totalPuntosCargados);
+
+  // Inactivity calculation (60 days reset)
+  const creditTxs = clientTxs.filter(t => t.points_earned > 0);
+  let daysSinceLastCredit = 999;
+  let lastCreditDate = null;
+  if (creditTxs.length > 0) {
+    const lastTx = creditTxs.reduce((latest, current) => {
+      return new Date(current.created_at) > new Date(latest.created_at) ? current : latest;
+    });
+    lastCreditDate = new Date(lastTx.created_at);
+    const diffTime = Math.abs(new Date().getTime() - lastCreditDate.getTime());
+    daysSinceLastCredit = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  } else if (profile?.created_at) {
+    const regDate = new Date(profile.created_at);
+    const diffTime = Math.abs(new Date().getTime() - regDate.getTime());
+    daysSinceLastCredit = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  }
+
+  const inactivityLimit = designConfig?.categoryInactivityDays || 60;
+  const isCategoryReset = daysSinceLastCredit > inactivityLimit;
+  const categoryPoints = isCategoryReset ? 0 : rawPuntosCargados;
+
+  const activeTiers = designConfig?.loyaltyTiers || [
+    { id: 'tier-fan', name: 'CRAFT FAN', minPoints: 1, maxPoints: 499, multiplier: 1.0, benefits: "Acceso a Club Craft. Sumas 1 punto base por cada peso consumido según la tasa." },
+    { id: 'tier-gold', name: 'CRAFT GOLD', minPoints: 500, maxPoints: 999, multiplier: 1.5, benefits: "Multiplicador de puntos x1.5 de regalo en consumos. Premios especiales." },
+    { id: 'tier-black', name: 'CRAFT BLACK', minPoints: 1000, maxPoints: 999999, multiplier: 2.0, benefits: "Multiplicador de puntos x2.0 en cada consumo. Invitaciones a eventos y degustaciones de autor y regalos sorpresa." }
+  ];
+
+  const getDashboardCurrentTier = (pts: number) => {
+    const sorted = [...activeTiers].sort((a, b) => b.minPoints - a.minPoints);
+    for (const t of sorted) {
+      if (pts >= t.minPoints) return t;
+    }
+    return activeTiers[0] || { id: 'tier-fan', name: 'CRAFT FAN', minPoints: 1, maxPoints: 499, multiplier: 1.0, benefits: "Acceso a Club Craft" };
+  };
+
+  const clientTier = getDashboardCurrentTier(categoryPoints);
+
+  // Points expiration check (3 months)
+  const expirationMonths = designConfig?.pointsExpirationMonths || 3;
+  const expirationDate = new Date();
+  expirationDate.setMonth(expirationDate.getMonth() - expirationMonths);
+
+  const oldEarned = clientTxs
+    .filter(t => t.points_earned > 0 && new Date(t.created_at) < expirationDate)
+    .reduce((sum, tx) => sum + tx.points_earned, 0);
+
+  const totalSpent = Math.abs(
+    clientTxs
+      .filter(t => t.points_earned < 0)
+      .reduce((sum, tx) => sum + tx.points_earned, 0)
+  );
+
+  const expiredEstimated = Math.max(0, oldEarned - totalSpent);
+  const warningDate = new Date();
+  warningDate.setMonth(warningDate.getMonth() - (expirationMonths - 1));
+
+  const soonEarned = clientTxs
+    .filter(t => t.points_earned > 0 && new Date(t.created_at) >= expirationDate && new Date(t.created_at) < warningDate)
+    .reduce((sum, tx) => sum + tx.points_earned, 0);
+
+  const soonToExpire = Math.max(0, Math.min(profile?.points || 0, soonEarned));
 
   const calculateComboBalances = (txList: Transaction[], availableCombos: any[]) => {
     const balances: Record<string, { title: string; totalPurchased: number; totalUsed: number; imageUrl?: string; price: number }> = {};
@@ -236,19 +324,6 @@ export function Dashboard() {
         console.warn("[LocalStorage] No se pudo guardar tx_cache por límite de cuota:", e);
       }
     }
-  };
-
-  const getCombinedTransactions = () => {
-    if (!profile) return [];
-    try {
-      const localStr = localStorage.getItem(`local_txs_${profile.id}`);
-      if (localStr) {
-        const localTxs = JSON.parse(localStr);
-        const combined = [...localTxs, ...transactions];
-        return combined.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
-      }
-    } catch(e) {}
-    return transactions;
   };
 
   const handlePayWithMercadoPago = async (combo: any) => {
@@ -851,15 +926,16 @@ export function Dashboard() {
                     <span className="bg-black/40 text-white/90 text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full backdrop-blur-xs">
                       PROMO CRAFT
                     </span>
-                    {profile.points >= 2000 ? (
-                      <span className="bg-purple-600 border border-purple-400 text-purple-100 text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shadow">
-                        CLUB BLACK
-                      </span>
-                    ) : profile.points >= 1000 ? (
-                      <span className="bg-amber-500 border border-amber-400 text-amber-950 text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shadow">
-                        CLUB PREMIUM
-                      </span>
-                    ) : null}
+                    <span className={cn(
+                      "text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shadow border",
+                      clientTier.id.includes('black') 
+                        ? "bg-purple-600 border-purple-400 text-purple-100" 
+                        : clientTier.id.includes('gold')
+                        ? "bg-amber-500 border-amber-400 text-amber-950"
+                        : "bg-love border-love/50 text-white"
+                    )}>
+                      {clientTier.name}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -1052,12 +1128,29 @@ export function Dashboard() {
           </div>
         </div>
         <div className="relative mt-8 pt-6 border-t border-white/10 flex flex-wrap gap-4 justify-between items-center text-[10px] uppercase tracking-widest font-bold opacity-80">
-          <div className="flex items-center gap-4">
-            <span className="flex items-center gap-2">
-              <Award size={14} />
-              {profile.points >= 2000 ? 'Cliente BLACK (Multiplicador x2.0)' : profile.points >= 1000 ? 'Cliente PREMIUM (Multiplicador x1.5)' : 'Cliente Preferred'}
-            </span>
-            <span className="text-white/40">DNI: {profile.dni || 'No asignado'}</span>
+          <div className="flex flex-col gap-1.5 text-left">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="flex items-center gap-2">
+                <Award size={14} />
+                {`Categoría: ${clientTier.name} (Multiplicador x${clientTier.multiplier})`}
+              </span>
+              <span className="text-white/40">| DNI: {profile.dni || 'No asignado'}</span>
+              {soonToExpire > 0 && (
+                <span className="bg-amber-500/20 text-amber-200 border border-amber-500/30 px-2 py-0.5 rounded-md text-[8px] font-black normal-case animate-pulse">
+                  {soonToExpire} PTS vencen pronto
+                </span>
+              )}
+            </div>
+            {daysSinceLastCredit > 45 && !isCategoryReset && (
+              <p className="text-rose-300 font-semibold normal-case text-[9px] tracking-normal mt-1 flex items-center gap-1">
+                ⚠️ ¡Carga puntos antes de {inactivityLimit - daysSinceLastCredit} días para no descender de categoría!
+              </p>
+            )}
+            {isCategoryReset && rawPuntosCargados > 0 && (
+              <p className="text-slate-400 font-bold normal-case text-[9px] tracking-normal mt-1">
+                ℹ️ Tu categoría se reinició por inactividad (+{inactivityLimit} días sin cargar). ¡Suma hoy para volver a subir!
+              </p>
+            )}
           </div>
           <button 
             onClick={() => setIsEditing(true)}
@@ -1703,23 +1796,41 @@ export function Dashboard() {
           {/* ROAD TRACK: Looks like a real asphalt road */}
           <div className="relative h-14 bg-slate-700 dark:bg-slate-800 rounded-2xl border-t-4 border-b-4 border-dashed border-slate-500 dark:border-slate-600 flex items-center shadow-inner">
             {/* Dashed center lane line (argentine/classic road styling) */}
-            <div className="absolute left-0 right-0 h-0.5 border-t border-dashed border-yellow-400 opacity-60 z-10" />
-            
+            <div className="absolute left-0 right-0 h-0.5 border-t border-dashed border-white/20" />
+
             {/* Active completed path track (glows red/yellow) */}
             <div 
               className="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-yellow-500/25 via-love/20 to-love/35 rounded-l-xl transition-all duration-1000 ease-out" 
-              style={{ width: `${getCarPercentage(profile.points)}%` }} 
+              style={{ width: `${getCarPercentage(categoryPoints)}%` }} 
             />
 
             {/* ROAD MILESTONES: visually placed on the road */}
             <div className="absolute inset-0 px-4 md:px-8 flex items-center justify-between pointer-events-none z-10">
               {[
                 { pts: 0, label: 'Inicio', target: '0 pts', pos: 10, icon: <Flag size={12} className="text-white" /> },
-                { pts: 500, label: 'Coffee Lover', target: '500 pts', pos: 35, icon: <Gift size={12} className="text-white" /> },
-                { pts: 1000, label: 'PREMIUM (x1.5)', target: '1K pts', pos: 65, icon: <Sparkles size={12} className="text-yellow-400" /> },
-                { pts: 2000, label: 'BLACK (x2.0)', target: '2K pts', pos: 90, icon: <Star size={12} className="text-purple-300 fill-purple-300" /> }
+                { 
+                  pts: activeTiers[0]?.minPoints || 1, 
+                  label: activeTiers[0]?.name || 'CRAFT FAN', 
+                  target: `${activeTiers[0]?.minPoints || 1} pts`, 
+                  pos: 35, 
+                  icon: <Gift size={12} className="text-white" /> 
+                },
+                { 
+                  pts: activeTiers[1]?.minPoints || 500, 
+                  label: activeTiers[1]?.name || 'CRAFT GOLD', 
+                  target: `${activeTiers[1]?.minPoints || 500} pts`, 
+                  pos: 65, 
+                  icon: <Sparkles size={12} className="text-yellow-400" /> 
+                },
+                { 
+                  pts: activeTiers[2]?.minPoints || 1000, 
+                  label: activeTiers[2]?.name || 'CRAFT BLACK', 
+                  target: `${activeTiers[2]?.minPoints || 1000} pts`, 
+                  pos: 90, 
+                  icon: <Star size={12} className="text-purple-300 fill-purple-300" /> 
+                }
               ].map((m, idx) => {
-                const reached = profile.points >= m.pts;
+                const reached = categoryPoints >= m.pts;
                 return (
                   <div 
                     key={idx}
@@ -1743,16 +1854,16 @@ export function Dashboard() {
             {/* ANIMATED COFFEE CUP: Moves smoothly based on points */}
             <div 
               className="absolute transition-all duration-[1200ms] cubic-bezier(0.16, 1, 0.3, 1) -translate-x-1/2 z-30"
-              style={{ left: `${getCarPercentage(profile.points)}%` }}
+              style={{ left: `${getCarPercentage(categoryPoints)}%` }}
             >
               <div className="flex flex-col items-center">
                 {/* Visual Speech Bubble above the coffee cup */}
                 <div className="bg-slate-900 border border-love text-white text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-lg shadow-lg mb-2.5 relative animate-bounce whitespace-nowrap">
-                  <span>☕ CRAFT LOVER</span>
+                  <span>☕ {clientTier.name}</span>
                   <div className="absolute bottom-[-4px] left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 border-r border-b border-love rotate-45" />
                 </div>
                 
-                {/* Stylized premium takeaway coffee cup */}
+                {/* Stylized takeaway coffee cup */}
                 <div className="relative group cursor-help flex flex-col items-center">
                   {/* Steam Effect */}
                   <div className="flex gap-1 mb-1 absolute -top-4 opacity-75">
@@ -1795,11 +1906,29 @@ export function Dashboard() {
           <div className="relative mt-4 h-16">
             {[
               { pts: 0, label: 'Inicio', target: '0 pts', pos: 10, benefit: 'Pref. Club' },
-              { pts: 500, label: 'Coffee', target: '500 pts', pos: 35, benefit: 'Premio Especial' },
-              { pts: 1000, label: 'Premium', target: '1.000 pts', pos: 65, benefit: 'Multiplicador x1.5' },
-              { pts: 2000, label: 'Black Tier', target: '2.000 pts', pos: 90, benefit: 'Multiplicador x2.0' }
+              { 
+                pts: activeTiers[0]?.minPoints || 1, 
+                label: activeTiers[0]?.name || 'CRAFT FAN', 
+                target: `${activeTiers[0]?.minPoints || 1} pts`, 
+                pos: 35, 
+                benefit: 'Nivel Inicial' 
+              },
+              { 
+                pts: activeTiers[1]?.minPoints || 500, 
+                label: activeTiers[1]?.name || 'CRAFT GOLD', 
+                target: `${(activeTiers[1]?.minPoints || 500).toLocaleString()} pts`, 
+                pos: 65, 
+                benefit: `Bonus x${activeTiers[1]?.multiplier || 1.5}` 
+              },
+              { 
+                pts: activeTiers[2]?.minPoints || 1000, 
+                label: activeTiers[2]?.name || 'CRAFT BLACK', 
+                target: `${(activeTiers[2]?.minPoints || 1000).toLocaleString()} pts`, 
+                pos: 90, 
+                benefit: `Bonus x${activeTiers[2]?.multiplier || 2.0}`
+              }
             ].map((m, idx) => {
-              const reached = profile.points >= m.pts;
+              const reached = categoryPoints >= m.pts;
               return (
                 <div 
                   key={idx}
@@ -1826,20 +1955,26 @@ export function Dashboard() {
         </div>
 
         {/* CONTEXTUAL HOVER TIP OR SUCCESS MESSAGE */}
-        <div className="bg-love/5 dark:bg-love/5 border border-love/15 p-4 rounded-2xl flex items-center gap-3">
-          <Sparkles className="text-love animate-pulse shrink-0" size={18} />
-          <p className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 leading-normal">
-            {profile.points >= 2000 ? (
-              <span><strong>¡Felicidades, eres CLUB BLACK!</strong> Accedes a todos los beneficios premium, tienes prioridad en eventos y tus consumos de mozos duplican puntos (x2.0 puntos).</span>
-            ) : profile.points >= 1000 ? (
-              <span><strong>¡Estás en CLUB PREMIUM!</strong> Tus sumas rinden más con un multiplicador de x1.5 puntos. Te faltan <strong>{(2000 - profile.points).toLocaleString()} puntos</strong> para llegar al nivel <strong>CLUB BLACK (Doble Puntos)</strong>. Let\'s go!</span>
+        <div className="bg-love/5 dark:bg-love/5 border border-love/15 p-4 rounded-2xl flex flex-col gap-2">
+          <div className="flex items-center gap-3">
+            <Sparkles className="text-love animate-pulse shrink-0" size={18} />
+            <p className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 leading-normal text-left">
+              <span><strong>Tus Puntos de Categoría: {categoryPoints.toLocaleString()}</strong> (acumulados Historial de cargas: {rawPuntosCargados.toLocaleString()} PTS). Tu categoría se calcula en base a tus puntos cargados totales (sin descontar canjes realizados). {isCategoryReset && '⚠️ Por inactividad de más de ' + inactivityLimit + ' días sin cargar puntos, tu categoría se ha restablecido temporalmente a 0.'}</span>
+            </p>
+          </div>
+          
+          <div className="pl-7 text-left text-[10px] text-slate-500 space-y-1 leading-relaxed">
+            <p className="font-semibold">• 📅 <strong>Vencimiento para canjes:</strong> Tus puntos tienen una vigencia inicial de {expirationMonths} meses para ser canjeados por premios.</p>
+            <p className="font-semibold">• ⚡ <strong>Inactividad de Categoría:</strong> Con una inactividad de {inactivityLimit} días sin registrar cargas de puntos, tu categoría de beneficios descenderá a 0 (CRAFT FAN).</p>
+            <p className="font-semibold">• {clientTier.id.includes('black') ? (
+              <span>✨ ¡Felicidades! Estás en el nivel máximo <strong>{clientTier.name}</strong> obteniendo {clientTier.benefits}</span>
             ) : (
-              <span>Te faltan <strong>{(1000 - profile.points).toLocaleString()} puntos</strong> para alcanzar el estatus de <strong>CLUB PREMIUM (Desbloquear multiplicador x1.5 en todos tus consumos)</strong>. ¡Ven a visitarnos y suma más puntos hoy!</span>
-            )}
-          </p>
+              <span>📈 Nivel actual: <strong>{clientTier.name}</strong> ({clientTier.benefits}). Próximo nivel requiere {activeTiers[clientTier.id.includes('gold') ? 2 : 1]?.minPoints} puntos.</span>
+            )}</p>
+          </div>
         </div>
-      </div>
 
+      </div>
       {/* Redesigned & Beautiful Full-Width "Cargas y Canjes" Panel (As requested) */}
       <div className="col-span-12 bg-white dark:bg-slate-900 rounded-[2rem] p-6 md:p-8 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none order-4 relative group/tx">
         

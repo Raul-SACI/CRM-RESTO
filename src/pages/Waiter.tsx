@@ -293,14 +293,47 @@ export function Waiter() {
       return;
     }
 
-    let multiplier = 1;
-    let label = '';
-    if (client.points >= 2000) {
-      multiplier = 2;
-      label = 'BLACK (x2.0)';
-    } else if (client.points >= 1000) {
-      multiplier = 1.5;
-      label = 'PREMIUM (x1.5)';
+    // Calc total historical points ever loaded
+    const totalPuntosCargados = clientTransactions
+      .filter(t => t.points_earned > 0)
+      .reduce((sum, tx) => sum + tx.points_earned, 0);
+    const rawPuntosCargados = Math.max(client.points || 0, totalPuntosCargados);
+
+    // Calc inactivity
+    const creditTxs = clientTransactions.filter(t => t.points_earned > 0);
+    let daysSinceLastCredit = 999;
+    if (creditTxs.length > 0) {
+      const lastTx = creditTxs.reduce((latest, current) => {
+        return new Date(current.created_at) > new Date(latest.created_at) ? current : latest;
+      });
+      const lastDate = new Date(lastTx.created_at);
+      const diffTime = Math.abs(new Date().getTime() - lastDate.getTime());
+      daysSinceLastCredit = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    } else if (client.created_at) {
+      const regDate = new Date(client.created_at);
+      const diffTime = Math.abs(new Date().getTime() - regDate.getTime());
+      daysSinceLastCredit = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    }
+
+    const inactivityLimit = designConfig?.categoryInactivityDays || 60;
+    const isCategoryReset = daysSinceLastCredit > inactivityLimit;
+    const categoryPoints = isCategoryReset ? 0 : rawPuntosCargados;
+
+    const tiers = designConfig?.loyaltyTiers || [
+      { id: 'tier-fan', name: 'CRAFT FAN', minPoints: 1, maxPoints: 499, multiplier: 1.0, benefits: "Acceso a Club Craft." },
+      { id: 'tier-gold', name: 'CRAFT GOLD', minPoints: 500, maxPoints: 999, multiplier: 1.5, benefits: "Multiplicador de puntos x1.5" },
+      { id: 'tier-black', name: 'CRAFT BLACK', minPoints: 1000, maxPoints: 999999, multiplier: 2.0, benefits: "Multiplicador de puntos x2.0" }
+    ];
+
+    let multiplier = 1.0;
+    let label = 'CRAFT FAN';
+    const sortedTiers = [...tiers].sort((a, b) => b.minPoints - a.minPoints);
+    for (const tier of sortedTiers) {
+      if (categoryPoints >= tier.minPoints) {
+        multiplier = tier.multiplier;
+        label = `${tier.name} (x${tier.multiplier})`;
+        break;
+      }
     }
 
     const pointsToAdd = Math.floor((amountNum / conversionRate) * multiplier);
