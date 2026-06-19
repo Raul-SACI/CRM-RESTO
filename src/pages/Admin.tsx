@@ -44,6 +44,9 @@ export function Admin() {
   // Design editing module states
   const { designConfig, saveDesignConfig } = useDesign();
   const [localDesign, setLocalDesign] = useState<DesignConfig | null>(null);
+  const [pointsExpirationMonths, setPointsExpirationMonths] = useState<number>(3);
+  const [categoryInactivityDays, setCategoryInactivityDays] = useState<number>(60);
+  const [localLoyaltyTiers, setLocalLoyaltyTiers] = useState<any[]>([]);
   const [savingDesign, setSavingDesign] = useState(false);
   const [designSubSection, setDesignSubSection] = useState<'branding' | 'styling' | 'colors' | 'banners' | 'css'>('branding');
   const [activeBannerIndex, setActiveBannerIndex] = useState<number>(0);
@@ -87,10 +90,21 @@ export function Admin() {
     isActive: true
   });
 
-  // Sincronizar bases y condiciones cuando la configuración cargue
+  // Sincronizar bases y condiciones y reglas de lealtad cuando la configuración cargue
   useEffect(() => {
     if (designConfig?.terms) {
       setLocalTermsText(designConfig.terms);
+    }
+    if (designConfig) {
+      if (designConfig.pointsExpirationMonths !== undefined) {
+        setPointsExpirationMonths(designConfig.pointsExpirationMonths);
+      }
+      if (designConfig.categoryInactivityDays !== undefined) {
+        setCategoryInactivityDays(designConfig.categoryInactivityDays);
+      }
+      if (designConfig.loyaltyTiers) {
+        setLocalLoyaltyTiers(JSON.parse(JSON.stringify(designConfig.loyaltyTiers)));
+      }
     }
   }, [designConfig]);
 
@@ -432,7 +446,18 @@ export function Admin() {
         .eq('id', settings.id);
 
       if (error) throw error;
-      alert("Configuración actualizada correctamente");
+
+      if (designConfig) {
+        const updatedDesign = {
+          ...designConfig,
+          pointsExpirationMonths,
+          categoryInactivityDays,
+          loyaltyTiers: localLoyaltyTiers
+        };
+        await saveDesignConfig(updatedDesign);
+      }
+
+      alert("Configuración de puntos y reglas de lealtad actualizada correctamente");
     } catch (err: any) {
       alert("Error actualizando configuración: " + err.message);
     } finally {
@@ -1679,6 +1704,7 @@ export function Admin() {
                       </div>
 
                       <form onSubmit={handleUpdateSettings} className="space-y-8">
+                        {/* Conversión y Tasa */}
                         <div className="space-y-3">
                           <label className="block text-xs font-black uppercase tracking-widest text-slate-500 pl-1">Tasa de Conversión de Puntos</label>
                           <div className="bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-3xl flex items-center justify-between group transition-all hover:border-love/30">
@@ -1694,13 +1720,197 @@ export function Admin() {
                               </div>
                               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-2">equivale a 1 punto</p>
                             </div>
-                            <div className="w-16 h-16 bg-white dark:bg-slate-950 rounded-2xl flex items-center justify-center border border-slate-205 dark:border-slate-800 shadow-sm text-love">
+                            <div className="w-16 h-16 bg-white dark:bg-slate-950 rounded-2xl flex items-center justify-center border border-slate-200 dark:border-slate-800 shadow-sm text-love animate-pulse">
                               <Award size={32} />
                             </div>
                           </div>
                           <p className="text-[10px] text-slate-400 font-medium px-2 leading-relaxed">
                             Este valor define cuántos pesos argentinos debe consumir el cliente para sumar 1 punto. Por ejemplo, si pones 1000, un consumo de $10.000 sumará 10 puntos.
                           </p>
+                        </div>
+
+                        {/* Vencimiento y Expiración */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="space-y-3">
+                            <label className="block text-xs font-black uppercase tracking-widest text-slate-500 pl-1">📅 Vencimiento de Puntos (Meses)</label>
+                            <div className="bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-5 rounded-3xl flex items-center gap-3">
+                              <input 
+                                type="number" 
+                                min="1"
+                                max="120"
+                                className="bg-transparent text-2xl font-black text-ink dark:text-white outline-none w-full border-b border-transparent focus:border-love/30 transition-all font-mono"
+                                value={pointsExpirationMonths}
+                                onChange={e => setPointsExpirationMonths(parseInt(e.target.value) || 3)}
+                              />
+                              <span className="text-xs font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">meses</span>
+                            </div>
+                            <p className="text-[9px] text-slate-400 font-medium px-2 leading-relaxed">
+                              Plazo de vigencia para que los clientes puedan canjear sus puntos por premios antes de que expiren automáticamente.
+                            </p>
+                          </div>
+
+                          <div className="space-y-3">
+                            <label className="block text-xs font-black uppercase tracking-widest text-slate-500 pl-1">⚡ Ventana de Inactividad de Categoría</label>
+                            <div className="bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-5 rounded-3xl flex items-center gap-3">
+                              <input 
+                                type="number" 
+                                min="1"
+                                max="365"
+                                className="bg-transparent text-2xl font-black text-ink dark:text-white outline-none w-full border-b border-transparent focus:border-love/30 transition-all font-mono"
+                                value={categoryInactivityDays}
+                                onChange={e => setCategoryInactivityDays(parseInt(e.target.value) || 60)}
+                              />
+                              <span className="text-xs font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">días</span>
+                            </div>
+                            <p className="text-[9px] text-slate-400 font-medium px-2 leading-relaxed">
+                              Periodo máximo de inactividad de recargas de puntos tras el cual la categoría de beneficios del cliente desciende o se restablece por inactividad.
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Niveles de Lealtad (Tiers) */}
+                        <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                          <div>
+                            <h4 className="text-sm font-black uppercase tracking-wider text-ink dark:text-white flex items-center gap-2">
+                              🛡️ Niveles de Lealtad y Beneficios (Tiers)
+                            </h4>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">
+                              Configura los requisitos de puntos totales y los beneficios/multiplicadores de cada categoría.
+                            </p>
+                          </div>
+
+                          <div className="space-y-6">
+                            {(localLoyaltyTiers || []).map((tier, idx) => (
+                              <div key={tier.id || idx} className="bg-slate-50/50 dark:bg-slate-900/30 border border-slate-100 dark:border-slate-800/80 p-6 rounded-3xl space-y-4 relative overflow-hidden group">
+                                <div className="absolute top-0 left-0 w-1.5 h-full bg-love/50" />
+                                <div className="flex items-center justify-between">
+                                  <span className="text-[10px] font-black uppercase bg-love/10 text-love px-3 py-1 rounded-full">
+                                    NIVEL {idx + 1}
+                                  </span>
+                                  <span className="text-[10px] text-slate-400 font-mono tracking-wider">
+                                    ID: {tier.id}
+                                  </span>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                  <div className="space-y-1.5">
+                                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400/90 pl-1">Nombre de Nivel</label>
+                                    <input 
+                                      type="text" 
+                                      className="w-full bg-slate-100/50 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 px-3 py-2.5 rounded-2xl text-xs font-bold text-ink dark:text-white focus:border-love outline-none"
+                                      value={tier.name}
+                                      onChange={e => {
+                                        const updated = [...localLoyaltyTiers];
+                                        updated[idx].name = e.target.value;
+                                        setLocalLoyaltyTiers(updated);
+                                      }}
+                                    />
+                                  </div>
+
+                                  <div className="space-y-1.5">
+                                    <div className="flex justify-between items-center">
+                                      <label className="text-[9px] font-black uppercase tracking-widest text-slate-400/90 pl-1">Puntos Requeridos</label>
+                                    </div>
+                                    <div className="flex gap-2 items-center">
+                                      <input 
+                                        type="number" 
+                                        placeholder="Min"
+                                        className="w-full bg-slate-100/50 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 px-3 py-2.5 rounded-2xl text-xs font-mono font-bold text-ink dark:text-white focus:border-love outline-none"
+                                        value={tier.minPoints}
+                                        onChange={e => {
+                                          const updated = [...localLoyaltyTiers];
+                                          updated[idx].minPoints = parseInt(e.target.value) || 0;
+                                          setLocalLoyaltyTiers(updated);
+                                        }}
+                                      />
+                                      <span className="text-slate-300 dark:text-slate-700 text-xs">-</span>
+                                      <input 
+                                        type="number" 
+                                        placeholder="Max"
+                                        className="w-full bg-slate-100/50 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 px-3 py-2.5 rounded-2xl text-xs font-mono font-bold text-ink dark:text-white focus:border-love outline-none"
+                                        value={tier.maxPoints}
+                                        onChange={e => {
+                                          const updated = [...localLoyaltyTiers];
+                                          updated[idx].maxPoints = parseInt(e.target.value) || 0;
+                                          setLocalLoyaltyTiers(updated);
+                                        }}
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div className="space-y-1.5">
+                                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400/90 pl-1">Multiplicador de Carga</label>
+                                    <input 
+                                      type="number" 
+                                      step="0.1"
+                                      min="1.0"
+                                      max="10.0"
+                                      className="w-full bg-slate-100/50 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 px-3 py-2.5 rounded-2xl text-xs font-mono font-bold text-love dark:text-love focus:border-love outline-none"
+                                      value={tier.multiplier}
+                                      onChange={e => {
+                                        const updated = [...localLoyaltyTiers];
+                                        updated[idx].multiplier = parseFloat(e.target.value) || 1.0;
+                                        setLocalLoyaltyTiers(updated);
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400/90 pl-1">Descripción de Beneficios del Nivel</label>
+                                  <textarea 
+                                    rows={2}
+                                    className="w-full bg-slate-100/50 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 p-3 rounded-2xl text-xs font-semibold text-slate-650 dark:text-slate-300 focus:border-love outline-none leading-relaxed"
+                                    value={tier.benefits}
+                                    onChange={e => {
+                                      const updated = [...localLoyaltyTiers];
+                                      updated[idx].benefits = e.target.value;
+                                      setLocalLoyaltyTiers(updated);
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (window.confirm("¿Seguro que deseas restaurar los 3 niveles a la configuración de fábrica (FAN, GOLD, BLACK)?")) {
+                                  setLocalLoyaltyTiers([
+                                    {
+                                      id: 'tier-fan',
+                                      name: 'CRAFT FAN',
+                                      minPoints: 1,
+                                      maxPoints: 499,
+                                      multiplier: 1.0,
+                                      benefits: 'Acceso a Club Craft. Sumas 1 punto base por cada peso consumido según la tasa.'
+                                    },
+                                    {
+                                      id: 'tier-gold',
+                                      name: 'CRAFT GOLD',
+                                      minPoints: 500,
+                                      maxPoints: 999,
+                                      multiplier: 1.5,
+                                      benefits: 'Multiplicador de puntos x1.5 de regalo en consumos. Premios especiales.'
+                                    },
+                                    {
+                                      id: 'tier-black',
+                                      name: 'CRAFT BLACK',
+                                      minPoints: 1000,
+                                      maxPoints: 999999,
+                                      multiplier: 2.0,
+                                      benefits: 'Multiplicador de puntos x2.0 de regalo en consumos. Atención ultra premium y sorpresas.'
+                                    }
+                                  ]);
+                                }
+                              }}
+                              className="text-[9px] font-black uppercase text-slate-400 hover:text-love tracking-widest transition-colors cursor-pointer bg-transparent border-none outline-none"
+                            >
+                              🔄 Restablecer Niveles de Fábrica
+                            </button>
+                          </div>
                         </div>
 
                         <button 
