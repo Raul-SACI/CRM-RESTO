@@ -35,7 +35,7 @@ export default async function handler(req: any, res: any) {
     if (!accessToken || accessToken === "your-access-token" || accessToken === "" || accessToken.trim() === "") {
       console.warn("Mercado Pago token is missing or default. Returning Sandbox trial config.");
       
-      const simulatedSuccessUrl = `${baseUrl}/#/dashboard?payment_status=success&combo_id=${combo.id}&combo_title=${encodeURIComponent(combo.title)}&totalUses=${combo.totalUses}&price=${combo.price}&demo=true`;
+      const simulatedSuccessUrl = `${baseUrl}/?payment_status=success&combo_id=${combo.id}&combo_title=${encodeURIComponent(combo.title)}&totalUses=${combo.totalUses}&price=${combo.price}&demo=true`;
       
       return res.status(200).json({
         isSandboxDemo: true,
@@ -67,9 +67,9 @@ export default async function handler(req: any, res: any) {
           }
         ],
         back_urls: {
-          success: `${baseUrl}/#/dashboard?payment_status=success&combo_id=${combo.id}&combo_title=${encodeURIComponent(combo.title)}&totalUses=${combo.totalUses}&price=${combo.price}`,
-          failure: `${baseUrl}/#/dashboard?payment_status=failure`,
-          pending: `${baseUrl}/#/dashboard?payment_status=pending`
+          success: `${baseUrl}/?payment_status=success&combo_id=${combo.id}&combo_title=${encodeURIComponent(combo.title)}&totalUses=${combo.totalUses}&price=${combo.price}`,
+          failure: `${baseUrl}/?payment_status=failure`,
+          pending: `${baseUrl}/?payment_status=pending`
         },
         auto_return: "approved",
         external_reference: `CLIENT:${client_id}|COMBO:${combo.id}|USES:${combo.totalUses}`,

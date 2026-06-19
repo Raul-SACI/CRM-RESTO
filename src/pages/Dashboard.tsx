@@ -18,7 +18,7 @@ import {
 } from 'recharts';
 
 export function Dashboard() {
-  const { profile, realProfile } = useAuth();
+  const { profile, realProfile, refreshProfile } = useAuth();
   const { designConfig, saveDesignConfig } = useDesign();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [settings, setSettings] = useState<SystemSettings | null>(null);
@@ -365,7 +365,7 @@ export function Dashboard() {
     }
   };
 
-  // Procesar retorno de Mercado Pago de forma automática
+  // Procesar retorno de Mercado Pago de forma automática o simulador
   useEffect(() => {
     if (!profile) return;
 
@@ -380,14 +380,15 @@ export function Dashboard() {
     const price = parseFloat(params.get('price') || '0') || 0;
     const paymentId = params.get('payment_id') || params.get('preference_id') || ('sim_' + Date.now());
 
-    if (paymentStatus === 'success' && comboId) {
+    if ((paymentStatus === 'success' || paymentStatus === 'approved') && comboId) {
       const processedKey = `processed_mp_tx_${paymentId}_${comboId}`;
       const isAlreadyProcessed = localStorage.getItem(processedKey);
 
       if (!isAlreadyProcessed) {
         localStorage.setItem(processedKey, 'true');
         
-        const bonusPoints = Math.floor(price / (settings?.points_conversion_rate || 1000));
+        const conversionRate = settings?.points_conversion_rate || 1000;
+        const bonusPoints = Math.floor(price / conversionRate);
         
         const newPurchaseTx = {
           id: 'tx_mp_' + paymentId,
@@ -420,13 +421,18 @@ export function Dashboard() {
               description: `COMPRA_COMBO: ${comboId}_${totalUses}|${comboTitle}`
             });
 
-            // Actualizar puntos del perfil
+            // Actualizar puntos del perfil en Supabase
             await supabase
               .from('profiles')
               .update({ points: (profile.points || 0) + bonusPoints })
               .eq('id', profile.id);
 
-            // Recargar datos frescos
+            // Refrescar el perfil de autenticación para actualizar puntos en la app
+            if (refreshProfile) {
+              await refreshProfile();
+            }
+
+            // Recargar datos frescos de transacciones
             fetchClientData();
             
             // Limpiar parámetros de la URL para que no se re-procese al recargar
@@ -442,7 +448,7 @@ export function Dashboard() {
         executeLogging();
       }
     }
-  }, [profile, settings]);
+  }, [profile, settings, refreshProfile]);
 
   useEffect(() => {
     if (profile) {
