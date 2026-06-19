@@ -197,6 +197,7 @@ export function Dashboard() {
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
   const [cardForm, setCardForm] = useState({ number: '', name: '', expiry: '', cvc: '' });
   const [paymentProcessing, setPaymentProcessing] = useState(false);
+  const [isCreatingPreference, setIsCreatingPreference] = useState(false);
   const [activeQRCodeCombo, setActiveQRCodeCombo] = useState<any | null>(null);
   const [comboRedeeming, setComboRedeeming] = useState<string | null>(null);
 
@@ -249,6 +250,123 @@ export function Dashboard() {
     } catch(e) {}
     return transactions;
   };
+
+  const handlePayWithMercadoPago = async (combo: any) => {
+    if (!profile) return;
+    setIsCreatingPreference(true);
+    try {
+      const response = await fetch("/api/mercadopago/preference", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          combo,
+          client_id: profile.id,
+          app_url: window.location.origin
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("No se pudo iniciar el proceso de pago.");
+      }
+
+      const data = await response.json();
+      if (data.init_point) {
+        // Redirigir al cliente al Checkout de Mercado Pago
+        if (data.isSandboxDemo) {
+          console.log("Modo Demo Sandbox activo - Redirigiendo a pasarela simulada");
+        }
+        window.location.href = data.init_point;
+      } else {
+        alert("Ocurrio un error: No se generó el punto de inicio de Mercado Pago.");
+      }
+    } catch (e: any) {
+      console.error(e);
+      alert("Error al conectar con Mercado Pago: " + e.message);
+    } finally {
+      setIsCreatingPreference(false);
+    }
+  };
+
+  // Procesar retorno de Mercado Pago de forma automática
+  useEffect(() => {
+    if (!profile) return;
+
+    // Detectar retorno de Mercado Pago en la URL
+    const hashPart = window.location.hash.includes('?') ? window.location.hash.split('?')[1] : '';
+    const params = new URLSearchParams(hashPart || window.location.search);
+    
+    const paymentStatus = params.get('payment_status') || params.get('collection_status') || params.get('status');
+    const comboId = params.get('combo_id');
+    const comboTitle = params.get('combo_title') || 'Abono Adquirido';
+    const totalUses = parseInt(params.get('totalUses') || '0') || 5;
+    const price = parseFloat(params.get('price') || '0') || 0;
+    const paymentId = params.get('payment_id') || params.get('preference_id') || ('sim_' + Date.now());
+
+    if (paymentStatus === 'success' && comboId) {
+      const processedKey = `processed_mp_tx_${paymentId}_${comboId}`;
+      const isAlreadyProcessed = localStorage.getItem(processedKey);
+
+      if (!isAlreadyProcessed) {
+        localStorage.setItem(processedKey, 'true');
+        
+        const bonusPoints = Math.floor(price / (settings?.points_conversion_rate || 1000));
+        
+        const newPurchaseTx = {
+          id: 'tx_mp_' + paymentId,
+          client_id: profile.id,
+          waiter_id: profile.id,
+          amount: price,
+          points_earned: bonusPoints,
+          branch: 'MP ONLINE',
+          invoice_number: 'PAGO_MP_' + paymentId.slice(-6),
+          created_at: new Date().toISOString(),
+          description: `COMPRA_COMBO: ${comboId}_${totalUses}|${comboTitle}`
+        };
+
+        const executeLogging = async () => {
+          try {
+            // Guardar en el cache local de transacciones
+            const existingStr = localStorage.getItem(`local_txs_${profile.id}`);
+            const existing = existingStr ? JSON.parse(existingStr) : [];
+            existing.push(newPurchaseTx);
+            localStorage.setItem(`local_txs_${profile.id}`, JSON.stringify(existing));
+
+            // Insertar en base de datos Supabase
+            await supabase.from('transactions').insert({
+              client_id: profile.id,
+              waiter_id: profile.id,
+              amount: price,
+              points_earned: bonusPoints,
+              branch: 'VENTA MERCADO PAGO',
+              invoice_number: newPurchaseTx.invoice_number,
+              description: `COMPRA_COMBO: ${comboId}_${totalUses}|${comboTitle}`
+            });
+
+            // Actualizar puntos del perfil
+            await supabase
+              .from('profiles')
+              .update({ points: (profile.points || 0) + bonusPoints })
+              .eq('id', profile.id);
+
+            // Recargar datos frescos
+            fetchClientData();
+            
+            // Limpiar parámetros de la URL para que no se re-procese al recargar
+            const cleanHash = window.location.hash.split('?')[0];
+            window.history.replaceState(null, '', window.location.pathname + cleanHash);
+            
+            alert(`🎉 ¡Gracias por tu compra! El combo "${comboTitle}" ha sido acreditado en tu cuenta con éxito. Sumaste +${bonusPoints} puntos.`);
+          } catch(err) {
+            console.error("Error al procesar transaccion de Mercado Pago:", err);
+          }
+        };
+
+        executeLogging();
+      }
+    }
+  }, [profile, settings]);
 
   useEffect(() => {
     if (profile) {
@@ -2273,6 +2391,32 @@ export function Dashboard() {
                 <div className="text-left space-y-0.5">
                   <h6 className="text-[11px] font-black uppercase text-ink dark:text-white">{selectedComboForPurchase.title}</h6>
                   <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Incluye {selectedComboForPurchase.totalUses} pases libres para consumir</p>
+                </div>
+              </div>
+
+              {/* Mercado Pago Real/Configurable Payment Channel */}
+              <div className="space-y-3.5 pt-2">
+                <button
+                  type="button"
+                  disabled={isCreatingPreference}
+                  onClick={() => handlePayWithMercadoPago(selectedComboForPurchase)}
+                  className="w-full bg-[#009ee3] hover:bg-[#008ac6] active:scale-[0.99] text-white font-black py-4 px-6 rounded-2xl text-xs uppercase tracking-widest cursor-pointer border-none shadow-lg shadow-[#009ee3]/20 flex items-center justify-center gap-2.5 transition-all"
+                >
+                  {isCreatingPreference ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      Generando Link de Pago...
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-sm">⚡</span> Pagar con Mercado Pago
+                    </>
+                  )}
+                </button>
+                <div className="flex items-center gap-3">
+                  <div className="h-[1px] bg-slate-100 dark:bg-slate-800 flex-1" />
+                  <span className="text-[10px] font-black uppercase text-slate-450 tracking-widest px-2 shrink-0">O Tarjeta de Crédito</span>
+                  <div className="h-[1px] bg-slate-100 dark:bg-slate-800 flex-1" />
                 </div>
               </div>
 
