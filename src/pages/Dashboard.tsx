@@ -268,7 +268,8 @@ export function Dashboard() {
       });
 
       if (!response.ok) {
-        throw new Error("No se pudo iniciar el proceso de pago.");
+        const errorText = await response.text();
+        throw new Error(`HTTP Error ${response.status}: ${errorText || "No se pudo iniciar el proceso de pago."}`);
       }
 
       const data = await response.json();
