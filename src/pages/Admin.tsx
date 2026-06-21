@@ -10,10 +10,51 @@ import { useDesign, COLOR_PRESETS, CORNER_PRESETS, AVAILABLE_FONTS, type DesignC
 import { useAuth } from '@/src/App';
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell, PieChart, Pie } from 'recharts';
+import { 
+  getRoles, 
+  saveRoles, 
+  getPermissions, 
+  savePermissions, 
+  getCustomUsers, 
+  saveCustomUsers,
+  type CustomUser,
+  type CustomRole,
+  type CustomPermission
+} from '@/src/lib/permissions';
 
 export function Admin() {
   const { isSimulatingClient, setIsSimulatingClient } = useAuth();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'clients' | 'prizes' | 'staff' | 'history' | 'settings' | 'design' | 'feedback'>('dashboard');
+  
+  // Custom permissions module states
+  const [staffSubTab, setStaffSubTab] = useState<'usuarios' | 'roles' | 'permisos'>('usuarios');
+  const [customUsersList, setCustomUsersList] = useState<CustomUser[]>(() => getCustomUsers());
+  const [showAddCustomUserModal, setShowAddCustomUserModal] = useState(false);
+  const [newCustomUser, setNewCustomUser] = useState({
+    email: '',
+    password: '',
+    fullName: '',
+    dni: '',
+    role: 'waiter',
+    birthDate: ''
+  });
+
+  const [customRolesList, setCustomRolesList] = useState<CustomRole[]>(() => getRoles());
+  const [showAddRoleModal, setShowAddRoleModal] = useState(false);
+  const [editingRole, setEditingRole] = useState<CustomRole | null>(null);
+  const [newRoleForm, setNewRoleForm] = useState({
+    id: '',
+    name: '',
+    permissions: [] as string[]
+  });
+
+  const [customPermissionsList, setCustomPermissionsList] = useState<CustomPermission[]>(() => getPermissions());
+  const [showAddPermissionModal, setShowAddPermissionModal] = useState(false);
+  const [newPermissionForm, setNewPermissionForm] = useState({
+    id: '',
+    name: '',
+    description: ''
+  });
   const [loading, setLoading] = useState(true);
   const [clients, setClients] = useState<Profile[]>([]);
   const [prizes, setPrizes] = useState<Prize[]>([]);
@@ -957,7 +998,7 @@ export function Admin() {
               dashboard: 'Dashboard',
               clients: 'Clientes',
               prizes: 'Premios',
-              staff: 'Staff',
+              staff: 'Acceso / Permisos',
               history: 'Movimientos',
               settings: 'Ajustes',
               design: 'Diseño',
@@ -1471,37 +1512,593 @@ export function Admin() {
             </div>
           )}
 
-          {activeTab === 'staff' && (
-            <div className="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-xl shadow-slate-200/50">
-              <div className="p-6 border-b border-slate-100 bg-slate-50">
-                <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-ink">
-                  <Award size={16} className="text-love" />
-                  Roles de Staff
-                </h3>
-              </div>
-              <div className="p-6 space-y-4">
-                {staff.map(member => (
-                  <div key={member.id} className="bg-slate-50 p-4 rounded-xl border border-slate-100 flex items-center justify-between">
+          {activeTab === 'staff' && (() => {
+            const handleAddCustomUser = (e: React.FormEvent) => {
+              e.preventDefault();
+              if (!newCustomUser.email || !newCustomUser.password || !newCustomUser.fullName || !newCustomUser.dni) {
+                alert("Por favor, rellene todos los campos requeridos.");
+                return;
+              }
+              const newUserObj: CustomUser = {
+                id: 'custom-' + Date.now(),
+                email: newCustomUser.email.trim(),
+                password: newCustomUser.password,
+                full_name: newCustomUser.fullName.trim(),
+                dni: newCustomUser.dni.trim(),
+                role: newCustomUser.role,
+                birth_date: newCustomUser.birthDate || undefined,
+                created_at: new Date().toISOString()
+              };
+              const updated = [...customUsersList, newUserObj];
+              setCustomUsersList(updated);
+              saveCustomUsers(updated);
+              
+              setNewCustomUser({
+                email: '',
+                password: '',
+                fullName: '',
+                dni: '',
+                role: 'waiter',
+                birthDate: ''
+              });
+              setShowAddCustomUserModal(false);
+            };
+
+            const handleDeleteCustomUser = (userId: string) => {
+              if (window.confirm("¿Está seguro de eliminar esta cuenta de usuario? Ya no podrá ingresar con estas credenciales.")) {
+                const updated = customUsersList.filter(u => u.id !== userId);
+                setCustomUsersList(updated);
+                saveCustomUsers(updated);
+              }
+            };
+
+            const handleCreateRole = (e: React.FormEvent) => {
+              e.preventDefault();
+              if (!newRoleForm.id || !newRoleForm.name) {
+                alert("Por favor, ingrese ID de rol y nombre descriptivo.");
+                return;
+              }
+              const cleanId = newRoleForm.id.toLowerCase().replace(/\s+/g, '-').trim();
+              if (customRolesList.some(r => r.id === cleanId)) {
+                alert("Ya existe un rol con este código ID de rol.");
+                return;
+              }
+              const newRoleObj: CustomRole = {
+                id: cleanId,
+                name: newRoleForm.name.toUpperCase().trim(),
+                permissions: newRoleForm.permissions
+              };
+              const updated = [...customRolesList, newRoleObj];
+              setCustomRolesList(updated);
+              saveRoles(updated);
+
+              setNewRoleForm({ id: '', name: '', permissions: [] });
+              setShowAddRoleModal(false);
+            };
+
+            const handleUpdateRolePermissions = (roleId: string, permId: string, enabled: boolean) => {
+              const updated = customRolesList.map(r => {
+                if (r.id === roleId) {
+                  let perms = [...r.permissions];
+                  if (enabled && !perms.includes(permId)) {
+                    perms.push(permId);
+                  } else if (!enabled) {
+                    perms = perms.filter(p => p !== permId);
+                  }
+                  return { ...r, permissions: perms };
+                }
+                return r;
+              });
+              setCustomRolesList(updated);
+              saveRoles(updated);
+            };
+
+            const handleCreatePermission = (e: React.FormEvent) => {
+              e.preventDefault();
+              if (!newPermissionForm.id || !newPermissionForm.name) {
+                alert("Por favor, ingrese ID de permiso y nombre descriptivo.");
+                return;
+              }
+              const cleanId = newPermissionForm.id.toLowerCase().replace(/\s+/g, '_').trim();
+              if (customPermissionsList.some(p => p.id === cleanId)) {
+                alert("Ya existe un permiso con este código ID.");
+                return;
+              }
+              const newPermObj: CustomPermission = {
+                id: cleanId,
+                name: newPermissionForm.name.trim(),
+                description: newPermissionForm.description.trim()
+              };
+              const updated = [...customPermissionsList, newPermObj];
+              setCustomPermissionsList(updated);
+              savePermissions(updated);
+
+              setNewPermissionForm({ id: '', name: '', description: '' });
+              setShowAddPermissionModal(false);
+            };
+
+            return (
+              <div className="space-y-6">
+                {/* Cabecera del Módulo con Sub-pestañas */}
+                <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 p-6 shadow-xl shadow-slate-200/50 dark:shadow-none">
+                  <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                     <div>
-                      <p className="font-black uppercase tracking-tight text-ink">{member.full_name}</p>
-                      <p className="text-[10px] text-slate-400 font-black uppercase italic leading-none mt-1 tracking-widest">{member.role}</p>
+                      <h2 className="text-xl md:text-2xl font-black uppercase tracking-tighter italic text-ink dark:text-white flex items-center gap-2">
+                        Control de Accesos y Permisos
+                      </h2>
+                      <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mt-1">
+                        Usuarios directos, definición de Roles dinámicos y asignación de Permisos
+                      </p>
                     </div>
-                    <div className="flex gap-2">
-                      <button onClick={() => updateUserRole(member.id, member.role === 'admin' ? 'waiter' : 'admin')} className="text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded bg-white text-slate-500 hover:bg-love hover:text-white transition-all border border-slate-200 shadow-sm">
-                        {member.role === 'admin' ? 'Hacer Mozo' : 'Hacer Admin'}
-                      </button>
-                      <button onClick={() => updateUserRole(member.id, 'client')} className="text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded bg-white text-slate-400 hover:text-love transition-all border border-slate-200 shadow-sm">
-                        Quitar Acceso
-                      </button>
+
+                    {/* Botón dinámico según sub-pestaña */}
+                    <div>
+                      {staffSubTab === 'usuarios' && (
+                        <button 
+                          onClick={() => setShowAddCustomUserModal(true)}
+                          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-love text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-love/20 hover:scale-102 transition-all cursor-pointer border-none"
+                        >
+                          <UserPlus size={12} />
+                          Crear Cuenta de Acceso
+                        </button>
+                      )}
+                      {staffSubTab === 'roles' && (
+                        <button 
+                          onClick={() => setShowAddRoleModal(true)}
+                          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-love text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-love/20 hover:scale-102 transition-all cursor-pointer border-none"
+                        >
+                          <Plus size={12} />
+                          Nuevo Rol
+                        </button>
+                      )}
+                      {staffSubTab === 'permisos' && (
+                        <button 
+                          onClick={() => setShowAddPermissionModal(true)}
+                          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-love text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-love/20 hover:scale-102 transition-all cursor-pointer border-none"
+                        >
+                          <Plus size={12} />
+                          Nuevo Permiso
+                        </button>
+                      )}
                     </div>
                   </div>
-                ))}
-                <div className="mt-8 p-4 bg-love/5 rounded-xl border border-love/10">
-                  <p className="text-[10px] text-love font-black uppercase tracking-widest text-center">Para añadir staff: Pídeles que se registren como clientes y luego asciéndelos aquí.</p>
+
+                  {/* Selector de Sub-pestañas */}
+                  <div className="flex gap-2 border-b border-slate-100 dark:border-slate-800 mt-6 pb-1">
+                    {(['usuarios', 'roles', 'permisos'] as const).map((tab) => (
+                      <button
+                        key={tab}
+                        onClick={() => setStaffSubTab(tab)}
+                        className={cn(
+                          "px-4 py-2.5 rounded-t-xl text-[10px] md:text-xs font-black uppercase tracking-wider transition-all border-none cursor-pointer",
+                          staffSubTab === tab
+                            ? "bg-love text-white shadow-md shadow-love/10"
+                            : "text-slate-400 bg-transparent hover:text-ink dark:hover:text-white"
+                        )}
+                      >
+                        {tab === 'usuarios' && '👥 Usuarios y Cuentas'}
+                        {tab === 'roles' && '🛡️ Roles del Sistema'}
+                        {tab === 'permisos' && '🔑 Llaves de Permiso'}
+                      </button>
+                    ))}
+                  </div>
                 </div>
+
+                {/* Sub-pestaña 1: USUARIOS Y CUENTAS */}
+                {staffSubTab === 'usuarios' && (
+                  <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 p-6 shadow-xl shadow-slate-200/50 dark:shadow-none space-y-6">
+                    <div>
+                      <h3 className="text-sm font-black uppercase tracking-wider text-ink dark:text-white">Cuentas creadas por el Administrador</h3>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-normal mt-0.5">Permiten acceso directo mediante email y contraseña sin pre-registro</p>
+                    </div>
+
+                    <div className="space-y-3">
+                      {customUsersList.length === 0 ? (
+                        <div className="p-8 text-center bg-slate-50 dark:bg-slate-950 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800">
+                          <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">No hay cuentas de acceso creadas directamente todavía.</p>
+                        </div>
+                      ) : (
+                        customUsersList.map((user) => (
+                          <div key={user.id} className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-100 dark:border-slate-800 flex items-center justify-between gap-4">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <p className="font-black uppercase tracking-tight text-ink dark:text-white text-xs">{user.full_name}</p>
+                                <span className="text-[8px] font-black uppercase tracking-widest bg-love/15 text-love border border-love/20 px-2 py-0.5 rounded-full">
+                                  CON CONTRASEÑA
+                                </span>
+                              </div>
+                              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-[10px] text-slate-400">
+                                <span>📧 {user.email}</span>
+                                <span>💳 DNI: {user.dni}</span>
+                                <span className="font-bold underline text-love">Rol: {customRolesList.find(r => r.id === user.role)?.name || user.role.toUpperCase()}</span>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => handleDeleteCustomUser(user.id)}
+                              className="p-2 rounded-lg bg-love/5 text-love border border-love/10 hover:bg-love/15 transition-all text-[10px] font-black uppercase cursor-pointer shrink-0"
+                              title="Eliminar Cuenta"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    {/* Personal del Personal en DB (Registered Accounts) */}
+                    <div className="pt-6 border-t border-slate-150 dark:border-slate-800">
+                      <div className="mb-4">
+                        <h3 className="text-sm font-black uppercase tracking-wider text-ink dark:text-white">Personal Registrado en Base de Datos</h3>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Usuarios que han completado el registro en la base de datos de producción</p>
+                      </div>
+
+                      <div className="space-y-3">
+                        {staff.length === 0 ? (
+                          <div className="p-4 text-center text-[10px] text-slate-400 uppercase tracking-wider font-bold">
+                            No hay cuentas de personal registradas en base de datos.
+                          </div>
+                        ) : (
+                          staff.map(member => (
+                            <div key={member.id} className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                              <div>
+                                <p className="font-black uppercase tracking-tight text-ink dark:text-white text-xs">{member.full_name}</p>
+                                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[9px] text-slate-405 dark:text-slate-400 mt-1 uppercase font-bold tracking-wider">
+                                  <span>📧 {member.email}</span>
+                                  <span>💳 DNI: {member.dni}</span>
+                                  <span className="text-indigo-500 font-black">PRODUCCIÓN: {member.role}</span>
+                                </div>
+                              </div>
+                              <div className="flex gap-2 shrink-0">
+                                <button 
+                                  onClick={() => updateUserRole(member.id, member.role === 'admin' ? 'waiter' : 'admin')} 
+                                  className="text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-300 hover:bg-love hover:text-white transition-all border border-slate-200 dark:border-slate-800 shadow-sm cursor-pointer"
+                                >
+                                  {member.role === 'admin' ? 'Hacer Mozo' : 'Hacer Admin'}
+                                </button>
+                                <button 
+                                  onClick={() => updateUserRole(member.id, 'client')} 
+                                  className="text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded bg-white dark:bg-slate-900 text-slate-400 hover:text-love hover:border-love/30 transition-all border border-slate-200 dark:border-slate-800 shadow-sm cursor-pointer"
+                                >
+                                  Quitar Acceso
+                                </button>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Sub-pestaña 2: ROLES */}
+                {staffSubTab === 'roles' && (
+                  <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 p-6 shadow-xl shadow-slate-200/50 dark:shadow-none space-y-6">
+                    <div>
+                      <h3 className="text-sm font-black uppercase tracking-wider text-ink dark:text-white">Matriz de Roles de Acceso</h3>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-normal mt-0.5">Asigne permisos directamente a cada rol del sistema en tiempo real</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+                      {customRolesList.map((role) => (
+                        <div key={role.id} className="bg-slate-50 dark:bg-slate-950 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-4 shadow-sm">
+                          <div className="flex items-center justify-between border-b border-slate-150 dark:border-slate-800 pb-2.5">
+                            <div>
+                              <h4 className="font-black uppercase tracking-tight text-ink dark:text-white text-sm">{role.name}</h4>
+                              <p className="text-[10px] font-mono text-slate-400">Cod ID: {role.id}</p>
+                            </div>
+                            <span className="text-[9px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-500 dark:bg-emerald-950/20 px-2.5 py-1 rounded border border-emerald-100 dark:border-emerald-900/30">
+                              {role.permissions.length} Permisos Activos
+                            </span>
+                          </div>
+
+                          <div className="space-y-2 mt-2">
+                            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Permisos del Sistema asignados:</p>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                              {customPermissionsList.map((perm) => {
+                                const isAssigned = role.permissions.includes(perm.id);
+                                return (
+                                  <label 
+                                    key={perm.id} 
+                                    className={cn(
+                                      "flex items-start gap-1.5 p-2 rounded-lg border text-[10px] font-bold cursor-pointer transition-all uppercase tracking-tight select-none",
+                                      isAssigned
+                                        ? "bg-white dark:bg-slate-900 border-love/20 text-ink dark:text-white"
+                                        : "bg-transparent border-transparent text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900"
+                                    )}
+                                  >
+                                    <input
+                                      type="checkbox"
+                                      className="accent-love cursor-pointer mt-0.5"
+                                      checked={isAssigned}
+                                      onChange={(e) => handleUpdateRolePermissions(role.id, perm.id, e.target.checked)}
+                                    />
+                                    <div>
+                                      <p className="font-extrabold leading-none">{perm.name}</p>
+                                      <p className="text-[8px] font-black text-slate-400 normal-case tracking-tight mt-0.5 truncate max-w-[150px]">{perm.description}</p>
+                                    </div>
+                                  </label>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Sub-pestaña 3: PERMISOS */}
+                {staffSubTab === 'permisos' && (
+                  <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 p-6 shadow-xl shadow-slate-200/50 dark:shadow-none space-y-6">
+                    <div>
+                      <h3 className="text-sm font-black uppercase tracking-wider text-ink dark:text-white">Llaves de Bloqueo Integradas (Permisos)</h3>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-normal mt-0.5">Permisos específicos utilizados en los componentes y navegación para validar accesos</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {customPermissionsList.map((perm) => (
+                        <div key={perm.id} className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                          <div className="flex items-center gap-2">
+                            <span className="p-1 px-2 text-[8px] font-mono font-black uppercase tracking-widest bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded">
+                              {perm.id}
+                            </span>
+                            <span className="font-black text-ink dark:text-white text-xs uppercase tracking-tight">{perm.name}</span>
+                          </div>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-tight mt-1 ml-0.5 border-l-2 border-love/20 pl-2">
+                            {perm.description || 'Sin descripción adicional'}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* MODAL PARA AGREGAR USUARIO DIRECTO */}
+                {showAddCustomUserModal && (
+                  <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-[999] flex items-center justify-center p-4">
+                    <form 
+                      onSubmit={handleAddCustomUser}
+                      className="bg-white dark:bg-slate-900 w-full max-w-md rounded-[2rem] border border-slate-100 dark:border-slate-800 p-6 space-y-4 shadow-2xl relative"
+                    >
+                      <button 
+                        type="button"
+                        onClick={() => setShowAddCustomUserModal(false)}
+                        className="absolute right-4 top-4 p-2 text-slate-305 hover:text-ink cursor-pointer border-none bg-transparent"
+                      >
+                        <X size={18} />
+                      </button>
+
+                      <div className="pr-8">
+                        <h4 className="font-black text-ink dark:text-white text-base uppercase tracking-tight">Crear Nueva Cuenta de Acceso</h4>
+                        <p className="text-[9px] uppercase font-black tracking-widest text-slate-450">Agregue credenciales listas para ingresar a la plataforma</p>
+                      </div>
+
+                      <div className="space-y-3 pt-2">
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-2 block">Nombre Completo</label>
+                          <input 
+                            type="text" 
+                            required
+                            placeholder="Ej. Rodrigo Fernández"
+                            value={newCustomUser.fullName}
+                            onChange={(e) => setNewCustomUser({ ...newCustomUser, fullName: e.target.value })}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-sm focus:border-love outline-none text-ink dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-2 block">DNI (Identificación)</label>
+                          <input 
+                            type="text" 
+                            required
+                            placeholder="Ej. 12345678"
+                            value={newCustomUser.dni}
+                            onChange={(e) => setNewCustomUser({ ...newCustomUser, dni: e.target.value })}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-sm focus:border-love outline-none text-ink dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-2 block">Correo Electrónico (Login)</label>
+                          <input 
+                            type="email" 
+                            required
+                            placeholder="Ej. roderigo@craftfan.com"
+                            value={newCustomUser.email}
+                            onChange={(e) => setNewCustomUser({ ...newCustomUser, email: e.target.value })}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-sm focus:border-love outline-none text-ink dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-2 block">Contraseña de Ingreso</label>
+                          <input 
+                            type="text" 
+                            required
+                            placeholder="Contraseña del usuario"
+                            value={newCustomUser.password}
+                            onChange={(e) => setNewCustomUser({ ...newCustomUser, password: e.target.value })}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-sm focus:border-love outline-none text-ink dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-2 block">Rol Asignado</label>
+                          <select 
+                            value={newCustomUser.role}
+                            onChange={(e) => setNewCustomUser({ ...newCustomUser, role: e.target.value })}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-sm focus:border-love outline-none text-ink dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                          >
+                            {customRolesList.map(r => (
+                              <option key={r.id} value={r.id}>{r.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="pt-4 flex justify-end gap-2">
+                        <button 
+                          type="button" 
+                          onClick={() => setShowAddCustomUserModal(false)}
+                          className="px-4 py-3 text-[9px] font-black uppercase tracking-widest rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 transition-all border-none cursor-pointer"
+                        >
+                          Cancelar
+                        </button>
+                        <button 
+                          type="submit"
+                          className="px-4 py-3 text-[9px] font-black uppercase tracking-widest rounded-xl bg-love text-white shadow-lg shadow-love/15 transition-all border-none cursor-pointer"
+                        >
+                          Guardar Cuenta
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                )}
+
+                {/* MODAL PARA AGREGAR ROL */}
+                {showAddRoleModal && (
+                  <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-[999] flex items-center justify-center p-4">
+                    <form 
+                      onSubmit={handleCreateRole}
+                      className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[2rem] border border-slate-100 dark:border-slate-800 p-6 space-y-4 shadow-2xl relative"
+                    >
+                      <button 
+                        type="button"
+                        onClick={() => setShowAddRoleModal(false)}
+                        className="absolute right-4 top-4 p-2 text-slate-305 hover:text-ink cursor-pointer border-none bg-transparent"
+                      >
+                        <X size={18} />
+                      </button>
+
+                      <div>
+                        <h4 className="font-black text-ink dark:text-white text-base uppercase tracking-tight">Crear Nuevo Rol</h4>
+                        <p className="text-[9px] uppercase font-black tracking-widest text-slate-450">Defina un rol contenedor de privilegios en el sistema</p>
+                      </div>
+
+                      <div className="space-y-3 pt-2">
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-2 block">Código ID de Rol</label>
+                          <input 
+                            type="text" 
+                            required
+                            placeholder="Ej. cajero, supervisor"
+                            value={newRoleForm.id}
+                            onChange={(e) => setNewRoleForm({ ...newRoleForm, id: e.target.value })}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-sm focus:border-love outline-none text-ink dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-2 block">Nombre del Rol</label>
+                          <input 
+                            type="text" 
+                            required
+                            placeholder="Ej. Personal de Caja"
+                            value={newRoleForm.name}
+                            onChange={(e) => setNewRoleForm({ ...newRoleForm, name: e.target.value })}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-sm focus:border-love outline-none text-ink dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="pt-4 flex justify-end gap-2">
+                        <button 
+                          type="button" 
+                          onClick={() => setShowAddRoleModal(false)}
+                          className="px-4 py-3 text-[9px] font-black uppercase tracking-widest rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 transition-all border-none cursor-pointer"
+                        >
+                          Cancelar
+                        </button>
+                        <button 
+                          type="submit"
+                          className="px-4 py-3 text-[9px] font-black uppercase tracking-widest rounded-xl bg-love text-white shadow-lg shadow-love/15 transition-all border-none cursor-pointer"
+                        >
+                          Crear Rol
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                )}
+
+                {/* MODAL PARA AGREGAR PERMISO */}
+                {showAddPermissionModal && (
+                  <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-[999] flex items-center justify-center p-4">
+                    <form 
+                      onSubmit={handleCreatePermission}
+                      className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[2rem] border border-slate-100 dark:border-slate-800 p-6 space-y-4 shadow-2xl relative"
+                    >
+                      <button 
+                        type="button"
+                        onClick={() => setShowAddPermissionModal(false)}
+                        className="absolute right-4 top-4 p-2 text-slate-305 hover:text-ink cursor-pointer border-none bg-transparent"
+                      >
+                        <X size={18} />
+                      </button>
+
+                      <div>
+                        <h4 className="font-black text-ink dark:text-white text-base uppercase tracking-tight">Crear Nuevo Permiso</h4>
+                        <p className="text-[9px] uppercase font-black tracking-widest text-slate-450">Defina un privilegio granular en el sistema</p>
+                      </div>
+
+                      <div className="space-y-3 pt-2">
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-2 block">Código ID de l Permiso</label>
+                          <input 
+                            type="text" 
+                            required
+                            placeholder="Ej. ver_cocina"
+                            value={newPermissionForm.id}
+                            onChange={(e) => setNewPermissionForm({ ...newPermissionForm, id: e.target.value })}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-sm focus:border-love outline-none text-ink dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-2 block">Nombre del Permiso</label>
+                          <input 
+                            type="text" 
+                            required
+                            placeholder="Ej. Ver Panel Cocineros"
+                            value={newPermissionForm.name}
+                            onChange={(e) => setNewPermissionForm({ ...newPermissionForm, name: e.target.value })}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-sm focus:border-love outline-none text-ink dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-2 block">Descripción del Permiso</label>
+                          <textarea 
+                            rows={3}
+                            placeholder="Ej. Permite visualizar e imprimir comandos para cocina"
+                            value={newPermissionForm.description}
+                            onChange={(e) => setNewPermissionForm({ ...newPermissionForm, description: e.target.value })}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 px-3 text-sm focus:border-love outline-none text-ink dark:bg-slate-800 dark:border-slate-700 dark:text-white resize-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="pt-4 flex justify-end gap-2">
+                        <button 
+                          type="button" 
+                          onClick={() => setShowAddPermissionModal(false)}
+                          className="px-4 py-3 text-[9px] font-black uppercase tracking-widest rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 transition-all border-none cursor-pointer"
+                        >
+                          Cancelar
+                        </button>
+                        <button 
+                          type="submit"
+                          className="px-4 py-3 text-[9px] font-black uppercase tracking-widest rounded-xl bg-love text-white shadow-lg shadow-love/15 transition-all border-none cursor-pointer"
+                        >
+                          Crear Permiso
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                )}
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {activeTab === 'history' && (
             <div className="space-y-4">

@@ -6,6 +6,7 @@ import { useAuth, useTheme } from '@/src/App';
 import { useDesign } from '@/src/components/DesignEngine';
 import { cn } from '@/src/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
+import { hasPermission } from '@/src/lib/permissions';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -289,13 +290,13 @@ export function Layout({ children }: LayoutProps) {
               );
             })}
 
-            {(profile?.role === 'waiter' || profile?.role === 'admin' || realProfile?.role === 'admin') && (
+            {(hasPermission(profile?.role, 'cargar_puntos') || hasPermission(realProfile?.role, 'cargar_puntos')) && (
               <NavLink to="/waiter" className={({ isActive }) => `px-3 md:px-4 py-1.5 md:py-2 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-tighter transition-all shrink-0 ${isActive ? 'bg-love text-white shadow-lg shadow-love/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-405'}`}>
                 Carga de Puntos
               </NavLink>
             )}
 
-            {(profile?.role === 'admin' || realProfile?.role === 'admin') && (
+            {(hasPermission(profile?.role, 'ver_admin') || hasPermission(realProfile?.role, 'ver_admin')) && (
               <NavLink to="/admin" className={({ isActive }) => `px-3 md:px-4 py-1.5 md:py-2 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-tighter transition-all shrink-0 ${isActive ? 'bg-love text-white shadow-lg shadow-love/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-405'}`}>
                 Admin
               </NavLink>
@@ -303,7 +304,7 @@ export function Layout({ children }: LayoutProps) {
           </div>
 
           {/* Inline compact links for other roles like Admin when in phone mode */}
-          {((isSimulatingClient && simDevice === 'phone') || window.innerWidth < 640) && (profile?.role === 'admin' || realProfile?.role === 'admin') ? (
+          {((isSimulatingClient && simDevice === 'phone') || window.innerWidth < 640) && (hasPermission(profile?.role, 'ver_admin') || hasPermission(realProfile?.role, 'ver_admin')) ? (
             <div className="flex items-center gap-1 sm:hidden">
               <NavLink to="/admin" className={({ isActive }) => cn(
                 "px-2.5 py-1.5 rounded-lg transition-all shrink-0 font-black text-[9px] border-none",
@@ -315,13 +316,15 @@ export function Layout({ children }: LayoutProps) {
           ) : null}
 
           {/* Floating Theme Selector and Actions */}
-          <button 
-            onClick={toggleTheme} 
-            className="ml-1 p-2 text-slate-400 hover:text-love transition-all hover:bg-love/10 rounded-lg shrink-0 cursor-pointer bg-transparent border-none" 
-            title={theme === 'light' ? 'Modo Oscuro' : 'Modo Claro'}
-          >
-            {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
-          </button>
+          {(profile?.role === 'admin' && !isSimulatingClient) && (
+            <button 
+              onClick={toggleTheme} 
+              className="ml-1 p-2 text-slate-400 hover:text-love transition-all hover:bg-love/10 rounded-lg shrink-0 cursor-pointer bg-transparent border-none" 
+              title={theme === 'light' ? 'Modo Oscuro' : 'Modo Claro'}
+            >
+              {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+            </button>
+          )}
 
           <button onClick={handleLogout} className="ml-1 p-2 text-slate-400 hover:text-love transition-all hover:bg-love/10 rounded-lg shrink-0 cursor-pointer bg-transparent border-none" title="Cerrar Sesión">
             <LogOut size={20} />

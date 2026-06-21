@@ -17,6 +17,7 @@ import { Branches } from '@/src/pages/Branches';
 import { Layout } from '@/src/components/Layout';
 import { motion, AnimatePresence } from 'motion/react';
 import { DesignProvider } from '@/src/components/DesignEngine';
+import { hasPermission } from '@/src/lib/permissions';
 
 interface ThemeContextType {
   theme: 'light' | 'dark';
@@ -105,7 +106,7 @@ function AppRoutes() {
           path="/waiter" 
           element={
             user ? (
-              realProfile?.role === 'waiter' || realProfile?.role === 'admin' 
+              hasPermission(realProfile?.role, 'cargar_puntos')
                 ? <Layout><Waiter /></Layout> 
                 : <Navigate to="/" replace />
             ) : (
@@ -118,7 +119,7 @@ function AppRoutes() {
           path="/admin" 
           element={
             user ? (
-              realProfile?.role === 'admin' 
+              hasPermission(realProfile?.role, 'ver_admin')
                 ? <Layout><Admin /></Layout> 
                 : <Navigate to="/" replace />
             ) : (
@@ -148,23 +149,24 @@ export default function App() {
     localStorage.setItem('isSimulatingClient', String(val));
   };
 
+  const [user, setUser] = useState<any | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     const root = window.document.documentElement;
-    if (theme === 'dark') {
+    const isClient = profile ? (isSimulatingClient ? true : profile.role !== 'admin') : true;
+    if (theme === 'dark' && !isClient) {
       root.classList.add('dark');
     } else {
       root.classList.remove('dark');
     }
     localStorage.setItem('theme', theme);
-  }, [theme]);
+  }, [theme, profile, isSimulatingClient]);
 
   const toggleTheme = () => {
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
   };
-
-  const [user, setUser] = useState<any | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
 
   // Verificación de configuración
   const isConfigured = !!(import.meta as any).env.VITE_SUPABASE_URL && !!(import.meta as any).env.VITE_SUPABASE_ANON_KEY;
@@ -280,6 +282,23 @@ export default function App() {
         setLoading(false);
       }, 5000);
 
+      // Check for a custom local session (from admin-created custom users) first
+      const customSessionStr = localStorage.getItem('custom_user_session');
+      if (customSessionStr) {
+        try {
+          const sess = JSON.parse(customSessionStr);
+          if (sess && sess.user && sess.profile) {
+            setUser(sess.user);
+            setProfile(sess.profile);
+            setLoading(false);
+            clearTimeout(forceUnlock);
+            return;
+          }
+        } catch (e) {
+          console.error("Error loading custom local session", e);
+        }
+      }
+
       try {
         const { data: { session } } = await supabase.auth.getSession();
         
@@ -322,6 +341,19 @@ export default function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (!isMounted) return;
       
+      const customSessionStr = localStorage.getItem('custom_user_session');
+      if (customSessionStr) {
+        try {
+          const sess = JSON.parse(customSessionStr);
+          if (sess && sess.user && sess.profile) {
+            setUser(sess.user);
+            setProfile(sess.profile);
+            setLoading(false);
+            return;
+          }
+        } catch (e) {}
+      }
+
       if (session?.user) {
         setUser(session.user);
         await fetchProfile(session.user.id, session.user.email);

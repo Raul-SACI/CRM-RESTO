@@ -3,6 +3,7 @@ import { supabase } from '@/src/lib/supabase';
 import { motion } from 'motion/react';
 import { User, Mail, Lock, CreditCard, Calendar } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
+import { getCustomUsers } from '@/src/lib/permissions';
 
 export function Auth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -24,6 +25,40 @@ export function Auth() {
 
     try {
       if (isLogin) {
+        // Look in custom users first
+        const customUsers = getCustomUsers();
+        const matchedUser = customUsers.find(
+          u => u.email.toLowerCase().trim() === formData.email.toLowerCase().trim() && 
+          u.password === formData.password
+        );
+
+        if (matchedUser) {
+          // Store custom session
+          const customSession = {
+            user: {
+              id: matchedUser.id,
+              email: matchedUser.email,
+              user_metadata: {
+                full_name: matchedUser.full_name,
+                dni: matchedUser.dni
+              }
+            },
+            profile: {
+              id: matchedUser.id,
+              full_name: matchedUser.full_name,
+              email: matchedUser.email,
+              dni: matchedUser.dni,
+              birth_date: matchedUser.birth_date || '',
+              role: matchedUser.role,
+              points: 0,
+              created_at: matchedUser.created_at
+            }
+          };
+          localStorage.setItem('custom_user_session', JSON.stringify(customSession));
+          window.location.reload();
+          return;
+        }
+
         const { error } = await supabase.auth.signInWithPassword({
           email: formData.email,
           password: formData.password,
