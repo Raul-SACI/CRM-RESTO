@@ -377,6 +377,19 @@ export function Layout({ children }: LayoutProps) {
               )}
             </NavLink>
           ))}
+
+          {/* mobile logout button at the very end */}
+          <button 
+            onClick={handleLogout}
+            className="flex flex-col items-center gap-1 py-1 px-3.5 rounded-2xl transition-all cursor-pointer border-none text-center bg-transparent shrink-0 group"
+          >
+            <div className="transition-transform duration-200 text-slate-400 dark:text-slate-500 group-hover:text-love group-hover:scale-110">
+              <LogOut size={19} />
+            </div>
+            <span className="text-[8px] uppercase tracking-wider font-black text-slate-400 dark:text-slate-500 group-hover:text-love transition-colors duration-200">
+              Salir
+            </span>
+          </button>
         </div>
 
           </div>
