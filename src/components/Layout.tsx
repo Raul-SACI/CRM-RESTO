@@ -72,6 +72,8 @@ export function Layout({ children }: LayoutProps) {
     await saveDesignConfig(updated);
   };
 
+  const [simDevice, setSimDevice] = useState<'pc' | 'tablet' | 'phone'>('pc');
+
   const handleLogout = async () => {
     await signOut();
     navigate('/auth');
@@ -80,7 +82,7 @@ export function Layout({ children }: LayoutProps) {
   return (
     <div className="min-h-screen bg-paper flex flex-col font-sans overflow-x-hidden">
       {isSimulatingClient && (
-        <div className="w-full bg-slate-900 border-b border-love text-white text-[10px] md:text-xs py-3 px-6 flex items-center justify-between font-black uppercase tracking-wider z-[100] sticky top-0 transition-all shadow-md">
+        <div className="w-full bg-slate-900 border-b border-love text-white text-[10px] md:text-xs py-2.5 px-4 md:px-6 flex flex-wrap gap-3 items-center justify-between font-black uppercase tracking-wider z-[100] sticky top-0 transition-all shadow-md">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-love animate-ping" />
             <span className="flex items-center gap-1">
@@ -88,23 +90,75 @@ export function Layout({ children }: LayoutProps) {
               Vista Cliente Activa: Estás viendo la app como un usuario normal
             </span>
           </div>
+
+          {/* Selector de Dispositivos (Device Simulation Selector) */}
+          <div className="flex items-center gap-1 bg-slate-800 p-1 rounded-xl border border-slate-700/60 shadow-inner">
+            <button
+              onClick={() => setSimDevice('pc')}
+              className={cn(
+                "px-2.5 py-1 rounded-lg text-[9px] font-black transition-all cursor-pointer border-none flex items-center gap-1",
+                simDevice === 'pc' 
+                  ? "bg-love text-white shadow-md font-black" 
+                  : "bg-transparent text-slate-400 hover:text-white"
+              )}
+            >
+              💻 PC
+            </button>
+            <button
+              onClick={() => setSimDevice('tablet')}
+              className={cn(
+                "px-2.5 py-1 rounded-lg text-[9px] font-black transition-all cursor-pointer border-none flex items-center gap-1",
+                simDevice === 'tablet' 
+                  ? "bg-love text-white shadow-md font-black" 
+                  : "bg-transparent text-slate-400 hover:text-white"
+              )}
+            >
+              📟 Tablet
+            </button>
+            <button
+              onClick={() => setSimDevice('phone')}
+              className={cn(
+                "px-2.5 py-1 rounded-lg text-[9px] font-black transition-all cursor-pointer border-none flex items-center gap-1",
+                simDevice === 'phone' 
+                  ? "bg-love text-white shadow-md font-black" 
+                  : "bg-transparent text-slate-400 hover:text-white"
+              )}
+            >
+              📱 Celular
+            </button>
+          </div>
+
           <button
             onClick={() => {
               setIsSimulatingClient(false);
               navigate('/admin');
             }}
-            className="px-4 py-1.5 bg-love hover:bg-love/90 text-white rounded-xl transition-all font-black shadow-lg shadow-love/20 active:scale-95 cursor-pointer text-[10px]"
+            className="px-4 py-1.5 bg-love hover:bg-love/90 text-white rounded-xl transition-all font-black shadow-lg shadow-love/20 active:scale-95 cursor-pointer text-[10px] border-none"
           >
             Volver a Admin
           </button>
         </div>
       )}
       
-      <div className="w-full max-w-[1800px] mx-auto flex-1 flex flex-col px-4 md:px-8">
-        <header className={cn(
-          "mt-2 md:mt-6 bg-white dark:bg-slate-900 p-3 md:p-4 rounded-xl md:rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none flex justify-between items-center sticky z-50",
-          isSimulatingClient ? "top-14" : "top-2 md:top-6"
-        )}>
+      <div className={cn(
+        "w-full flex-1 flex flex-col transition-all duration-300",
+        isSimulatingClient && simDevice !== 'pc' && "bg-slate-100 dark:bg-slate-950/40 p-4 md:p-8 justify-center items-center"
+      )}>
+        <div 
+          className={cn(
+            "w-full flex-1 flex flex-col transition-all duration-300",
+            (isSimulatingClient && simDevice === 'tablet') && "w-[768px] max-w-full h-[1024px] max-h-[85vh] bg-white dark:bg-slate-900 border-[14px] border-slate-950 dark:border-slate-800 rounded-[2.5rem] shadow-2xl overflow-y-auto scrollbar-none relative p-4",
+            (isSimulatingClient && simDevice === 'phone') && "w-[375px] max-w-full h-[812px] max-h-[80vh] bg-white dark:bg-slate-900 border-[14px] border-slate-950 dark:border-slate-800 rounded-[2.5rem] shadow-2xl overflow-y-auto scrollbar-none relative p-4"
+          )}
+        >
+          <div className={cn(
+            "w-full mx-auto flex-1 flex flex-col",
+            !(isSimulatingClient && simDevice !== 'pc') && "max-w-[1800px] px-4 md:px-8"
+          )}>
+            <header className={cn(
+              "mt-2 md:mt-6 bg-white dark:bg-slate-900 p-3 md:p-4 rounded-xl md:rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none flex justify-between items-center sticky z-50",
+              (isSimulatingClient && simDevice === 'pc') ? "top-14" : "top-2 md:top-6"
+            )}>
         <div className="flex items-center gap-2 md:gap-3">
           {designConfig.logoUrl ? (
             <img 
@@ -261,7 +315,8 @@ export function Layout({ children }: LayoutProps) {
           {children}
         </main>
 
-
+          </div>
+        </div>
       </div>
 
       {/* Interactive FAQ Sliding Drawer / Overlay Modal */}

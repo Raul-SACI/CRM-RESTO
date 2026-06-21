@@ -140,12 +140,12 @@ export function Dashboard() {
     const goldMin = activeTiers[1]?.minPoints || 500;
     const blackMin = activeTiers[2]?.minPoints || 1000;
     
-    if (pts <= 0) return 10;
+    if (pts <= 0) return 15;
     if (pts >= blackMin) return 90;
     if (pts <= goldMin) {
-      return 10 + (pts / goldMin) * 25;
+      return 15 + (pts / goldMin) * 40;
     } else {
-      return 35 + ((pts - goldMin) / (blackMin - goldMin)) * 30;
+      return 55 + ((pts - goldMin) / (blackMin - goldMin)) * 35;
     }
   };
 
@@ -1813,25 +1813,24 @@ export function Dashboard() {
             {/* ROAD MILESTONES: visually placed on the road */}
             <div className="absolute inset-0 px-4 md:px-8 flex items-center justify-between pointer-events-none z-10">
               {[
-                { pts: 0, label: 'Inicio', target: '0 pts', pos: 10, icon: <Flag size={12} className="text-white" /> },
                 { 
-                  pts: activeTiers[0]?.minPoints || 1, 
+                  pts: 0, 
                   label: activeTiers[0]?.name || 'CRAFT FAN', 
-                  target: `${activeTiers[0]?.minPoints || 1} pts`, 
-                  pos: 35, 
+                  target: '0 PTS', 
+                  pos: 15, 
                   icon: <Gift size={12} className="text-white" /> 
                 },
                 { 
                   pts: activeTiers[1]?.minPoints || 500, 
                   label: activeTiers[1]?.name || 'CRAFT GOLD', 
-                  target: `${activeTiers[1]?.minPoints || 500} pts`, 
-                  pos: 65, 
+                  target: `${activeTiers[1]?.minPoints || 500} PTS`, 
+                  pos: 55, 
                   icon: <Sparkles size={12} className="text-yellow-400" /> 
                 },
                 { 
                   pts: activeTiers[2]?.minPoints || 1000, 
                   label: activeTiers[2]?.name || 'CRAFT BLACK', 
-                  target: `${activeTiers[2]?.minPoints || 1000} pts`, 
+                  target: `${activeTiers[2]?.minPoints || 1000} PTS`, 
                   pos: 90, 
                   icon: <Star size={12} className="text-purple-300 fill-purple-300" /> 
                 }
@@ -1911,25 +1910,24 @@ export function Dashboard() {
           {/* LABELS BELOW ROAD */}
           <div className="relative mt-4 h-16">
             {[
-              { pts: 0, label: 'Inicio', target: '0 pts', pos: 10, benefit: 'Pref. Club' },
               { 
-                pts: activeTiers[0]?.minPoints || 1, 
+                pts: 0, 
                 label: activeTiers[0]?.name || 'CRAFT FAN', 
-                target: `${activeTiers[0]?.minPoints || 1} pts`, 
-                pos: 35, 
+                target: '0 PTS', 
+                pos: 15, 
                 benefit: 'Nivel Inicial' 
               },
               { 
                 pts: activeTiers[1]?.minPoints || 500, 
                 label: activeTiers[1]?.name || 'CRAFT GOLD', 
-                target: `${(activeTiers[1]?.minPoints || 500).toLocaleString()} pts`, 
-                pos: 65, 
+                target: `${(activeTiers[1]?.minPoints || 500).toLocaleString()} PTS`, 
+                pos: 55, 
                 benefit: `Bonus x${activeTiers[1]?.multiplier || 1.5}` 
               },
               { 
                 pts: activeTiers[2]?.minPoints || 1000, 
                 label: activeTiers[2]?.name || 'CRAFT BLACK', 
-                target: `${(activeTiers[2]?.minPoints || 1000).toLocaleString()} pts`, 
+                target: `${(activeTiers[2]?.minPoints || 1000).toLocaleString()} PTS`, 
                 pos: 90, 
                 benefit: `Bonus x${activeTiers[2]?.multiplier || 2.0}`
               }
