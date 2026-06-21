@@ -119,18 +119,20 @@ export function Layout({ children }: LayoutProps) {
             />
           ) : null}
           {(!designConfig.logoUrl) && (
-            <div className="w-8 h-8 md:w-10 md:h-10 bg-love rounded-lg flex items-center justify-center font-bold text-lg md:text-xl uppercase shadow-lg shadow-love/20 text-white">
-              {(designConfig.logoText || 'CLUB CRAFT').charAt(0)}
+            <div className="bg-love rounded-xl px-4 py-2 flex items-center justify-center font-black text-xs md:text-sm uppercase shadow-lg shadow-love/20 text-white tracking-widest whitespace-nowrap">
+              {designConfig.logoText || 'CLUB CRAFT'}
             </div>
           )}
-          <div className="hidden xs:block">
-            <h1 className="text-sm md:text-lg font-black tracking-tighter leading-none uppercase text-ink logo-title">
-              {designConfig.logoText || 'CLUB CRAFT'}
-            </h1>
-            <p className="text-[8px] md:text-[10px] uppercase tracking-widest text-slate-400 mt-1">
-              {designConfig.logoSubtitle || 'Management & Loyalty'}
-            </p>
-          </div>
+          {designConfig.logoUrl && (
+            <div className="hidden xs:block">
+              <h1 className="text-sm md:text-lg font-black tracking-tighter leading-none uppercase text-ink logo-title">
+                {designConfig.logoText || 'CLUB CRAFT'}
+              </h1>
+              <p className="text-[8px] md:text-[10px] uppercase tracking-widest text-slate-400 mt-1">
+                {designConfig.logoSubtitle || 'Management & Loyalty'}
+              </p>
+            </div>
+          )}
         </div>
         
         <nav className="flex items-center gap-1 md:gap-4 overflow-x-auto no-scrollbar">
@@ -259,30 +261,7 @@ export function Layout({ children }: LayoutProps) {
           {children}
         </main>
 
-        <footer className="mt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-[10px] sm:text-[11px] font-mono text-slate-400 py-6 border-t border-slate-200 dark:border-slate-800">
-        <div className="flex flex-wrap gap-4 md:gap-6 justify-center md:justify-start uppercase tracking-tight font-black">
-          <button 
-            onClick={() => {
-              setActiveFaqIndex(null);
-              setShowFAQ(true);
-            }}
-            className="hover:text-love transition-all uppercase cursor-pointer bg-transparent border-0 outline-none"
-          >
-            Preguntas Frecuentes
-          </button>
-          <span className="text-slate-200 hidden sm:inline">|</span>
-          <button 
-            onClick={() => setShowTerms(true)}
-            className="hover:text-love transition-all uppercase cursor-pointer bg-transparent border-0 outline-none"
-          >
-            Bases y Condiciones
-          </button>
-        </div>
-        <div className="flex gap-4 items-center font-bold">
-          <span className="flex items-center gap-1 uppercase tracking-tight"><div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]"></div> DB Connected</span>
-          <span className="bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-800">v1.0.4-prod</span>
-        </div>
-      </footer>
+
       </div>
 
       {/* Interactive FAQ Sliding Drawer / Overlay Modal */}

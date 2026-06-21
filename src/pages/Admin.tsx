@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '@/src/lib/supabase';
 import { Profile, Prize, Transaction, SystemSettings } from '@/src/types';
 import { motion, AnimatePresence } from 'motion/react';
-import { Users, Gift, Settings, Search, Plus, Trash2, Pencil, Calendar, Award, History, DollarSign, Upload, Image as ImageIcon, FileSpreadsheet, UserPlus, X, Palette, Home, User, Star, MessageSquare, FileText, HelpCircle, LogOut, MapPin } from 'lucide-react';
+import { Users, Gift, Settings, Search, Plus, Trash2, Pencil, Calendar, Award, History, DollarSign, Upload, Image as ImageIcon, FileSpreadsheet, UserPlus, X, Palette, Home, User, Star, MessageSquare, FileText, HelpCircle, LogOut, MapPin, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import * as XLSX from 'xlsx';
 import { BRANCHES } from '@/src/constants';
@@ -89,6 +89,8 @@ export function Admin() {
     imageUrl: '',
     isActive: true
   });
+
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
 
   // Sincronizar bases y condiciones y reglas de lealtad cuando la configuración cargue
   useEffect(() => {
@@ -895,14 +897,38 @@ export function Admin() {
   return (
     <div className="flex flex-col lg:flex-row gap-6 md:gap-8 items-start w-full">
       {/* Menú Lateral Izquierdo (Admin Sidebar) */}
-      <div className="w-full lg:w-64 xl:w-72 shrink-0 bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none flex flex-col gap-6 lg:sticky lg:top-24">
-        <div>
-          <h2 className="text-xl md:text-2xl font-black uppercase tracking-tighter italic text-ink dark:text-white">
-            CLUB <span className="text-love">CRAFT</span>
-          </h2>
-          <p className="text-[9px] md:text-[10px] uppercase tracking-[0.2em] text-slate-400 font-black">
-            Panel Administrativo
-          </p>
+      <div className={cn(
+        "shrink-0 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none flex flex-col gap-6 lg:sticky lg:top-24 transition-all duration-300",
+        isSidebarExpanded 
+          ? "w-full lg:w-64 xl:w-72 p-6 rounded-[2rem]" 
+          : "w-full lg:w-20 p-4 rounded-3xl"
+      )}>
+        <div className={cn(
+          "flex items-center justify-between",
+          !isSidebarExpanded && "lg:flex-col lg:gap-3 lg:items-center"
+        )}>
+          {isSidebarExpanded ? (
+            <div>
+              <h2 className="text-xl md:text-2xl font-black uppercase tracking-tighter italic text-ink dark:text-white">
+                CLUB <span className="text-love">CRAFT</span>
+              </h2>
+              <p className="text-[9px] md:text-[10px] uppercase tracking-[0.2em] text-slate-400 font-black">
+                Panel Administrativo
+              </p>
+            </div>
+          ) : (
+            <div className="w-10 h-10 bg-love rounded-xl flex items-center justify-center font-black text-lg text-white shadow-lg shadow-love/20 lg:mx-auto">
+              C
+            </div>
+          )}
+          
+          <button
+            onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
+            className="p-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-705 text-slate-400 dark:text-slate-400 transition-colors border-none cursor-pointer flex items-center justify-center"
+            title={isSidebarExpanded ? "Minimizar Menú" : "Expandir Menú"}
+          >
+            {isSidebarExpanded ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+          </button>
         </div>
         
         <button
@@ -910,14 +936,22 @@ export function Admin() {
             setIsSimulatingClient(true);
             window.location.hash = '#/';
           }}
-          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-950 hover:bg-slate-900 dark:bg-slate-800 dark:hover:bg-slate-700 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-slate-950/15 active:scale-95"
+          className={cn(
+            "flex items-center justify-center bg-slate-950 hover:bg-slate-900 dark:bg-slate-800 dark:hover:bg-slate-700 text-white transition-all shadow-lg shadow-slate-950/15 active:scale-95 cursor-pointer",
+            isSidebarExpanded 
+              ? "w-full gap-2 px-4 py-3 text-[10px] font-black uppercase tracking-widest rounded-2xl" 
+              : "w-11 h-11 p-0 rounded-xl lg:mx-auto"
+          )}
           title="Ver la aplicación exactamente como la ve un cliente"
         >
           <User size={13} className="text-love animate-pulse" />
-          Vista Cliente
+          {isSidebarExpanded && <span>Vista Cliente</span>}
         </button>
 
-        <div className="flex flex-row lg:flex-col p-1 lg:p-0 bg-slate-100 dark:bg-slate-950 lg:bg-transparent rounded-2xl border border-slate-200 dark:border-slate-800 lg:border-none overflow-x-auto lg:overflow-x-visible lg:space-y-1.5 scrollbar-hide lg:w-full">
+        <div className={cn(
+          "flex flex-row lg:flex-col p-1 lg:p-0 bg-slate-100 dark:bg-slate-950 lg:bg-transparent rounded-2xl border border-slate-200 dark:border-slate-800 lg:border-none overflow-x-auto lg:overflow-x-visible scrollbar-hide lg:w-full",
+          isSidebarExpanded ? "lg:space-y-1.5" : "lg:space-y-3 lg:items-center"
+        )}>
           {['dashboard', 'clients', 'prizes', 'staff', 'history', 'settings', 'design', 'feedback'].map((tab) => {
             const labels: Record<string, string> = {
               dashboard: 'Dashboard',
@@ -944,14 +978,18 @@ export function Admin() {
                 key={tab}
                 onClick={() => setActiveTab(tab as any)}
                 className={cn(
-                  "flex items-center gap-2.5 px-4 lg:px-5 py-2.5 lg:py-3.5 rounded-xl text-[10px] md:text-sm font-black uppercase tracking-wider transition-all whitespace-nowrap lg:w-full lg:justify-start", 
+                  "flex items-center rounded-xl text-[10px] md:text-sm font-black uppercase tracking-wider transition-all whitespace-nowrap", 
+                  isSidebarExpanded 
+                    ? "gap-2.5 px-4 lg:px-5 py-2.5 lg:py-3.5 lg:w-full lg:justify-start" 
+                    : "justify-center p-3 lg:w-12 lg:h-12 lg:mx-auto",
                   activeTab === tab 
                     ? "bg-love text-white shadow-lg shadow-love/30 scale-[1.02]" 
                     : "text-slate-405 dark:text-slate-400 hover:text-ink dark:hover:text-white lg:hover:bg-slate-50 lg:dark:hover:bg-slate-800/50"
                 )}
+                title={labels[tab]}
               >
                 {icons[tab]}
-                <span>{labels[tab]}</span>
+                {isSidebarExpanded && <span>{labels[tab]}</span>}
               </button>
             );
           })}
