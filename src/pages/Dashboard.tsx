@@ -961,7 +961,7 @@ export function Dashboard() {
         {/* Header greeting */}
         <div className="flex justify-between items-center px-1">
           <div>
-            <h1 className="text-xl font-black uppercase text-black dark:text-white tracking-tight leading-none">Club Craft</h1>
+            <h1 className="text-xl font-black uppercase text-black dark:text-black tracking-tight leading-none" style={{ color: '#000000' }}>Club Craft</h1>
             <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest mt-1">Hola, {profile.full_name?.split(' ')[0]} ⚡</p>
           </div>
         </div>
@@ -1189,7 +1189,7 @@ export function Dashboard() {
           <div className="flex justify-between items-center px-1">
             <div className="flex items-center gap-1.5">
               <Ticket size={16} className="text-love" />
-              <h3 className="text-xs font-black uppercase tracking-wider text-black dark:text-white">Comprá Combos</h3>
+              <h3 className="text-xs font-black uppercase tracking-wider text-black dark:text-black" style={{ color: '#000000' }}>Comprá Combos</h3>
             </div>
             <span className="text-[8px] bg-love/15 text-love px-2 py-0.5 rounded-full font-black uppercase tracking-wider animate-pulse">Precios Promo</span>
           </div>
@@ -1256,14 +1256,14 @@ export function Dashboard() {
           <div className="flex justify-between items-center px-1">
             <div className="flex items-center gap-1.5">
               <Gift size={16} className="text-love" />
-              <h4 className="text-xs font-black uppercase tracking-wider text-black dark:text-white">Recomendados para canje</h4>
+              <h4 className="text-xs font-black uppercase tracking-wider text-black dark:text-black" style={{ color: '#000000' }}>Recomendados para canje</h4>
             </div>
             <span className="text-[8px] uppercase font-extrabold text-slate-400">Tus Premios</span>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             {popularPrizes.slice(0, 2).map((prize) => {
-              const worksCanje = profile.points >= prize.points_required;
+              const worksCanje = profile.points >= prize.points_cost;
               return (
                 <div key={prize.id} className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 p-3.5 shadow-sm text-left flex flex-col justify-between">
                   <div>
@@ -1271,18 +1271,18 @@ export function Dashboard() {
                       <div className="w-full h-20 rounded-2xl overflow-hidden mb-2">
                         <img 
                           src={prize.image_url} 
-                          alt={prize.name} 
+                          alt={prize.title} 
                           className="w-full h-full object-cover"
                           referrerPolicy="no-referrer"
                         />
                       </div>
                     )}
-                    <h5 className="text-[10px] font-black uppercase text-ink dark:text-white line-clamp-1 leading-normal">{prize.name}</h5>
+                    <h5 className="text-[10px] font-black uppercase text-ink dark:text-white line-clamp-1 leading-normal">{prize.title}</h5>
                     <p className="text-[8px] text-slate-400 font-extrabold tracking-widest uppercase mt-0.5">{prize.category || 'MENÚ'}</p>
                   </div>
                   
                   <div className="mt-3 flex items-center justify-between">
-                    <span className="text-[10px] font-black italic text-love">{prize.points_required} pts</span>
+                    <span className="text-[10px] font-black italic text-love">{prize.points_cost} pts</span>
                     <span className={cn(
                       "text-[7px] uppercase font-black px-2 py-0.5 rounded-full",
                       worksCanje ? "bg-emerald-500/10 text-emerald-500" : "bg-slate-100 text-slate-400 dark:bg-slate-850"
@@ -1300,7 +1300,7 @@ export function Dashboard() {
         <div className="space-y-3">
           <div className="flex items-center gap-1.5 px-1">
             <MapPin size={16} className="text-love" />
-            <h4 className="text-xs font-black uppercase tracking-wider text-black dark:text-white">Sucursales</h4>
+            <h4 className="text-xs font-black uppercase tracking-wider text-black dark:text-black" style={{ color: '#000000' }}>Sucursales</h4>
           </div>
 
           <div className="space-y-2.5">
