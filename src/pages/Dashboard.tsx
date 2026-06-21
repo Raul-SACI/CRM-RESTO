@@ -18,7 +18,7 @@ import {
 } from 'recharts';
 
 export function Dashboard() {
-  const { profile, realProfile, refreshProfile } = useAuth();
+  const { profile, realProfile, refreshProfile, isSimulatingClient, simDevice } = useAuth();
   const { designConfig, saveDesignConfig } = useDesign();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [settings, setSettings] = useState<SystemSettings | null>(null);
@@ -854,6 +854,139 @@ export function Dashboard() {
             </button>
           </div>
         </div>
+      </motion.div>
+    );
+  }
+
+  const isMobileView = (profile?.role === 'client' || isSimulatingClient) && (window.innerWidth < 640 || (isSimulatingClient && simDevice === 'phone'));
+
+  if (isMobileView && profile) {
+    return (
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="flex flex-col gap-6 max-w-sm mx-auto pb-10"
+      >
+        {/* Header greeting */}
+        <div className="flex justify-between items-center px-1">
+          <div>
+            <h1 className="text-xl font-black uppercase text-ink dark:text-white tracking-tight leading-none text-left">Club Craft</h1>
+            <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest mt-1 text-left">Hola, {profile.full_name?.split(' ')[0]} ⚡</p>
+          </div>
+        </div>
+
+        {/* 1. Points Balance Card */}
+        <div 
+          style={{
+            backgroundColor: designConfig?.pointsCardBg || undefined,
+            color: designConfig?.pointsCardText || undefined,
+          }}
+          className={cn(
+            "rounded-3xl p-6 flex flex-col justify-between border border-slate-900/5 relative overflow-hidden group/card shadow-lg",
+            designConfig?.pointsCardBg ? "" : "bg-love text-white"
+          )}
+        >
+          <div className="absolute top-0 right-0 -mr-16 -mt-16 w-48 h-48 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+          
+          <div className="relative text-left">
+            <h2 className="text-[10px] uppercase font-bold tracking-widest opacity-80 mb-1">Mi Saldo</h2>
+            <div className="flex items-baseline gap-2">
+              <span className="text-5xl font-black italic">{profile.points.toLocaleString()}</span>
+              <span className="text-sm font-bold uppercase tracking-tighter">puntos</span>
+            </div>
+          </div>
+          
+          <div className="relative mt-6 pt-4 border-t border-white/10 flex justify-between items-center text-[8px] uppercase tracking-wider font-extrabold opacity-90">
+            <div className="flex flex-col gap-0.5 text-left">
+              <div className="flex items-center gap-1.5">
+                <span className="font-bold">Categoría: {clientTier?.name || 'Común'}</span>
+              </div>
+              <span className="text-white/60">DNI: {profile.dni || 'No asignado'}</span>
+            </div>
+            <button 
+              onClick={() => setIsEditing(true)}
+              style={{
+                backgroundColor: designConfig?.profileButtonBg || 'rgba(255,255,255,0.15)',
+                color: designConfig?.profileButtonText || '#ffffff',
+              }}
+              className="px-3 py-1.5 rounded-lg transition-all border border-white/10 active:scale-95 text-[8px] font-black tracking-wider uppercase"
+            >
+              Editar Perfil
+            </button>
+          </div>
+        </div>
+
+        {/* 2. QR Code Card */}
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800 flex flex-col items-center justify-center text-center">
+          <div className="qr-container p-4 bg-white rounded-2xl mb-4 border border-slate-100 shadow-sm flex items-center justify-center">
+            <QRCode 
+              value={`${window.location.origin}/#/waiter?dni=${profile.dni || profile.id}`} 
+              size={140}
+              style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+              viewBox={`0 0 256 256`}
+            />
+          </div>
+          <p className="text-[10px] uppercase font-black text-love tracking-widest">ID Cliente QR</p>
+          <p className="text-ink dark:text-white font-black mt-1 text-sm tracking-tight">{profile.dni || 'PENDIENTE DE ASIGNACIÓN'}</p>
+          <p className="text-[10px] text-slate-400 font-semibold uppercase mt-0.5">{profile.full_name}</p>
+        </div>
+
+        {/* Modal Editar Perfil inside mobile view */}
+        <AnimatePresence>
+          {isEditing && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-[150] flex items-center justify-center p-6"
+            >
+              <motion.div 
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                className="bg-white border border-slate-200 p-8 rounded-[2rem] w-full max-w-sm shadow-2xl text-left"
+              >
+                <h3 className="text-xl font-bold mb-6 uppercase tracking-tight italic text-ink">Completar <span className="text-love">Mis Datos</span></h3>
+                <form onSubmit={handleUpdateProfile} className="space-y-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Nombre Completo</label>
+                    <input 
+                      required
+                      placeholder="Tu nombre" 
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-love text-ink" 
+                      value={editForm.fullName} 
+                      onChange={e => setEditForm({...editForm, fullName: e.target.value})} 
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">DNI (Para el QR)</label>
+                    <input 
+                      required
+                      placeholder="Tu DNI" 
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-love text-ink" 
+                      value={editForm.dni} 
+                      onChange={e => setEditForm({...editForm, dni: e.target.value})} 
+                    />
+                  </div>
+                  <div className="flex gap-2 pt-4">
+                    <button 
+                      type="button" 
+                      onClick={() => setIsEditing(false)}
+                      className="flex-1 bg-slate-100 text-slate-500 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-slate-200"
+                    >
+                      Cancelar
+                    </button>
+                    <button 
+                      type="submit" 
+                      className="flex-[2] bg-love text-white py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-love/20"
+                    >
+                      Guardar Cambios
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
     );
   }

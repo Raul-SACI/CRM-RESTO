@@ -14,6 +14,7 @@ import { Admin } from '@/src/pages/Admin';
 import { Rewards } from '@/src/pages/Rewards';
 import { Help } from '@/src/pages/Help';
 import { Branches } from '@/src/pages/Branches';
+import { MyCombos } from '@/src/pages/MyCombos';
 import { Layout } from '@/src/components/Layout';
 import { motion, AnimatePresence } from 'motion/react';
 import { DesignProvider } from '@/src/components/DesignEngine';
@@ -40,6 +41,8 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   isSimulatingClient: boolean;
   setIsSimulatingClient: (val: boolean) => void;
+  simDevice: 'pc' | 'tablet' | 'phone';
+  setSimDevice: (val: 'pc' | 'tablet' | 'phone') => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -51,6 +54,8 @@ const AuthContext = createContext<AuthContextType>({
   signOut: async () => {},
   isSimulatingClient: false,
   setIsSimulatingClient: () => {},
+  simDevice: 'pc',
+  setSimDevice: () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -101,6 +106,11 @@ function AppRoutes() {
           path="/branches" 
           element={user ? <Layout><Branches /></Layout> : <Navigate to="/auth" state={{ from: location }} replace />} 
         />
+
+        <Route 
+          path="/my-combos" 
+          element={user ? <Layout><MyCombos /></Layout> : <Navigate to="/auth" state={{ from: location }} replace />} 
+        />
         
         <Route 
           path="/waiter" 
@@ -143,6 +153,8 @@ export default function App() {
   const [isSimulatingClient, setIsSimulatingClient] = useState<boolean>(() => {
     return localStorage.getItem('isSimulatingClient') === 'true';
   });
+
+  const [simDevice, setSimDevice] = useState<'pc' | 'tablet' | 'phone'>('pc');
 
   const handleSetSimulatingClient = (val: boolean) => {
     setIsSimulatingClient(val);
@@ -432,7 +444,9 @@ export default function App() {
           refreshProfile, 
           signOut,
           isSimulatingClient,
-          setIsSimulatingClient: handleSetSimulatingClient
+          setIsSimulatingClient: handleSetSimulatingClient,
+          simDevice,
+          setSimDevice
         }}>
           <HashRouter>
             <AppRoutes />

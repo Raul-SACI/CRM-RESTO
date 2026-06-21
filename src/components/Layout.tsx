@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LogOut, Home, Gift, User, ShieldCheck, Moon, Sun, HelpCircle, FileText, ChevronRight, X, ArrowLeft, ArrowRight, Palette, Check, MapPin } from 'lucide-react';
+import { LogOut, Home, Gift, User, ShieldCheck, Moon, Sun, HelpCircle, FileText, ChevronRight, X, ArrowLeft, ArrowRight, Palette, Check, MapPin, Ticket } from 'lucide-react';
 import { supabase } from '@/src/lib/supabase';
 import { useAuth, useTheme } from '@/src/App';
 import { useDesign } from '@/src/components/DesignEngine';
@@ -13,7 +13,7 @@ interface LayoutProps {
 }
 
 export function Layout({ children }: LayoutProps) {
-  const { profile, realProfile, signOut, isSimulatingClient, setIsSimulatingClient } = useAuth();
+  const { profile, realProfile, signOut, isSimulatingClient, setIsSimulatingClient, simDevice, setSimDevice } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { designConfig, saveDesignConfig } = useDesign();
   const navigate = useNavigate();
@@ -72,8 +72,6 @@ export function Layout({ children }: LayoutProps) {
     };
     await saveDesignConfig(updated);
   };
-
-  const [simDevice, setSimDevice] = useState<'pc' | 'tablet' | 'phone'>('pc');
 
   const handleLogout = async () => {
     await signOut();
@@ -346,6 +344,7 @@ export function Layout({ children }: LayoutProps) {
           {[
             { label: 'Inicio', to: '/', icon: <Home size={19} /> },
             { label: 'Premios', to: '/rewards', icon: <Gift size={19} /> },
+            { label: 'Mis combos', to: '/my-combos', icon: <Ticket size={19} /> },
             { label: 'Sucursales', to: '/branches', icon: <MapPin size={19} /> },
             { label: 'Ayuda', to: '/help', icon: <HelpCircle size={19} /> }
           ].map((item) => (
