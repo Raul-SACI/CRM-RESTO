@@ -961,15 +961,9 @@ export function Dashboard() {
         {/* Header greeting */}
         <div className="flex justify-between items-center px-1">
           <div>
-            <h1 className="text-xl font-black uppercase text-ink dark:text-white tracking-tight leading-none">Club Craft</h1>
+            <h1 className="text-xl font-black uppercase text-black dark:text-white tracking-tight leading-none">Club Craft</h1>
             <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest mt-1">Hola, {profile.full_name?.split(' ')[0]} ⚡</p>
           </div>
-          <button 
-            onClick={() => setIsEditing(true)}
-            className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl hover:text-love text-[10px] font-bold uppercase tracking-wider transition-all"
-          >
-            Ajustes
-          </button>
         </div>
 
         {/* 1. sliding promo banners */}
@@ -1017,12 +1011,12 @@ export function Dashboard() {
           )}
         </div>
 
-        {/* 2. Barrita de estado con tipo de cliente */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-100 dark:border-slate-800 shadow-md">
+        {/* 2. Camino de fidelidad (Ruta de puntos as requested, photo match) */}
+        <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-5 border border-slate-100 dark:border-slate-800 shadow-md">
           <div className="flex justify-between items-center mb-3">
             <div className="flex items-center gap-1.5">
-              <Award size={15} className="text-love animate-bounce" />
-              <span className="text-[10px] uppercase font-black tracking-wider text-slate-400">Nivel de Cliente</span>
+              <Trophy size={14} className="text-yellow-500 animate-bounce" />
+              <span className="text-[10px] uppercase font-black tracking-wider text-slate-400">Camino de Fidelidad Craft</span>
             </div>
             <span className={cn(
               "text-[9px] font-black tracking-widest px-2.5 py-0.5 rounded-full uppercase italic",
@@ -1032,23 +1026,117 @@ export function Dashboard() {
             </span>
           </div>
 
-          {/* Progress bar line */}
-          <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mb-2.5 relative">
-            <div 
-              className={cn(
-                "h-full rounded-full transition-all duration-500",
-                clientTier.id.includes('black') ? "bg-gradient-to-r from-violet-600 to-amber-400" : (clientTier.id.includes('gold') ? "bg-amber-400" : "bg-emerald-500")
-              )}
-              style={{ width: `${progressPercentage}%` }}
-            />
+          {/* Road Track section adapted perfectly for mobile screen */}
+          <div className="relative py-10 px-2 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-sky-950/20 mt-1 overflow-hidden">
+            
+            {/* ROAD TRACK: Asphalt road strip */}
+            <div className="relative h-10 bg-slate-700 dark:bg-slate-800 rounded-xl border-t border-b border-dashed border-slate-500 dark:border-slate-600 flex items-center shadow-inner">
+              <div className="absolute left-0 right-0 h-0.5 border-t border-dashed border-white/20" />
+
+              {/* Active level progress trail */}
+              <div 
+                className="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-yellow-500/25 via-love/20 to-love/35 rounded-l-lg transition-all duration-1000 ease-out" 
+                style={{ width: `${getCarPercentage(categoryPoints)}%` }} 
+              />
+
+              {/* Milestones inside road track */}
+              <div className="absolute inset-0 px-4 flex items-center justify-between pointer-events-none z-10">
+                {[
+                  { pts: 0, icon: <Gift size={10} className="text-white" />, pos: 15 },
+                  { pts: activeTiers[1]?.minPoints || 500, icon: <Sparkles size={10} className="text-yellow-400" />, pos: 55 },
+                  { pts: activeTiers[2]?.minPoints || 1000, icon: <Star size={10} className="text-purple-300 fill-purple-300" />, pos: 90 }
+                ].map((m, idx) => {
+                  const reached = categoryPoints >= m.pts;
+                  return (
+                    <div 
+                      key={idx}
+                      className="absolute -translate-x-1/2 flex flex-col items-center gap-1"
+                      style={{ left: `${m.pos}%` }}
+                    >
+                      <div className={cn(
+                        "w-5.5 h-5.5 rounded-full flex items-center justify-center border transition-all duration-700",
+                        reached 
+                          ? "bg-love border-white scale-110 text-white ring-2 ring-love/20" 
+                          : "bg-slate-800 border-slate-600 text-slate-400"
+                      )}>
+                        {m.icon}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* COFFEE CUP VEHICLE: Moves smoothly according to score */}
+              <div 
+                className="absolute transition-all duration-[1200ms] cubic-bezier(0.16, 1, 0.3, 1) -translate-x-1/2 z-30"
+                style={{ left: `${getCarPercentage(categoryPoints)}%` }}
+              >
+                <div className="flex flex-col items-center">
+                  {/* Little cup speech text */}
+                  <div className="bg-slate-900 border border-love text-white text-[7px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded shadow mb-1.5 relative whitespace-nowrap">
+                    <span>☕ {clientTier.name}</span>
+                    <div className="absolute bottom-[2.5px] left-1/2 -translate-x-1/2 w-1 h-1 bg-slate-900 border-r border-b border-love rotate-45" />
+                  </div>
+
+                  {/* Takeaway coffee cup layout */}
+                  <div className="relative flex flex-col items-center filter drop-shadow-[0_2px_4px_rgba(230,57,70,0.35)]">
+                    <div className="w-5.5 h-1 bg-slate-900 rounded-t-sm z-10" />
+                    <div className="w-6.5 h-0.5 bg-slate-800 rounded-sm z-10 -mt-0.5" />
+                    <div className="w-4.5 h-7 bg-white rounded-b-sm border border-slate-200 relative overflow-hidden flex items-center justify-center -mt-0.5" style={{ clipPath: 'polygon(3% 0%, 97% 0%, 82% 100%, 18% 100%)' }}>
+                      <div className="text-[5px] font-black tracking-wider text-love select-none flex flex-col items-center justify-center leading-[1] mt-0.5 font-sans">
+                        <span>C</span>
+                        <span>R</span>
+                        <span>A</span>
+                        <span>F</span>
+                        <span>T</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            {/* LABELS BELOW ROAD */}
+            <div className="relative mt-2.5 h-11">
+              {[
+                { pts: 0, label: activeTiers[0]?.name || 'CRAFT FAN', target: '0 PTS', pos: 15, benefit: 'Nivel Inicial' },
+                { pts: activeTiers[1]?.minPoints || 500, label: activeTiers[1]?.name || 'CRAFT GOLD', target: `${(activeTiers[1]?.minPoints || 500).toLocaleString()} PTS`, pos: 55, benefit: `Bonus x${activeTiers[1]?.multiplier || 1.5}` },
+                { pts: activeTiers[2]?.minPoints || 1000, label: activeTiers[2]?.name || 'CRAFT BLACK', target: `${(activeTiers[2]?.minPoints || 1000).toLocaleString()} PTS`, pos: 90, benefit: `Bonus x${activeTiers[2]?.multiplier || 2.0}` }
+              ].map((m, idx) => {
+                const reached = categoryPoints >= m.pts;
+                return (
+                  <div 
+                    key={idx}
+                    className="absolute -translate-x-1/2 text-center"
+                    style={{ left: `${m.pos}%` }}
+                  >
+                    <p className={cn(
+                      "text-[8px] font-black uppercase truncate max-w-[65px] leading-none",
+                      reached ? "text-love" : "text-slate-400"
+                    )}>
+                      {m.label}
+                    </p>
+                    <p className="text-[7px] text-[#A06C00] font-black uppercase mt-0.5 tracking-tight leading-none">
+                      {m.target}
+                    </p>
+                    <p className="text-[6px] font-semibold text-slate-400 uppercase tracking-tighter mt-0.5 leading-none font-sans">
+                      {m.benefit}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+
           </div>
 
-          <div className="text-[9px] text-slate-400 font-extrabold uppercase tracking-tight">
+          {/* Text helper info */}
+          <div className="text-[9px] text-slate-400 font-extrabold uppercase mt-3.5 tracking-tight">
             {clientTier.id.includes('black') ? (
-              <span>✨ ¡Felicidades! Tienes los máximos beneficios x{clientTier.multiplier} multiplicador.</span>
+              <span>✨ ¡Felicidades! Estás en el nivel máximo <strong>{clientTier.name}</strong></span>
             ) : (
               <span>
-                Cargaste {categoryPoints} pts. Faltan {nextTierPoints && (nextTierPoints - categoryPoints)} pts de consumo para {activeTiers[clientTier.id.includes('gold') ? 2 : 1]?.name}.
+                Cargaste {categoryPoints} pts. Te faltan {nextTierPoints && (nextTierPoints - categoryPoints)} pts de consumo para llegar a {activeTiers[clientTier.id.includes('gold') ? 2 : 1]?.name}.
               </span>
             )}
           </div>
@@ -1101,7 +1189,7 @@ export function Dashboard() {
           <div className="flex justify-between items-center px-1">
             <div className="flex items-center gap-1.5">
               <Ticket size={16} className="text-love" />
-              <h3 className="text-xs font-black uppercase tracking-wider text-ink dark:text-white">Comprá Combos</h3>
+              <h3 className="text-xs font-black uppercase tracking-wider text-black dark:text-white">Comprá Combos</h3>
             </div>
             <span className="text-[8px] bg-love/15 text-love px-2 py-0.5 rounded-full font-black uppercase tracking-wider animate-pulse">Precios Promo</span>
           </div>
@@ -1168,7 +1256,7 @@ export function Dashboard() {
           <div className="flex justify-between items-center px-1">
             <div className="flex items-center gap-1.5">
               <Gift size={16} className="text-love" />
-              <h4 className="text-xs font-black uppercase tracking-wider text-ink dark:text-white">Recomendados para canje</h4>
+              <h4 className="text-xs font-black uppercase tracking-wider text-black dark:text-white">Recomendados para canje</h4>
             </div>
             <span className="text-[8px] uppercase font-extrabold text-slate-400">Tus Premios</span>
           </div>
@@ -1212,7 +1300,7 @@ export function Dashboard() {
         <div className="space-y-3">
           <div className="flex items-center gap-1.5 px-1">
             <MapPin size={16} className="text-love" />
-            <h4 className="text-xs font-black uppercase tracking-wider text-ink dark:text-white">Sucursales</h4>
+            <h4 className="text-xs font-black uppercase tracking-wider text-black dark:text-white">Sucursales</h4>
           </div>
 
           <div className="space-y-2.5">
