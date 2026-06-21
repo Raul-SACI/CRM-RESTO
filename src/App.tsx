@@ -15,6 +15,7 @@ import { Rewards } from '@/src/pages/Rewards';
 import { Help } from '@/src/pages/Help';
 import { Branches } from '@/src/pages/Branches';
 import { MyCombos } from '@/src/pages/MyCombos';
+import { MyAccount } from '@/src/pages/MyAccount';
 import { Layout } from '@/src/components/Layout';
 import { motion, AnimatePresence } from 'motion/react';
 import { DesignProvider } from '@/src/components/DesignEngine';
@@ -110,6 +111,11 @@ function AppRoutes() {
         <Route 
           path="/my-combos" 
           element={user ? <Layout><MyCombos /></Layout> : <Navigate to="/auth" state={{ from: location }} replace />} 
+        />
+
+        <Route 
+          path="/my-account" 
+          element={user ? <Layout><MyAccount /></Layout> : <Navigate to="/auth" state={{ from: location }} replace />} 
         />
         
         <Route 

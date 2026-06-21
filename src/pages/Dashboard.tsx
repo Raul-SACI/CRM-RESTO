@@ -6,7 +6,7 @@ import {
   CreditCard, Award, TrendingUp, History, Users, 
   Gift, Calendar, ChevronRight, BarChart3, PieChart,
   Flag, Sparkles, Car, Trophy, ArrowLeft, ArrowRight, Star,
-  Pencil, Check
+  Pencil, Check, Ticket, MapPin, Clock, Phone, Loader2
 } from 'lucide-react';
 import { supabase } from '@/src/lib/supabase';
 import { Transaction, SystemSettings, Profile, Prize } from '@/src/types';
@@ -362,6 +362,82 @@ export function Dashboard() {
       alert("Error al conectar con Mercado Pago: " + e.message);
     } finally {
       setIsCreatingPreference(false);
+    }
+  };
+
+  const handlePayWithMockCard = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!profile || !selectedComboForPurchase) return;
+    
+    setPaymentProcessing(true);
+    await new Promise(r => setTimeout(r, 1800));
+
+    try {
+      const paymentId = 'card_sim_' + Math.random().toString(36).substr(2, 9);
+      const fakePrice = selectedComboForPurchase.price;
+      const fakeUses = selectedComboForPurchase.totalUses || 5;
+      
+      const conversionRate = settings?.points_conversion_rate || 1000;
+      const bonusPoints = Math.floor(fakePrice / conversionRate);
+
+      const newPurchaseTx = {
+        id: 'tx_mp_' + paymentId,
+        client_id: profile.id,
+        waiter_id: profile.id,
+        amount: fakePrice,
+        points_earned: bonusPoints,
+        branch: 'TARJETA ONLINE',
+        invoice_number: 'PAGO_CC_' + paymentId.slice(-4).toUpperCase(),
+        created_at: new Date().toISOString(),
+        description: `COMPRA_COMBO: ${selectedComboForPurchase.id}_${fakeUses}|${selectedComboForPurchase.title}`
+      };
+
+      // Cache locally
+      const existingStr = localStorage.getItem(`local_txs_${profile.id}`);
+      const existing = existingStr ? JSON.parse(existingStr) : [];
+      existing.push(newPurchaseTx);
+      localStorage.setItem(`local_txs_${profile.id}`, JSON.stringify(existing));
+
+      // Push to Supabase
+      await supabase.from('transactions').insert({
+        client_id: profile.id,
+        waiter_id: profile.id,
+        amount: fakePrice,
+        points_earned: bonusPoints,
+        branch: 'VENTA TARJETA',
+        invoice_number: newPurchaseTx.invoice_number,
+        description: `COMPRA_COMBO: ${selectedComboForPurchase.id}_${fakeUses}|${selectedComboForPurchase.title}`
+      });
+
+      // Update points
+      await supabase
+        .from('profiles')
+        .update({ points: (profile.points || 0) + bonusPoints })
+        .eq('id', profile.id);
+
+      if (refreshProfile) {
+        await refreshProfile();
+      }
+
+      const updatedTxs = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('client_id', profile.id)
+        .order('created_at', { ascending: false });
+      if (updatedTxs.data) {
+        setTransactions(updatedTxs.data);
+      }
+
+      setIsCheckoutModalOpen(false);
+      setSelectedComboForPurchase(null);
+      setCardForm({ number: '', name: '', expiry: '', cvc: '' });
+
+      alert(`🎉 ¡Pago procesado con éxito! El combo "${selectedComboForPurchase.title}" ha sido adquirido. Recibiste +${bonusPoints} puntos.`);
+    } catch (err: any) {
+      console.error(err);
+      alert("Error al procesar el pago simulado.");
+    } finally {
+      setPaymentProcessing(false);
     }
   };
 
@@ -861,74 +937,301 @@ export function Dashboard() {
   const isMobileView = (profile?.role === 'client' || isSimulatingClient) && (window.innerWidth < 640 || (isSimulatingClient && simDevice === 'phone'));
 
   if (isMobileView && profile) {
+    const nextTierPoints = clientTier.id.includes('black') 
+      ? null 
+      : (clientTier.id.includes('gold') ? (activeTiers[2]?.minPoints || 1000) : (activeTiers[1]?.minPoints || 500));
+    const currentTierMin = clientTier.id.includes('black')
+      ? (activeTiers[2]?.minPoints || 1000)
+      : (clientTier.id.includes('gold') ? (activeTiers[1]?.minPoints || 500) : 0);
+    const progressPercentage = nextTierPoints
+      ? Math.min(100, Math.max(0, ((categoryPoints - currentTierMin) / (nextTierPoints - currentTierMin)) * 100))
+      : 100;
+
+    const avCombos = (designConfig as any)?.combos || [];
+    const activeCombosForSale = avCombos.filter((c: any) => c.isActive);
+
+    const branchesList = designConfig?.branches || [];
+
     return (
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="flex flex-col gap-6 max-w-sm mx-auto pb-10"
+        className="flex flex-col gap-6 max-w-sm mx-auto pb-24 text-left"
       >
         {/* Header greeting */}
         <div className="flex justify-between items-center px-1">
           <div>
-            <h1 className="text-xl font-black uppercase text-ink dark:text-white tracking-tight leading-none text-left">Club Craft</h1>
-            <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest mt-1 text-left">Hola, {profile.full_name?.split(' ')[0]} ⚡</p>
+            <h1 className="text-xl font-black uppercase text-ink dark:text-white tracking-tight leading-none">Club Craft</h1>
+            <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest mt-1">Hola, {profile.full_name?.split(' ')[0]} ⚡</p>
           </div>
+          <button 
+            onClick={() => setIsEditing(true)}
+            className="p-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl hover:text-love text-[10px] font-bold uppercase tracking-wider transition-all"
+          >
+            Ajustes
+          </button>
         </div>
 
-        {/* 1. Points Balance Card */}
-        <div 
-          style={{
-            backgroundColor: designConfig?.pointsCardBg || undefined,
-            color: designConfig?.pointsCardText || undefined,
-          }}
-          className={cn(
-            "rounded-3xl p-6 flex flex-col justify-between border border-slate-900/5 relative overflow-hidden group/card shadow-lg",
-            designConfig?.pointsCardBg ? "" : "bg-love text-white"
+        {/* 1. sliding promo banners */}
+        <div className="relative w-full overflow-hidden rounded-[2rem] h-[160px] shadow-lg border border-slate-200/50 dark:border-slate-800 bg-slate-950">
+          <div className="absolute inset-0">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentSlide}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.4 }}
+                className="absolute inset-0 flex flex-col justify-end p-5 text-white"
+                style={{
+                  backgroundImage: `linear-gradient(to top, rgba(0,0,0,0.85) 45%, rgba(0,0,0,0.2) 100%), url(${bannerList[currentSlide]?.imageUrl})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                }}
+              >
+                <div className="max-w-[85%] text-left">
+                  <span className="text-[7px] font-black uppercase tracking-widest bg-love/90 text-white px-2 py-0.5 rounded-full inline-block mb-1.5 animate-pulse">
+                    Novedad
+                  </span>
+                  <h3 className="text-xs font-black uppercase tracking-tight line-clamp-1">{bannerList[currentSlide]?.title}</h3>
+                  <p className="text-[9px] text-slate-300 line-clamp-1 mt-0.5">{bannerList[currentSlide]?.subtitle}</p>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+
+          {/* Dots banner controller */}
+          {bannerList.length > 1 && (
+            <div className="absolute bottom-3 right-4 flex gap-1 z-10">
+              {bannerList.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentSlide(idx)}
+                  className={cn(
+                    "w-1.5 h-1.5 rounded-full transition-all border-none p-0 cursor-pointer",
+                    currentSlide === idx ? "bg-love w-3" : "bg-white/40"
+                  )}
+                />
+              ))}
+            </div>
           )}
-        >
-          <div className="absolute top-0 right-0 -mr-16 -mt-16 w-48 h-48 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-          
-          <div className="relative text-left">
-            <h2 className="text-[10px] uppercase font-bold tracking-widest opacity-80 mb-1">Mi Saldo</h2>
-            <div className="flex items-baseline gap-2">
-              <span className="text-5xl font-black italic">{profile.points.toLocaleString()}</span>
-              <span className="text-sm font-bold uppercase tracking-tighter">puntos</span>
-            </div>
-          </div>
-          
-          <div className="relative mt-6 pt-4 border-t border-white/10 flex justify-between items-center text-[8px] uppercase tracking-wider font-extrabold opacity-90">
-            <div className="flex flex-col gap-0.5 text-left">
-              <div className="flex items-center gap-1.5">
-                <span className="font-bold">Categoría: {clientTier?.name || 'Común'}</span>
-              </div>
-              <span className="text-white/60">DNI: {profile.dni || 'No asignado'}</span>
-            </div>
-            <button 
-              onClick={() => setIsEditing(true)}
-              style={{
-                backgroundColor: designConfig?.profileButtonBg || 'rgba(255,255,255,0.15)',
-                color: designConfig?.profileButtonText || '#ffffff',
-              }}
-              className="px-3 py-1.5 rounded-lg transition-all border border-white/10 active:scale-95 text-[8px] font-black tracking-wider uppercase"
-            >
-              Editar Perfil
-            </button>
-          </div>
         </div>
 
-        {/* 2. QR Code Card */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-xl shadow-slate-200/50 dark:shadow-none border border-slate-100 dark:border-slate-800 flex flex-col items-center justify-center text-center">
-          <div className="qr-container p-4 bg-white rounded-2xl mb-4 border border-slate-100 shadow-sm flex items-center justify-center">
-            <QRCode 
-              value={`${window.location.origin}/#/waiter?dni=${profile.dni || profile.id}`} 
-              size={140}
-              style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-              viewBox={`0 0 256 256`}
+        {/* 2. Barrita de estado con tipo de cliente */}
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-100 dark:border-slate-800 shadow-md">
+          <div className="flex justify-between items-center mb-3">
+            <div className="flex items-center gap-1.5">
+              <Award size={15} className="text-love animate-bounce" />
+              <span className="text-[10px] uppercase font-black tracking-wider text-slate-400">Nivel de Cliente</span>
+            </div>
+            <span className={cn(
+              "text-[9px] font-black tracking-widest px-2.5 py-0.5 rounded-full uppercase italic",
+              clientTier.id.includes('black') ? "bg-slate-900 text-amber-400" : (clientTier.id.includes('gold') ? "bg-amber-400/10 text-amber-500" : "bg-emerald-500/10 text-emerald-500")
+            )}>
+              {clientTier.name}
+            </span>
+          </div>
+
+          {/* Progress bar line */}
+          <div className="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mb-2.5 relative">
+            <div 
+              className={cn(
+                "h-full rounded-full transition-all duration-500",
+                clientTier.id.includes('black') ? "bg-gradient-to-r from-violet-600 to-amber-400" : (clientTier.id.includes('gold') ? "bg-amber-400" : "bg-emerald-500")
+              )}
+              style={{ width: `${progressPercentage}%` }}
             />
           </div>
-          <p className="text-[10px] uppercase font-black text-love tracking-widest">ID Cliente QR</p>
-          <p className="text-ink dark:text-white font-black mt-1 text-sm tracking-tight">{profile.dni || 'PENDIENTE DE ASIGNACIÓN'}</p>
-          <p className="text-[10px] text-slate-400 font-semibold uppercase mt-0.5">{profile.full_name}</p>
+
+          <div className="text-[9px] text-slate-400 font-extrabold uppercase tracking-tight">
+            {clientTier.id.includes('black') ? (
+              <span>✨ ¡Felicidades! Tienes los máximos beneficios x{clientTier.multiplier} multiplicador.</span>
+            ) : (
+              <span>
+                Cargaste {categoryPoints} pts. Faltan {nextTierPoints && (nextTierPoints - categoryPoints)} pts de consumo para {activeTiers[clientTier.id.includes('gold') ? 2 : 1]?.name}.
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* 3 & 4. Saldo actual de puntos and QR Code in an elegant split or stacked layout */}
+        <div className="grid grid-cols-1 gap-4">
+          {/* Points Display */}
+          <div 
+            style={{
+              backgroundColor: designConfig?.pointsCardBg || undefined,
+              color: designConfig?.pointsCardText || undefined,
+            }}
+            className={cn(
+              "rounded-3xl p-5 flex flex-col justify-between border border-slate-900/5 relative overflow-hidden group/card shadow-lg",
+              designConfig?.pointsCardBg ? "" : "bg-love text-white"
+            )}
+          >
+            <div className="absolute top-0 right-0 -mr-16 -mt-16 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+            
+            <div className="relative text-left">
+              <h2 className="text-[9px] uppercase font-bold tracking-widest opacity-80 mb-1">Mi Saldo Disponible</h2>
+              <div className="flex items-baseline gap-2">
+                <span className="text-4xl font-black italic">{profile.points.toLocaleString()}</span>
+                <span className="text-xs font-bold uppercase tracking-tighter">puntos</span>
+              </div>
+            </div>
+          </div>
+
+          {/* QR Scan Container */}
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-100 dark:border-slate-800 shadow-md text-center flex flex-col items-center justify-center">
+            <span className="text-[9px] uppercase tracking-widest font-black text-slate-400 mb-3.5 flex items-center gap-1.5">
+              ⚡ Presenta este código en caja para sumar/canjear
+            </span>
+            <div className="qr-container p-3.5 bg-white rounded-2xl border border-slate-100 shadow-sm flex items-center justify-center mb-3">
+              <QRCode 
+                value={`${window.location.origin}/#/waiter?dni=${profile.dni || profile.id}`} 
+                size={125}
+                style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                viewBox={`0 0 256 256`}
+              />
+            </div>
+            <p className="text-[8px] uppercase font-bold text-slate-400">DNI registrado</p>
+            <p className="text-ink dark:text-white font-black mt-0.5 text-xs tracking-tight">{profile.dni || 'No asignado'}</p>
+          </div>
+        </div>
+
+        {/* 5. Comprá Combos Store feed */}
+        <div className="space-y-3">
+          <div className="flex justify-between items-center px-1">
+            <div className="flex items-center gap-1.5">
+              <Ticket size={16} className="text-love" />
+              <h3 className="text-xs font-black uppercase tracking-wider text-ink dark:text-white">Comprá Combos</h3>
+            </div>
+            <span className="text-[8px] bg-love/15 text-love px-2 py-0.5 rounded-full font-black uppercase tracking-wider animate-pulse">Precios Promo</span>
+          </div>
+
+          {activeCombosForSale.length === 0 ? (
+            <p className="text-[10px] text-slate-400 px-1 font-semibold uppercase">No hay combos disponibles a la venta hoy.</p>
+          ) : (
+            <div className="flex gap-4 overflow-x-auto no-scrollbar pb-1 px-0.5">
+              {activeCombosForSale.map((combo: any) => (
+                <div 
+                  key={combo.id} 
+                  className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 p-4 shadow shadow-slate-100 dark:shadow-none shrink-0 w-[240px] text-left flex flex-col justify-between"
+                >
+                  <div>
+                    {combo.imageUrl && (
+                      <div className="w-full h-24 rounded-2xl overflow-hidden mb-3">
+                        <img 
+                          src={combo.imageUrl} 
+                          alt={combo.title} 
+                          className="w-full h-full object-cover"
+                          referrerPolicy="no-referrer"
+                        />
+                      </div>
+                    )}
+                    <h4 className="text-[11px] font-black uppercase tracking-tight text-ink dark:text-white line-clamp-1">{combo.title}</h4>
+                    <p className="text-[9px] text-slate-400 mt-1 line-clamp-2 leading-relaxed min-h-[22px]">{combo.description || 'Disfruta de nuestros menús premium precargados.'}</p>
+                    
+                    <div className="flex items-center justify-between mt-3 font-mono">
+                      <span className="text-[8px] uppercase font-black tracking-widest text-[#92400E] dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full">
+                        🎫 {combo.totalUses} usos
+                      </span>
+                      <span className="text-xs font-black text-slate-900 dark:text-white">
+                        ${combo.price.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-1.5 mt-4">
+                    <button
+                      onClick={() => handlePayWithMercadoPago(combo)}
+                      disabled={isCreatingPreference}
+                      className="py-2 bg-[#009EE3] hover:bg-[#008cc8] text-white rounded-xl text-[8px] font-black uppercase tracking-widest transition-colors cursor-pointer border-none"
+                    >
+                      {isCreatingPreference ? 'Procesando...' : 'MP Pago'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSelectedComboForPurchase(combo);
+                        setIsCheckoutModalOpen(true);
+                      }}
+                      className="py-2 bg-slate-900 hover:bg-slate-950 dark:bg-love text-white rounded-xl text-[8px] font-black uppercase tracking-widest transition-colors cursor-pointer border-none"
+                    >
+                      Tarjeta
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* 6. Recomendados para canje */}
+        <div className="space-y-3">
+          <div className="flex justify-between items-center px-1">
+            <div className="flex items-center gap-1.5">
+              <Gift size={16} className="text-love" />
+              <h4 className="text-xs font-black uppercase tracking-wider text-ink dark:text-white">Recomendados para canje</h4>
+            </div>
+            <span className="text-[8px] uppercase font-extrabold text-slate-400">Tus Premios</span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            {popularPrizes.slice(0, 2).map((prize) => {
+              const worksCanje = profile.points >= prize.points_required;
+              return (
+                <div key={prize.id} className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 p-3.5 shadow-sm text-left flex flex-col justify-between">
+                  <div>
+                    {prize.image_url && (
+                      <div className="w-full h-20 rounded-2xl overflow-hidden mb-2">
+                        <img 
+                          src={prize.image_url} 
+                          alt={prize.name} 
+                          className="w-full h-full object-cover"
+                          referrerPolicy="no-referrer"
+                        />
+                      </div>
+                    )}
+                    <h5 className="text-[10px] font-black uppercase text-ink dark:text-white line-clamp-1 leading-normal">{prize.name}</h5>
+                    <p className="text-[8px] text-slate-400 font-extrabold tracking-widest uppercase mt-0.5">{prize.category || 'MENÚ'}</p>
+                  </div>
+                  
+                  <div className="mt-3 flex items-center justify-between">
+                    <span className="text-[10px] font-black italic text-love">{prize.points_required} pts</span>
+                    <span className={cn(
+                      "text-[7px] uppercase font-black px-2 py-0.5 rounded-full",
+                      worksCanje ? "bg-emerald-500/10 text-emerald-500" : "bg-slate-100 text-slate-400 dark:bg-slate-850"
+                    )}>
+                      {worksCanje ? "CARGAR" : "FALTAN"}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 7. Sucursales */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-1.5 px-1">
+            <MapPin size={16} className="text-love" />
+            <h4 className="text-xs font-black uppercase tracking-wider text-ink dark:text-white">Sucursales</h4>
+          </div>
+
+          <div className="space-y-2.5">
+            {branchesList.map((branch: any) => (
+              <div key={branch.id} className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 p-4 shadow-sm text-left flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-love/10 text-love flex items-center justify-center shrink-0">
+                  <MapPin size={18} />
+                </div>
+                <div className="space-y-0.5 text-left flex-1 min-w-0">
+                  <h5 className="text-[11px] font-black uppercase text-ink dark:text-white tracking-tight">{branch.name}</h5>
+                  <p className="text-[9px] text-slate-400 font-bold truncate uppercase">{branch.address} • {branch.city}</p>
+                  <p className="text-[8px] text-slate-400 flex items-center gap-1">
+                    <Clock size={10} className="text-slate-400 shrink-0" />
+                    <span>Lun a Vie: {branch.hoursWeekday || '08:00 - 20:00'}</span>
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Modal Editar Perfil inside mobile view */}
@@ -938,31 +1241,32 @@ export function Dashboard() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-[150] flex items-center justify-center p-6"
+              className="fixed inset-0 bg-ink/65 backdrop-blur-sm z-[150] flex items-center justify-center p-6"
             >
               <motion.div 
                 initial={{ scale: 0.9, y: 20 }}
                 animate={{ scale: 1, y: 0 }}
-                className="bg-white border border-slate-200 p-8 rounded-[2rem] w-full max-w-sm shadow-2xl text-left"
+                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-8 rounded-[2.5rem] w-full max-w-sm shadow-2xl text-left"
               >
-                <h3 className="text-xl font-bold mb-6 uppercase tracking-tight italic text-ink">Completar <span className="text-love">Mis Datos</span></h3>
+                <h3 className="text-lg font-black uppercase italic text-ink dark:text-white">Completar <span className="text-love">Mis Datos</span></h3>
+                <p className="text-[9px] text-slate-400 uppercase font-bold tracking-wider mt-1 mb-5">Ingresa tu identificación para el QR</p>
                 <form onSubmit={handleUpdateProfile} className="space-y-4">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Nombre Completo</label>
+                  <div className="space-y-1 text-left">
+                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1">Nombre Completo</label>
                     <input 
                       required
                       placeholder="Tu nombre" 
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-love text-ink" 
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-xs outline-none focus:border-love text-ink dark:text-white" 
                       value={editForm.fullName} 
                       onChange={e => setEditForm({...editForm, fullName: e.target.value})} 
                     />
                   </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">DNI (Para el QR)</label>
+                  <div className="space-y-1 text-left">
+                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 ml-1">DNI (Para el QR)</label>
                     <input 
                       required
                       placeholder="Tu DNI" 
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-love text-ink" 
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-xs outline-none focus:border-love text-ink dark:text-white" 
                       value={editForm.dni} 
                       onChange={e => setEditForm({...editForm, dni: e.target.value})} 
                     />
@@ -971,17 +1275,124 @@ export function Dashboard() {
                     <button 
                       type="button" 
                       onClick={() => setIsEditing(false)}
-                      className="flex-1 bg-slate-100 text-slate-500 py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-slate-200"
+                      className="flex-1 bg-slate-100 dark:bg-slate-800 text-slate-500 py-3 rounded-xl font-bold text-[9px] uppercase tracking-widest hover:bg-slate-200"
                     >
                       Cancelar
                     </button>
                     <button 
                       type="submit" 
-                      className="flex-[2] bg-love text-white py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-love/20"
+                      className="flex-[2] bg-love text-white py-3 rounded-xl font-bold text-[9px] uppercase tracking-widest shadow-lg shadow-love/20"
                     >
-                      Guardar Cambios
+                      Guardar
                     </button>
                   </div>
+                </form>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Modal Pago Tarjeta Combinada inside Mobile View */}
+        <AnimatePresence>
+          {isCheckoutModalOpen && selectedComboForPurchase && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-ink/75 backdrop-blur-sm z-[150] flex items-center justify-center p-4"
+            >
+              <motion.div 
+                initial={{ scale: 0.9, y: 15 }}
+                animate={{ scale: 1, y: 0 }}
+                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-[2.5rem] w-full max-w-sm shadow-2xl text-left relative"
+              >
+                <div className="flex items-center justify-between mb-5">
+                  <h3 className="text-sm font-black uppercase tracking-tight text-ink dark:text-white">Pago con Tarjeta</h3>
+                  <button 
+                    onClick={() => {
+                      setIsCheckoutModalOpen(false);
+                      setSelectedComboForPurchase(null);
+                    }}
+                    className="text-slate-400 hover:text-love transition-colors cursor-pointer p-1 bg-transparent border-none outline-none"
+                  >
+                    Cerrar
+                  </button>
+                </div>
+
+                <div className="bg-slate-50 dark:bg-slate-950 p-3.5 rounded-2xl mb-5 text-left border border-slate-100 dark:border-slate-800/60 flex items-center gap-3">
+                  {selectedComboForPurchase.imageUrl && (
+                    <img 
+                      src={selectedComboForPurchase.imageUrl} 
+                      alt="" 
+                      className="w-10 h-10 object-cover rounded-lg shrink-0"
+                      referrerPolicy="no-referrer"
+                    />
+                  )}
+                  <div>
+                    <h5 className="text-[10px] font-black uppercase text-ink dark:text-white">{selectedComboForPurchase.title}</h5>
+                    <p className="text-[9px] text-[#92400E] dark:text-amber-400 font-bold uppercase mt-0.5">Monto total a abonar: ${selectedComboForPurchase.price}</p>
+                  </div>
+                </div>
+
+                <form onSubmit={handlePayWithMockCard} className="space-y-3 text-left">
+                  <div className="space-y-1">
+                    <label className="text-[8px] font-black uppercase tracking-widest text-slate-400 ml-0.5">Cargar Número de Tarjeta</label>
+                    <input 
+                      required
+                      placeholder="4540 8820 9931 5110" 
+                      maxLength={19}
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4.5 py-3 text-xs outline-none focus:border-love text-ink dark:text-white font-mono"
+                      value={cardForm.number}
+                      onChange={e => setCardForm({...cardForm, number: e.target.value.replace(/\s?/g, '').replace(/(\d{4})/g, '$1 ').trim()})}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[8px] font-black uppercase tracking-widest text-slate-400 ml-0.5">Nombre en Placa</label>
+                    <input 
+                      required
+                      placeholder="JUAN PEREZ" 
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4.5 py-3 text-xs outline-none focus:border-love text-ink dark:text-white font-mono uppercase"
+                      value={cardForm.name}
+                      onChange={e => setCardForm({...cardForm, name: e.target.value})}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="text-[8px] font-black uppercase tracking-widest text-slate-400 ml-0.5">Vencimiento</label>
+                      <input 
+                        required
+                        placeholder="MM/AA" 
+                        maxLength={5}
+                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4.5 py-3 text-xs outline-none focus:border-love text-ink dark:text-white font-mono"
+                        value={cardForm.expiry}
+                        onChange={e => setCardForm({...cardForm, expiry: e.target.value})}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[8px] font-black uppercase tracking-widest text-slate-400 ml-0.5">CVC / Clave</label>
+                      <input 
+                        required
+                        type="password"
+                        placeholder="•••" 
+                        maxLength={4}
+                        className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4.5 py-3 text-xs outline-none focus:border-love text-ink dark:text-white font-mono"
+                        value={cardForm.cvc}
+                        onChange={e => setCardForm({...cardForm, cvc: e.target.value})}
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={paymentProcessing}
+                    className="w-full mt-4 bg-love hover:bg-opacity-95 text-white py-3 rounded-xl font-bold text-[9px] uppercase tracking-widest flex items-center justify-center gap-2 outline-none border-none cursor-pointer"
+                  >
+                    {paymentProcessing ? (
+                      <>
+                        <Loader2 size={12} className="animate-spin" /> Procesando...
+                      </>
+                    ) : `PAGAR $${selectedComboForPurchase.price}`}
+                  </button>
                 </form>
               </motion.div>
             </motion.div>
