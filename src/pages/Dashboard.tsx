@@ -962,7 +962,7 @@ export function Dashboard() {
         {/* Header greeting */}
         <div className="flex justify-between items-center px-1">
           <div>
-            <h1 className="text-xl font-black uppercase text-black dark:text-black tracking-tight leading-none" style={{ color: '#000000' }}>Club Craft</h1>
+            <h1 className="text-2xl font-black uppercase tracking-tight leading-none text-slate-905 dark:text-white" style={{ fontFamily: designConfig?.fontHeadings || 'inherit' }}>Club Craft</h1>
             <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest mt-1">Hola, {profile.full_name?.split(' ')[0]} ⚡</p>
           </div>
         </div>
@@ -1190,7 +1190,7 @@ export function Dashboard() {
           <div className="flex justify-between items-center px-1">
             <div className="flex items-center gap-1.5">
               <Ticket size={16} className="text-love" />
-              <h3 className="text-xs font-black uppercase tracking-wider text-black dark:text-black" style={{ color: '#000000' }}>Comprá Combos</h3>
+              <h3 className="text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white" style={{ fontFamily: designConfig?.fontHeadings || 'inherit' }}>Comprá Combos</h3>
             </div>
             <span className="text-[8px] bg-love/15 text-love px-2 py-0.5 rounded-full font-black uppercase tracking-wider animate-pulse">Precios Promo</span>
           </div>
@@ -1261,7 +1261,7 @@ export function Dashboard() {
           <div className="flex justify-between items-center px-1">
             <div className="flex items-center gap-1.5">
               <Gift size={16} className="text-love" />
-              <h4 className="text-xs font-black uppercase tracking-wider text-black dark:text-black" style={{ color: '#000000' }}>Recomendados para canje</h4>
+              <h4 className="text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white" style={{ fontFamily: designConfig?.fontHeadings || 'inherit' }}>Recomendados para canje</h4>
             </div>
             <span className="text-[8px] uppercase font-extrabold text-slate-400">Tus Premios</span>
           </div>
@@ -1305,12 +1305,15 @@ export function Dashboard() {
         <div className="space-y-3">
           <div className="flex items-center gap-1.5 px-1">
             <MapPin size={16} className="text-love" />
-            <h4 className="text-xs font-black uppercase tracking-wider text-black dark:text-black" style={{ color: '#000000' }}>Sucursales</h4>
+            <h4 className="text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white" style={{ fontFamily: designConfig?.fontHeadings || 'inherit' }}>Sucursales</h4>
           </div>
 
           <div className="space-y-2.5">
             {branchesList.map((branch: any) => {
               const isExpanded = expandedBranchId === branch.id;
+              const phoneClean = branch.phone ? branch.phone.replace(/\D/g, '') : '';
+              const whatsappPhone = phoneClean ? (phoneClean.startsWith('54') ? phoneClean : '54' + phoneClean) : '';
+
               return (
                 <div 
                   key={branch.id} 
@@ -1362,7 +1365,7 @@ export function Dashboard() {
                           <span>Ver ubicación</span>
                         </a>
                         <a
-                          href={branch.phone ? `https://wa.me/${branch.phone.replace(/\D/g, '')}` : '#'}
+                          href={whatsappPhone ? `https://wa.me/${whatsappPhone}` : '#'}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex-1 py-2.5 bg-[#25D366] hover:bg-[#20ba56] text-white rounded-xl text-[9px] font-black uppercase tracking-wider text-center flex items-center justify-center gap-1.5 transition-all outline-none no-underline shadow-sm active:scale-95 cursor-pointer"

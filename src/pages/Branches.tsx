@@ -22,6 +22,7 @@ interface Branch {
 
 export function Branches() {
   const { designConfig } = useDesign();
+  const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
 
   const branches = designConfig?.branches || [];
 
@@ -38,17 +39,17 @@ export function Branches() {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <MapPin size={18} className="text-love animate-pulse shrink-0" />
-              <span className="text-xs uppercase font-extrabold tracking-widest text-[#92400E] dark:text-amber-400">Presencia en la Provincia</span>
+              <span className="text-xs uppercase font-extrabold tracking-widest text-[#92400E] dark:text-amber-400">Nuestras Sucursales</span>
             </div>
             <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-ink dark:text-white" style={{ fontFamily: `"${designConfig?.fontHeadings || 'Inter'}", sans-serif` }}>
               Nuestras Sucursales
             </h1>
             <p className="text-slate-400 dark:text-slate-500 text-xs md:text-sm mt-1.5 font-medium max-w-xl">
-              Encuentra la sucursal de Club CRAFT más cercana a ti en la provincia de Entre Ríos, conoce sus cómodos horarios y acécate a sumar puntos con tus amigos o familia.
+              Encuentra la sucursal de Club CRAFT más cercana a ti, conoce sus cómodos horarios y acécate a sumar puntos con tus amigos o familia.
             </p>
           </div>
           <div className="bg-slate-50 dark:bg-slate-950 px-4 py-3 rounded-2xl border border-slate-200/50 dark:border-slate-800/80 font-mono text-[10px] text-slate-400 font-extrabold uppercase shrink-0">
-            📍 {branches.length} Locales en Entre Ríos
+            📍 {branches.length} {branches.length === 1 ? 'Local' : 'Locales'}
           </div>
         </div>
       </div>
@@ -56,10 +57,18 @@ export function Branches() {
       {/* Branches Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
         {branches.map((branch) => {
+          const isSelected = selectedBranchId === branch.id;
+          const phoneClean = branch.phone ? branch.phone.replace(/\D/g, '') : '';
+          const whatsappPhone = phoneClean.startsWith('54') ? phoneClean : '54' + phoneClean;
+
           return (
             <div 
               key={branch.id}
-              className="bg-white dark:bg-slate-900 rounded-[2rem] overflow-hidden border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/45 dark:shadow-none flex flex-col group hover:border-love/30 transition-all duration-300"
+              onClick={() => setSelectedBranchId(isSelected ? null : branch.id)}
+              className={cn(
+                "bg-white dark:bg-slate-900 rounded-[2rem] overflow-hidden border shadow-xl shadow-slate-200/45 dark:shadow-none flex flex-col group transition-all duration-300 cursor-pointer select-none",
+                isSelected ? "border-love ring-2 ring-love/15 scale-[1.01]" : "border-slate-105 dark:border-slate-800 hover:border-love/30"
+              )}
             >
               {/* Branch Image Hero banner with Overlay details */}
               <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-200 dark:bg-slate-850">
@@ -73,7 +82,7 @@ export function Branches() {
                 {/* City & Province tag */}
                 <div className="absolute top-4 left-4">
                   <span className="bg-black/70 text-white text-[8px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg backdrop-blur-xs flex items-center gap-1">
-                    <Compass size={10} className="text-love" /> {branch.city}, ER
+                    <Compass size={10} className="text-love" /> {branch.city}{branch.province ? `, ${branch.province}` : ''}
                   </span>
                 </div>
               </div>
@@ -134,9 +143,10 @@ export function Branches() {
                       <div>
                         <p className="text-[9px] font-black uppercase tracking-wider text-slate-400">Llamar / Reservar / WhatsApp</p>
                         <a 
-                          href={`https://wa.me/${branch.phone.replace(/\D/g, '')}`} 
+                          href={phoneClean ? `https://wa.me/${whatsappPhone}` : '#'} 
                           target="_blank"
                           rel="noopener noreferrer"
+                          onClick={e => e.stopPropagation()}
                           className="font-bold text-ink dark:text-white hover:text-love transition-colors flex items-center gap-1"
                         >
                           {branch.phone}
@@ -147,26 +157,42 @@ export function Branches() {
                 </div>
 
                 {/* Simulated Visual Maps & Navigation links */}
-                <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex gap-2 w-full">
-                  <a 
-                    href={branch.googleMapsUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 py-3 text-[10px] uppercase tracking-wider font-extrabold rounded-xl transition-all flex items-center justify-center gap-2 border bg-slate-50 border-slate-200/50 dark:bg-slate-950 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-850 active:scale-95"
-                  >
-                    <Map size={12} />
-                    Ver Ubicación
-                  </a>
+                <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800">
+                  <AnimatePresence>
+                    {isSelected ? (
+                      <motion.div 
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="flex gap-2 w-full pt-1"
+                        onClick={e => e.stopPropagation()}
+                      >
+                        <a 
+                          href={branch.googleMapsUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(branch.name + ' ' + branch.address)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1 py-3 text-[10px] uppercase tracking-wider font-extrabold rounded-xl transition-all flex items-center justify-center gap-2 border bg-love text-white border-none hover:bg-love/90 active:scale-95 shadow-md shadow-love/10"
+                        >
+                          <Navigation size={12} className="animate-pulse" />
+                          Ver Ubicación
+                        </a>
 
-                  <a 
-                    href={branch.googleMapsUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="px-4 bg-love hover:bg-love/90 text-white rounded-xl transition-all flex items-center justify-center shadow-lg shadow-love/15 active:scale-95"
-                    title="Navegar en Google Maps"
-                  >
-                    <Navigation size={14} />
-                  </a>
+                        <a 
+                          href={phoneClean ? `https://wa.me/${whatsappPhone}` : '#'}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1 py-3 text-[10px] uppercase tracking-wider font-extrabold rounded-xl transition-all flex items-center justify-center gap-2 border bg-emerald-500 text-white border-none hover:bg-emerald-600 active:scale-95 shadow-md shadow-emerald-500/10"
+                        >
+                          <Phone size={12} />
+                          Contactar
+                        </a>
+                      </motion.div>
+                    ) : (
+                      <div className="text-center py-2 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 group-hover:text-love transition-colors">
+                        👇 {branch.name ? `Haz click para ver opciones` : `Haz click para contactar`}
+                      </div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
             </div>
