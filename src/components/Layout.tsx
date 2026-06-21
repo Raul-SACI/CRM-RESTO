@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LogOut, Home, Gift, User, ShieldCheck, Moon, Sun, HelpCircle, FileText, ChevronRight, X, ArrowLeft, ArrowRight, Palette, Check } from 'lucide-react';
+import { LogOut, Home, Gift, User, ShieldCheck, Moon, Sun, HelpCircle, FileText, ChevronRight, X, ArrowLeft, ArrowRight, Palette, Check, MapPin } from 'lucide-react';
 import { supabase } from '@/src/lib/supabase';
 import { useAuth, useTheme } from '@/src/App';
 import { useDesign } from '@/src/components/DesignEngine';
@@ -190,113 +190,131 @@ export function Layout({ children }: LayoutProps) {
         </div>
         
         <nav className="flex items-center gap-1 md:gap-4 overflow-x-auto no-scrollbar">
-          {resolvedOrder.map((route, idx) => {
-            const data = routesMap[route];
-            if (!data) return null;
+          {/* Main page navigation links - Hidden on small screen sizes and phone simulation */}
+          <div className={cn(
+            "flex items-center gap-1 md:gap-4",
+            "hidden sm:flex",
+            (isSimulatingClient && simDevice === 'phone') && "!hidden"
+          )}>
+            {resolvedOrder.map((route, idx) => {
+              const data = routesMap[route];
+              if (!data) return null;
 
-            const customColor = designConfig?.navButtonColors?.[route] || designConfig?.primaryColor || '#ef4444';
-            const isActiveColor = customColor;
+              const customColor = designConfig?.navButtonColors?.[route] || designConfig?.primaryColor || '#ef4444';
+              const isActiveColor = customColor;
 
-            return (
-              <div key={route} className="relative flex items-center shrink-0">
-                <NavLink 
-                  to={data.to} 
-                  style={({ isActive }) => ({
-                    backgroundColor: isActive ? isActiveColor : undefined,
-                    color: isActive ? '#ffffff' : undefined,
-                    boxShadow: isActive ? `0 10px 15px -3px ${isActiveColor}40` : undefined
-                  })}
-                  className={({ isActive }) => cn(
-                    "px-3 md:px-4 py-1.5 md:py-2 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-tighter transition-all shrink-0",
-                    isActive ? "" : "bg-slate-100 text-slate-600 hover:bg-slate-250 dark:bg-slate-800 dark:text-slate-405 hover:scale-[1.02]"
-                  )}
-                >
-                  {data.label}
-                </NavLink>
-
-                {/* Overlaid design mode control bar */}
-                {isVisualDesignMode && (
-                  <div className="absolute -top-12 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-slate-900 border border-slate-700 text-white p-1.5 rounded-full shadow-2xl z-[110] scale-90 md:scale-100">
-                    {/* Move Left */}
-                    <button
-                      onClick={() => handleMoveButton(route, 'left')}
-                      disabled={idx === 0}
-                      className="p-1 text-slate-400 hover:text-white disabled:opacity-30 transition-colors bg-transparent border-none outline-none cursor-pointer"
-                      title="Mover Izquierda"
-                    >
-                      <ArrowLeft size={10} />
-                    </button>
-
-                    {/* Color picker circle */}
-                    <button
-                      onClick={() => setActivePickerRoute(activePickerRoute === route ? null : route)}
-                      className="w-3.5 h-3.5 rounded-full border border-white hover:scale-110 transition-transform cursor-pointer"
-                      style={{ backgroundColor: customColor }}
-                      title="Cambiar Color"
-                    />
-
-                    {/* Move Right */}
-                    <button
-                      onClick={() => handleMoveButton(route, 'right')}
-                      disabled={idx === resolvedOrder.length - 1}
-                      className="p-1 text-slate-400 hover:text-white disabled:opacity-30 transition-colors bg-transparent border-none outline-none cursor-pointer"
-                      title="Mover Derecha"
-                    >
-                      <ArrowRight size={10} />
-                    </button>
-
-                    {/* Active inline mini color popup */}
-                    {activePickerRoute === route && (
-                      <div className="absolute top-10 left-1/2 -translate-x-1/2 z-[120] bg-slate-900 border border-slate-700 p-2.5 rounded-2xl flex flex-col gap-2 shadow-2xl w-32">
-                        <div className="flex justify-between items-center gap-1">
-                          <span className="text-[8px] uppercase tracking-wider font-extrabold text-slate-400">Color</span>
-                          <button onClick={() => setActivePickerRoute(null)} className="text-amber-400 hover:text-amber-305 font-bold p-0.5 text-[8px] bg-transparent border-none cursor-pointer">OK</button>
-                        </div>
-                        <div className="grid grid-cols-5 gap-1">
-                          {['#ef4444', '#10b981', '#3b82f6', '#f59e0b', '#8b5cf6'].map(presetColor => (
-                            <button
-                              key={presetColor}
-                              onClick={() => handleSetButtonColor(route, presetColor)}
-                              className={cn(
-                                "w-4 h-4 rounded-full border border-white/20 relative flex items-center justify-center cursor-pointer",
-                                customColor === presetColor && "scale-110 shadow"
-                              )}
-                              style={{ backgroundColor: presetColor }}
-                            >
-                              {customColor === presetColor && <Check size={8} className="text-white" />}
-                            </button>
-                          ))}
-                        </div>
-                        {/* Hex custom design selector */}
-                        <input
-                          type="text"
-                          value={customColor}
-                          onChange={(e) => handleSetButtonColor(route, e.target.value)}
-                          className="w-full bg-slate-800 text-[9px] text-white font-mono uppercase px-1.5 py-0.5 rounded border border-slate-705 text-center outline-none focus:border-amber-500"
-                          placeholder="#HEX"
-                        />
-                      </div>
+              return (
+                <div key={route} className="relative flex items-center shrink-0">
+                  <NavLink 
+                    to={data.to} 
+                    style={({ isActive }) => ({
+                      backgroundColor: isActive ? isActiveColor : undefined,
+                      color: isActive ? '#ffffff' : undefined,
+                      boxShadow: isActive ? `0 10px 15px -3px ${isActiveColor}40` : undefined
+                    })}
+                    className={({ isActive }) => cn(
+                      "px-3 md:px-4 py-1.5 md:py-2 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-tighter transition-all shrink-0",
+                      isActive ? "" : "bg-slate-100 text-slate-600 hover:bg-slate-250 dark:bg-slate-800 dark:text-slate-405 hover:scale-[1.02]"
                     )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+                  >
+                    {data.label}
+                  </NavLink>
 
-          {(profile?.role === 'waiter' || profile?.role === 'admin' || realProfile?.role === 'admin') && (
-            <NavLink to="/waiter" className={({ isActive }) => `px-3 md:px-4 py-1.5 md:py-2 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-tighter transition-all shrink-0 ${isActive ? 'bg-love text-white shadow-lg shadow-love/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400'}`}>
-              Carga de Puntos
-            </NavLink>
-          )}
+                  {/* Overlaid design mode control bar */}
+                  {isVisualDesignMode && (
+                    <div className="absolute -top-12 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-slate-900 border border-slate-700 text-white p-1.5 rounded-full shadow-2xl z-[110] scale-90 md:scale-100">
+                      {/* Move Left */}
+                      <button
+                        onClick={() => handleMoveButton(route, 'left')}
+                        disabled={idx === 0}
+                        className="p-1 text-slate-400 hover:text-white disabled:opacity-30 transition-colors bg-transparent border-none outline-none cursor-pointer"
+                        title="Mover Izquierda"
+                      >
+                        <ArrowLeft size={10} />
+                      </button>
 
-          {(profile?.role === 'admin' || realProfile?.role === 'admin') && (
-            <NavLink to="/admin" className={({ isActive }) => `px-3 md:px-4 py-1.5 md:py-2 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-tighter transition-all shrink-0 ${isActive ? 'bg-love text-white shadow-lg shadow-love/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400'}`}>
-              Admin
-            </NavLink>
-          )}
+                      {/* Color picker circle */}
+                      <button
+                        onClick={() => setActivePickerRoute(activePickerRoute === route ? null : route)}
+                        className="w-3.5 h-3.5 rounded-full border border-white hover:scale-110 transition-transform cursor-pointer"
+                        style={{ backgroundColor: customColor }}
+                        title="Cambiar Color"
+                      />
+
+                      {/* Move Right */}
+                      <button
+                        onClick={() => handleMoveButton(route, 'right')}
+                        disabled={idx === resolvedOrder.length - 1}
+                        className="p-1 text-slate-400 hover:text-white disabled:opacity-30 transition-colors bg-transparent border-none outline-none cursor-pointer"
+                        title="Mover Derecha"
+                      >
+                        <ArrowRight size={10} />
+                      </button>
+
+                      {/* Active inline mini color popup */}
+                      {activePickerRoute === route && (
+                        <div className="absolute top-10 left-1/2 -translate-x-1/2 z-[120] bg-slate-900 border border-slate-700 p-2.5 rounded-2xl flex flex-col gap-2 shadow-2xl w-32">
+                          <div className="flex justify-between items-center gap-1">
+                            <span className="text-[8px] uppercase tracking-wider font-extrabold text-slate-400">Color</span>
+                            <button onClick={() => setActivePickerRoute(null)} className="text-amber-400 hover:text-amber-305 font-bold p-0.5 text-[8px] bg-transparent border-none cursor-pointer">OK</button>
+                          </div>
+                          <div className="grid grid-cols-5 gap-1">
+                            {['#ef4444', '#10b981', '#3b82f6', '#f59e0b', '#8b5cf6'].map(presetColor => (
+                              <button
+                                key={presetColor}
+                                onClick={() => handleSetButtonColor(route, presetColor)}
+                                className={cn(
+                                  "w-4 h-4 rounded-full border border-white/20 relative flex items-center justify-center cursor-pointer",
+                                  customColor === presetColor && "scale-110 shadow"
+                                )}
+                                style={{ backgroundColor: presetColor }}
+                              >
+                                {customColor === presetColor && <Check size={8} className="text-white" />}
+                              </button>
+                            ))}
+                          </div>
+                          {/* Hex custom design selector */}
+                          <input
+                            type="text"
+                            value={customColor}
+                            onChange={(e) => handleSetButtonColor(route, e.target.value)}
+                            className="w-full bg-slate-800 text-[9px] text-white font-mono uppercase px-1.5 py-0.5 rounded border border-slate-705 text-center outline-none focus:border-amber-500"
+                            placeholder="#HEX"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            {(profile?.role === 'waiter' || profile?.role === 'admin' || realProfile?.role === 'admin') && (
+              <NavLink to="/waiter" className={({ isActive }) => `px-3 md:px-4 py-1.5 md:py-2 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-tighter transition-all shrink-0 ${isActive ? 'bg-love text-white shadow-lg shadow-love/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-405'}`}>
+                Carga de Puntos
+              </NavLink>
+            )}
+
+            {(profile?.role === 'admin' || realProfile?.role === 'admin') && (
+              <NavLink to="/admin" className={({ isActive }) => `px-3 md:px-4 py-1.5 md:py-2 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-tighter transition-all shrink-0 ${isActive ? 'bg-love text-white shadow-lg shadow-love/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-405'}`}>
+                Admin
+              </NavLink>
+            )}
+          </div>
+
+          {/* Inline compact links for other roles like Admin when in phone mode */}
+          {((isSimulatingClient && simDevice === 'phone') || window.innerWidth < 640) && (profile?.role === 'admin' || realProfile?.role === 'admin') ? (
+            <div className="flex items-center gap-1 sm:hidden">
+              <NavLink to="/admin" className={({ isActive }) => cn(
+                "px-2.5 py-1.5 rounded-lg transition-all shrink-0 font-black text-[9px] border-none",
+                isActive ? "bg-love text-white" : "bg-slate-105 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
+              )}>
+                ADMIN
+              </NavLink>
+            </div>
+          ) : null}
 
           {/* Floating Theme Selector and Actions */}
-          
           <button 
             onClick={toggleTheme} 
             className="ml-1 p-2 text-slate-400 hover:text-love transition-all hover:bg-love/10 rounded-lg shrink-0 cursor-pointer bg-transparent border-none" 
@@ -314,6 +332,49 @@ export function Layout({ children }: LayoutProps) {
         <main className="flex-1 w-full py-4 md:py-6 mt-2 md:mt-4">
           {children}
         </main>
+
+        {/* Bottom Floating Navigation Dock - Renders on actual Mobile and Simulated Phone */}
+        <div className={cn(
+          "z-[90] transition-all duration-300",
+          (isSimulatingClient && simDevice === 'phone') 
+            ? "sticky bottom-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 p-3.5 flex justify-around shrink-0 -mx-4 -mb-4 rounded-b-[1.7rem] shadow-[0_-8px_30px_rgba(0,0,0,0.08)]" 
+            : "fixed bottom-4 left-4 right-4 sm:hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border border-slate-200/60 dark:border-slate-800 px-4 py-3 rounded-2xl shadow-[0_10px_35px_rgba(0,0,0,0.12)] flex items-center justify-around z-[90]"
+        )}>
+          {[
+            { label: 'Inicio', to: '/', icon: <Home size={19} /> },
+            { label: 'Premios', to: '/rewards', icon: <Gift size={19} /> },
+            { label: 'Sucursales', to: '/branches', icon: <MapPin size={19} /> },
+            { label: 'Ayuda', to: '/help', icon: <HelpCircle size={19} /> }
+          ].map((item) => (
+            <NavLink 
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) => cn(
+                "flex flex-col items-center gap-1 py-1 px-3.5 rounded-2xl transition-all cursor-pointer border-none text-center bg-transparent shrink-0",
+                isActive 
+                  ? "scale-105" 
+                  : "hover:text-slate-600 dark:hover:text-slate-300"
+              )}
+            >
+              {({ isActive }) => (
+                <>
+                  <div className={cn(
+                    "transition-transform duration-200",
+                    isActive ? "scale-110 text-love" : "text-slate-400 dark:text-slate-500"
+                  )}>
+                    {item.icon}
+                  </div>
+                  <span className={cn(
+                    "text-[8px] uppercase tracking-wider font-black transition-colors duration-200",
+                    isActive ? "text-love" : "text-slate-400 dark:text-slate-500"
+                  )}>
+                    {item.label}
+                  </span>
+                </>
+              )}
+            </NavLink>
+          ))}
+        </div>
 
           </div>
         </div>
