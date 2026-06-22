@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Users, Gift, Settings, Search, Plus, Trash2, Pencil, Calendar, Award, History, DollarSign, Upload, Image as ImageIcon, FileSpreadsheet, UserPlus, X, Palette, Home, User, Star, MessageSquare, FileText, HelpCircle, LogOut, MapPin, ChevronLeft, ChevronRight, Package } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import * as XLSX from 'xlsx';
-import { BRANCHES } from '@/src/constants';
 import { useDesign, COLOR_PRESETS, CORNER_PRESETS, AVAILABLE_FONTS, type DesignConfig, type BannerConfig } from '@/src/components/DesignEngine';
 import { useAuth } from '@/src/App';
 
@@ -84,6 +83,9 @@ export function Admin() {
 
   // Design editing module states
   const { designConfig, saveDesignConfig } = useDesign();
+  // Nombres de sucursales para los filtros de reportes (todas, activas e inactivas,
+  // para poder filtrar historiales de sucursales ya cerradas).
+  const branchNames = (designConfig.branches || []).map(b => b.name);
   const [localDesign, setLocalDesign] = useState<DesignConfig | null>(null);
   const [pointsExpirationMonths, setPointsExpirationMonths] = useState<number>(3);
   const [categoryInactivityDays, setCategoryInactivityDays] = useState<number>(60);
@@ -115,7 +117,8 @@ export function Admin() {
     features: [] as string[],
     coordinates: '',
     imageUrl: '',
-    googleMapsUrl: ''
+    googleMapsUrl: '',
+    active: true
   });
   const [newFeatureText, setNewFeatureText] = useState('');
 
@@ -1061,7 +1064,7 @@ export function Admin() {
                     >
                       Todas
                     </button>
-                    {BRANCHES.map(branch => (
+                    {branchNames.map(branch => (
                       <button
                         key={branch}
                         onClick={() => setSelectedBranchFilter(branch)}
@@ -2383,7 +2386,7 @@ export function Admin() {
                     className="bg-slate-50 border border-slate-100 rounded-lg px-3 py-1.5 text-[10px] font-bold text-ink outline-none focus:border-love/30"
                   >
                     <option value="Todas">Todas</option>
-                    {BRANCHES.map(b => <option key={b} value={b}>{b}</option>)}
+                    {branchNames.map(b => <option key={b} value={b}>{b}</option>)}
                   </select>
                 </div>
               </div>
@@ -2962,12 +2965,17 @@ export function Admin() {
                         <div key={branch.id} className="bg-slate-50 dark:bg-slate-950 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 flex flex-col justify-between gap-3 shadow-sm hover:border-love/30 transition-all">
                           <div>
                             <div className="flex items-start justify-between gap-2">
-                              <h5 className="text-xs font-black text-ink dark:text-white uppercase tracking-tight">{branch.name}</h5>
+                              <h5 className="text-xs font-black text-ink dark:text-white uppercase tracking-tight">
+                                {branch.name}
+                                {branch.active === false && (
+                                  <span className="ml-2 px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-500 text-[8px] font-black uppercase tracking-widest">Inactiva</span>
+                                )}
+                              </h5>
                               <div className="flex items-center gap-1">
                                 <button
                                   onClick={() => {
                                     setEditingBranchId(branch.id);
-                                    setBranchForm({ ...branch });
+                                    setBranchForm({ ...branch, active: branch.active !== false });
                                   }}
                                   className="p-1 text-slate-400 hover:text-amber-500 transition-colors bg-transparent border-none cursor-pointer"
                                   title="Editar sucursal"
@@ -3032,7 +3040,7 @@ export function Admin() {
                         setBranchForm({
                           id: '', name: '', address: '', city: 'Paraná', province: 'Entre Ríos',
                           phone: '', hoursWeekday: '07:30 a 21:30 hs', hoursWeekend: '08:30 a 21:00 hs',
-                          specialty: '', features: [], coordinates: '', imageUrl: '', googleMapsUrl: ''
+                          specialty: '', features: [], coordinates: '', imageUrl: '', googleMapsUrl: '', active: true
                         });
                         alert("Sucursal guardada correctamente");
                       }} className="space-y-4">
@@ -3178,6 +3186,26 @@ export function Admin() {
                               placeholder="https://maps.google.com/?q=..."
                             />
                           </div>
+                          <div className="col-span-2 flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-lg">
+                            <div>
+                              <label className="text-[10px] uppercase font-black tracking-widest text-slate-400 block">Sucursal Activa</label>
+                              <span className="text-[9px] text-slate-400">Si está apagada, no aparece para cargar consumos.</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setBranchForm({ ...branchForm, active: !branchForm.active })}
+                              className={cn(
+                                "relative w-12 h-6 rounded-full transition-all flex-shrink-0",
+                                branchForm.active ? "bg-love" : "bg-slate-300 dark:bg-slate-700"
+                              )}
+                              title={branchForm.active ? "Activa" : "Inactiva"}
+                            >
+                              <span className={cn(
+                                "absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all",
+                                branchForm.active ? "left-[26px]" : "left-0.5"
+                              )} />
+                            </button>
+                          </div>
                         </div>
 
                         {/* Servicio pills list builder */}
@@ -3240,7 +3268,7 @@ export function Admin() {
                                 setBranchForm({
                                   id: '', name: '', address: '', city: 'Paraná', province: 'Entre Ríos',
                                   phone: '', hoursWeekday: '07:30 a 21:30 hs', hoursWeekend: '08:30 a 21:00 hs',
-                                  specialty: '', features: [], coordinates: '', imageUrl: '', googleMapsUrl: ''
+                                  specialty: '', features: [], coordinates: '', imageUrl: '', googleMapsUrl: '', active: true
                                 });
                               }}
                               className="px-6 py-3 bg-slate-200 dark:bg-slate-800 text-slate-500 rounded-xl text-xs uppercase font-black tracking-widest hover:bg-slate-350 cursor-pointer border-none"

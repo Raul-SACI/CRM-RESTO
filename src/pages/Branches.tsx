@@ -24,7 +24,7 @@ export function Branches() {
   const { designConfig } = useDesign();
   const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
 
-  const branches = designConfig?.branches || [];
+  const branches = (designConfig?.branches || []).filter(b => b.active !== false);
 
   return (
     <motion.div 

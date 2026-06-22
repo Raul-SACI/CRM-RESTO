@@ -6,7 +6,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Search, Receipt, PlusCircle, CheckCircle2, AlertCircle, QrCode, X, Camera, Loader2 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { Profile, SystemSettings } from '@/src/types';
-import { BRANCHES } from '@/src/constants';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import { extractDataFromReceipt, ExtractedReceiptItem } from '@/src/services/gemini';
 import { useDesign } from '@/src/components/DesignEngine';
@@ -20,7 +19,7 @@ export function Waiter() {
   const [dni, setDni] = useState('');
   const [amount, setAmount] = useState('');
   const [invoiceNumber, setInvoiceNumber] = useState('');
-  const [selectedBranch, setSelectedBranch] = useState(BRANCHES[0]);
+  const [selectedBranch, setSelectedBranch] = useState('');
   const [client, setClient] = useState<Profile | null>(null);
   const [clientTransactions, setClientTransactions] = useState<any[]>([]);
   const [deductingComboId, setDeductingComboId] = useState<string | null>(null);
@@ -31,6 +30,16 @@ export function Waiter() {
   const [analyzing, setAnalyzing] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+
+  // Sucursales reales (del panel), solo las activas. active undefined = activa.
+  const activeBranches = (designConfig.branches || []).filter(b => b.active !== false);
+
+  // Cuando cargan las sucursales, preseleccionar la primera activa si no hay ninguna elegida.
+  useEffect(() => {
+    if (!selectedBranch && activeBranches.length > 0) {
+      setSelectedBranch(activeBranches[0].name);
+    }
+  }, [activeBranches, selectedBranch]);
 
   useEffect(() => {
     let dniParam = searchParams.get('dni');
@@ -596,19 +605,21 @@ export function Waiter() {
                   <div className="space-y-4 pt-4 border-t-2 border-dashed border-slate-100">
                     <label className="block text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Sucursal de Carga</label>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                      {BRANCHES.map(branch => (
+                      {activeBranches.length === 0 ? (
+                        <p className="col-span-full text-[9px] text-slate-400 font-bold uppercase tracking-widest">No hay sucursales activas. Configurá una en el panel de administración.</p>
+                      ) : activeBranches.map(branch => (
                         <button
-                          key={branch}
+                          key={branch.id}
                           type="button"
-                          onClick={() => setSelectedBranch(branch)}
+                          onClick={() => setSelectedBranch(branch.name)}
                           className={cn(
                             "py-3 px-2 rounded-xl text-[8px] md:text-[9px] font-black uppercase tracking-widest transition-all border-2",
-                            selectedBranch === branch 
+                            selectedBranch === branch.name 
                               ? "bg-love border-love text-white shadow-lg shadow-love/20" 
                               : "bg-slate-50 border-slate-100 text-slate-400 hover:border-slate-200"
                           )}
                         >
-                          {branch}
+                          {branch.name}
                         </button>
                       ))}
                     </div>

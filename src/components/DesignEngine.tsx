@@ -26,6 +26,7 @@ export interface Branch {
   coordinates: string;
   imageUrl: string;
   googleMapsUrl: string;
+  active?: boolean;
 }
 
 export interface FaqItem {
@@ -214,7 +215,8 @@ export const DEFAULT_DESIGN: DesignConfig = {
       features: ['Wifi de Alta Velocidad', 'Pet Friendly', 'Área de Coworking Silencioso', 'Take Away'],
       coordinates: '-31.733190, -60.529810',
       imageUrl: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=600',
-      googleMapsUrl: 'https://maps.google.com/?q=-31.733190,-60.529810'
+      googleMapsUrl: 'https://maps.google.com/?q=-31.733190,-60.529810',
+      active: true
     },
     {
       id: '2',
@@ -229,7 +231,8 @@ export const DEFAULT_DESIGN: DesignConfig = {
       features: ['Estacionamiento Propio', 'Pet Friendly', 'Patio al Aire Libre', 'Música en Vivo'],
       coordinates: '-31.745120, -60.512640',
       imageUrl: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&q=80&w=600',
-      googleMapsUrl: 'https://maps.google.com/?q=-31.745120,-60.512640'
+      googleMapsUrl: 'https://maps.google.com/?q=-31.745120,-60.512640',
+      active: true
     },
     {
       id: '3',
@@ -244,7 +247,8 @@ export const DEFAULT_DESIGN: DesignConfig = {
       features: ['Deck de Madera al Río', 'Pet Friendly', 'Carga de Autos Eléctricos', 'Take Away'],
       coordinates: '-31.721450, -60.521890',
       imageUrl: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&q=80&w=600',
-      googleMapsUrl: 'https://maps.google.com/?q=-31.721450,-60.521890'
+      googleMapsUrl: 'https://maps.google.com/?q=-31.721450,-60.521890',
+      active: true
     }
   ],
   combos: [
