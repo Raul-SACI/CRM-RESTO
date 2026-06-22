@@ -314,18 +314,40 @@ export function MyAccount() {
         ) : (
           <div className="space-y-3 max-h-[350px] overflow-y-auto no-scrollbar pr-1">
             {combinedTxs.map((tx) => {
-              const worksAsLoad = tx.points_earned > 0;
+              const desc = tx.description || '';
+              const isCanje = desc.startsWith('CANJE');
+              const isCompra = desc.startsWith('COMPRA_COMBO');
+              const tipo = isCanje ? 'CANJE' : isCompra ? 'COMPRA' : 'CARGA';
+
+              // Colores por tipo
+              const tipoClass = isCanje
+                ? "bg-love/10 text-love"
+                : isCompra
+                  ? "bg-amber-500/10 text-amber-600"
+                  : "bg-emerald-500/10 text-emerald-500";
+
+              // Texto principal legible segun tipo
+              let titulo = desc;
+              if (isCanje) titulo = desc.replace('CANJE:', '').trim() || 'Canje de premio';
+              else if (isCompra) titulo = desc.replace('COMPRA_COMBO:', '').split('|')[1]?.trim() || 'Compra de combo';
+              else titulo = desc || 'Carga de puntos';
+
+              // Monto de puntos: canje resta, carga/compra suman lo que tengan
+              const puntos = tx.points_earned || 0;
+              const montoTexto = puntos >= 0 ? `+${puntos}` : `${puntos}`;
+              const montoClass = puntos >= 0 ? "text-emerald-500" : "text-love";
+
               return (
                 <div key={tx.id} className="p-3 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3 text-left">
                   <div className="space-y-0.5">
                     <span className={cn(
                       "text-[8px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest",
-                      worksAsLoad ? "bg-emerald-500/10 text-emerald-500" : "bg-love/10 text-love"
+                      tipoClass
                     )}>
-                      {worksAsLoad ? "CARGA" : "CANJE"}
+                      {tipo}
                     </span>
-                    <h5 className="text-[10px] font-black uppercase text-black dark:text-white tracking-tight leading-normal mt-1 max-w-[200px] truncate">
-                      {tx.description || (worksAsLoad ? `Carga de Puntos` : `Canje de Premio`)}
+                    <h5 className="text-[10px] font-black uppercase !text-slate-900 tracking-tight leading-normal mt-1 max-w-[200px] truncate">
+                      {titulo}
                     </h5>
                     <p className="text-[8px] text-slate-400 font-extrabold uppercase tracking-widest">
                       {new Date(tx.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}  • {tx.branch || 'Sucursal principal'}
@@ -334,9 +356,9 @@ export function MyAccount() {
                   <div className="text-right shrink-0">
                     <span className={cn(
                       "text-xs font-black italic",
-                      worksAsLoad ? "text-emerald-500" : "text-love"
+                      montoClass
                     )}>
-                      {worksAsLoad ? `+${tx.points_earned}` : `-${tx.points_spent || 0}`}
+                      {montoTexto}
                     </span>
                     <p className="text-[8px] font-black uppercase text-slate-400 tracking-wider">puntos</p>
                   </div>

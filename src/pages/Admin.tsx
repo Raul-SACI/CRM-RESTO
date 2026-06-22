@@ -633,6 +633,7 @@ export function Admin() {
         }
       } else if (activeTab === 'feedback') {
         let remoteFeedbacks: any[] = [];
+        let remoteOk = false;
         try {
           const { data, error } = await supabase
             .from('program_feedback')
@@ -640,64 +641,32 @@ export function Admin() {
             .order('created_at', { ascending: false });
           if (!error && data) {
             remoteFeedbacks = data;
+            remoteOk = true;
           }
         } catch (e) {
-          console.log("No program_feedback table, falling back to cached/seeded reviews");
+          console.log("No program_feedback table, falling back to local cache");
         }
 
-        const localCached = localStorage.getItem('local_program_feedback');
-        let localFeedbacks: any[] = [];
-        if (localCached) {
-          try {
-            localFeedbacks = JSON.parse(localCached);
-          } catch (e) {
-            console.error("Local feedback parse error:", e);
-          }
-        }
-
-        const combined = [...remoteFeedbacks, ...localFeedbacks];
-        if (combined.length === 0) {
-          const seeded = [
-            {
-              id: 'seed-1',
-              client_name: 'Sofía Martínez',
-              rating: 5,
-              comment: '¡Excelente programa de puntos! Me encanta que el vasito de café de especialidad de la marca CRAFT avance en tiempo real por el camino de puntos. Trato muy premium, el canje fue rapidísimo.',
-              prize_title: 'Café de Especialidad',
-              created_at: new Date(Date.now() - 1000 * 60 * 60 * 18).toISOString()
-            },
-            {
-              id: 'seed-2',
-              client_name: 'Juan Ignacio Pérez',
-              rating: 4,
-              comment: 'Los premios digitales son espectaculares y cargan en el día. Estaría bárbaro agregar más tostados y opciones saladas para el café de la tarde.',
-              prize_title: 'Tabla de Quesos Selectos',
-              created_at: new Date(Date.now() - 1000 * 60 * 60 * 42).toISOString()
-            },
-            {
-              id: 'seed-3',
-              client_name: 'Martina Silva',
-              rating: 5,
-              comment: 'Me volví miembra de nivel BLACK la semana pasada y la atención de los mozos al duplicar los puntos es magnífica. Recomiendo un montón registrarse en el club.',
-              prize_title: 'Cena para Dos',
-              created_at: new Date(Date.now() - 1000 * 60 * 60 * 68).toISOString()
-            },
-            {
-              id: 'seed-4',
-              client_name: 'Bautista Rodríguez',
-              rating: 5,
-              comment: 'La interfaz móvil corre genial en cualquier celular. La transparencia al escanear los códigos y las preguntas frecuentes aclaran todo al instante.',
-              prize_title: 'Cóctel de Bienvenida',
-              created_at: new Date(Date.now() - 1000 * 60 * 60 * 92).toISOString()
-            }
-          ];
-          setFeedbacks(seeded);
-          safeSetItem('local_program_feedback', JSON.stringify(seeded));
-          safeSetItem(cacheKey, JSON.stringify(seeded));
+        if (remoteOk) {
+          // La base respondio: es la fuente de verdad. No mezclamos cache vieja
+          // ni sembramos comentarios de prueba.
+          setFeedbacks(remoteFeedbacks);
+          safeSetItem(cacheKey, JSON.stringify(remoteFeedbacks));
         } else {
-          combined.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-          setFeedbacks(combined);
-          safeSetItem(cacheKey, JSON.stringify(combined));
+          // La base no respondio (tabla aun no creada): mostramos lo cacheado real,
+          // sin inventar comentarios de prueba.
+          const localCached = localStorage.getItem('local_program_feedback');
+          let localFeedbacks: any[] = [];
+          if (localCached) {
+            try {
+              localFeedbacks = JSON.parse(localCached);
+            } catch (e) {
+              console.error("Local feedback parse error:", e);
+            }
+          }
+          localFeedbacks.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+          setFeedbacks(localFeedbacks);
+          safeSetItem(cacheKey, JSON.stringify(localFeedbacks));
         }
       }
     } catch (e: any) {
