@@ -416,6 +416,11 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     fetchDesign();
+    // Volver a leer el diseño desde la base al re-enfocar la pestaña, para que
+    // cambios del admin (sucursales, combos, etc.) se reflejen sin recargar.
+    const onFocus = () => fetchDesign();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
   }, []);
 
   // Update dynamic styles in head
