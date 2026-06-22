@@ -32,7 +32,6 @@ export function Rewards() {
       if (cached) {
         try {
           setPrizes(JSON.parse(cached));
-          setLoading(false);
         } catch (e) {
           console.error("Rewards cache error:", e);
         }
@@ -174,12 +173,23 @@ export function Rewards() {
     }, 2000);
   };
 
-  // Mock data if database is empty for demo purposes
-  const displayPrizes = prizes.length > 0 ? prizes : [
-    { id: '1', title: 'Cóctel de Bienvenida', description: 'Cualquier cóctel de nuestra carta de autor.', points_cost: 500, image_url: 'https://images.unsplash.com/photo-1536935338788-846bb9981813?auto=format&fit=crop&q=80&w=400', is_active: true },
-    { id: '2', title: 'Tabla de Quesos Selectos', description: 'Selección de quesos regionales con miel de higos.', points_cost: 1500, image_url: 'https://images.unsplash.com/photo-1631515243349-e0cb75fb8d3a?auto=format&fit=crop&q=80&w=400', is_active: true },
-    { id: '3', title: 'Cena para Dos', description: 'Menú de 3 pasos con maridaje incluido.', points_cost: 5000, image_url: 'https://images.unsplash.com/photo-1559339352-11d035aa65de?auto=format&fit=crop&q=80&w=400', is_active: true },
-  ];
+  const displayPrizes = prizes;
+
+  if (!profile || loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center min-h-[60vh]">
+        <motion.div 
+          animate={{ rotate: 360 }}
+          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+          className="w-10 h-10 border-2 border-love border-t-transparent rounded-full mb-6"
+        />
+        <h2 className="text-xl font-bold mb-2 uppercase tracking-tighter text-ink dark:text-white">
+          Sincronizando Premios
+        </h2>
+        <p className="text-slate-400 text-[10px] uppercase tracking-widest">Espera un momento...</p>
+      </div>
+    );
+  }
 
   return (
     <motion.div 
@@ -378,6 +388,12 @@ export function Rewards() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {loading ? (
           <div className="col-span-full text-center py-12 text-slate-200 animate-pulse uppercase tracking-[0.2em] text-[10px] font-black italic">Explorando posibilidades...</div>
+        ) : displayPrizes.length === 0 ? (
+          <div className="col-span-full text-center py-16 bg-white dark:bg-slate-900 border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-[2rem] p-10">
+            <Gift size={40} className="mx-auto text-slate-300 dark:text-slate-700 mb-3" />
+            <p className="text-[11px] font-black uppercase tracking-widest text-[#ef4444]">Catálogo de canjes vacío</p>
+            <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 uppercase font-bold tracking-wider">Actualmente no hay premios activos disponibles.</p>
+          </div>
         ) : (
           displayPrizes.map((prize, index) => (
             <motion.div

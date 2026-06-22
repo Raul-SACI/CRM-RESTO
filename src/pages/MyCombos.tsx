@@ -10,7 +10,7 @@ import { cn } from '@/src/lib/utils';
 
 export function MyCombos() {
   const { profile, refreshProfile, isSimulatingClient } = useAuth();
-  const { designConfig } = useDesign();
+  const { designConfig, loading: designLoading } = useDesign();
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -307,7 +307,21 @@ export function MyCombos() {
     }
   }, [profile, transactions]);
 
-  if (!profile) return null;
+  if (!profile || loading || designLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center min-h-[60vh]">
+        <motion.div 
+          animate={{ rotate: 360 }}
+          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+          className="w-10 h-10 border-2 border-love border-t-transparent rounded-full mb-6"
+        />
+        <h2 className="text-xl font-bold mb-2 uppercase tracking-tighter text-ink dark:text-white">
+          Sincronizando Combos
+        </h2>
+        <p className="text-slate-400 text-[10px] uppercase tracking-widest">Espera un momento...</p>
+      </div>
+    );
+  }
 
   const combinedTxs = getCombinedTransactions();
   const avCombos = (designConfig as any).combos || [];

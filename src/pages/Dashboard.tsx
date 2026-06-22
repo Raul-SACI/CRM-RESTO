@@ -19,7 +19,7 @@ import {
 
 export function Dashboard() {
   const { profile, realProfile, refreshProfile, isSimulatingClient, simDevice } = useAuth();
-  const { designConfig, saveDesignConfig } = useDesign();
+  const { designConfig, saveDesignConfig, loading: designLoading } = useDesign();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [settings, setSettings] = useState<SystemSettings | null>(null);
   const [loading, setLoading] = useState(true);
@@ -650,25 +650,26 @@ export function Dashboard() {
           
           if (isMounted && !error && data && data.length > 0) {
             setPopularPrizes(data);
-          } else if (isMounted && (!data || data.length === 0)) {
-            const fallbackPrizes: Prize[] = [
-              { id: '1', title: 'Cóctel de Bienvenida', description: 'Cualquier cóctel de nuestra carta de autor.', points_cost: 500, image_url: 'https://images.unsplash.com/photo-1536935338788-846bb9981813?auto=format&fit=crop&q=80&w=400', is_active: true },
-              { id: '2', title: 'Tabla de Quesos Selectos', description: 'Selección de quesos regionales con miel de higos.', points_cost: 1500, image_url: 'https://images.unsplash.com/photo-1631515243349-e0cb75fb8d3a?auto=format&fit=crop&q=80&w=400', is_active: true },
-              { id: '3', title: 'Cena para Dos', description: 'Menú de 3 pasos con maridaje incluido.', points_cost: 5000, image_url: 'https://images.unsplash.com/photo-1559339352-11d035aa65de?auto=format&fit=crop&q=80&w=400', is_active: true },
-            ];
-            setPopularPrizes(fallbackPrizes);
+          } else if (isMounted) {
+            setPopularPrizes([]);
           }
         } catch (err) {
           console.error("Popular rewards fetch error:", err);
+          if (isMounted) setPopularPrizes([]);
         }
       };
 
       if (profile.role === 'admin') {
         fetchAdminStats().finally(() => { if (isMounted) setLoading(false); });
       } else {
-        fetchClientData();
-        fetchPopularPrizes();
-        setLoading(false);
+        const loadAllData = async () => {
+          await Promise.allSettled([
+            fetchClientData(),
+            fetchPopularPrizes()
+          ]);
+          if (isMounted) setLoading(false);
+        };
+        loadAllData();
       }
       
       fetchSettings();
@@ -786,7 +787,7 @@ export function Dashboard() {
     }
   };
 
-  if (!profile || (loading && !adminStats && profile.role === 'admin')) {
+  if (!profile || loading || designLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center min-h-[60vh]">
         <motion.div 
@@ -1714,8 +1715,14 @@ export function Dashboard() {
         </div>
 
         {/* Grid List of 3 Recommended Prizes */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {popularPrizes.slice(0, 3).map((prize) => {
+        {popularPrizes.length === 0 ? (
+          <div className="text-center py-8 border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-3xl">
+            <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">Próximamente más premios disponibles</p>
+            <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Registra premios en el panel de administración para habilitar canjes rápidos.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {popularPrizes.slice(0, 3).map((prize) => {
             const progress = Math.min((profile.points / prize.points_cost) * 150 - 50 < 0 ? 10 : (profile.points / prize.points_cost) * 100, 100);
             const needed = Math.max(prize.points_cost - profile.points, 0);
             const canRedeem = profile.points >= prize.points_cost;
@@ -1788,6 +1795,7 @@ export function Dashboard() {
             );
           })}
         </div>
+      )}
       </div>
 
       {/* Points Balance Card - Large Bento */}

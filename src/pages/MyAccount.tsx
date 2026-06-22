@@ -131,7 +131,21 @@ export function MyAccount() {
     }
   };
 
-  if (!profile) return null;
+  if (!profile || loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center min-h-[60vh]">
+        <motion.div 
+          animate={{ rotate: 360 }}
+          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+          className="w-10 h-10 border-2 border-love border-t-transparent rounded-full mb-6"
+        />
+        <h2 className="text-xl font-bold mb-2 uppercase tracking-tighter text-ink dark:text-white">
+          Sincronizando Cuenta
+        </h2>
+        <p className="text-slate-400 text-[10px] uppercase tracking-widest">Espera un momento...</p>
+      </div>
+    );
+  }
 
   const combinedTxs = getCombinedTransactions();
 
