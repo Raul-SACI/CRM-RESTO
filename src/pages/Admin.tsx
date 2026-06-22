@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '@/src/lib/supabase';
 import { Profile, Prize, Transaction, SystemSettings } from '@/src/types';
 import { motion, AnimatePresence } from 'motion/react';
-import { Users, Gift, Settings, Search, Plus, Trash2, Pencil, Calendar, Award, History, DollarSign, Upload, Image as ImageIcon, FileSpreadsheet, UserPlus, X, Palette, Home, User, Star, MessageSquare, FileText, HelpCircle, LogOut, MapPin, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Users, Gift, Settings, Search, Plus, Trash2, Pencil, Calendar, Award, History, DollarSign, Upload, Image as ImageIcon, FileSpreadsheet, UserPlus, X, Palette, Home, User, Star, MessageSquare, FileText, HelpCircle, LogOut, MapPin, ChevronLeft, ChevronRight, Package } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import * as XLSX from 'xlsx';
 import { BRANCHES } from '@/src/constants';
@@ -24,7 +24,7 @@ import {
 
 export function Admin() {
   const { isSimulatingClient, setIsSimulatingClient } = useAuth();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'clients' | 'prizes' | 'staff' | 'history' | 'settings' | 'design' | 'feedback'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'clients' | 'prizes' | 'combos' | 'staff' | 'history' | 'settings' | 'design' | 'feedback'>('dashboard');
   
   // Custom permissions module states
   const [staffSubTab, setStaffSubTab] = useState<'usuarios' | 'roles' | 'permisos'>('usuarios');
@@ -93,7 +93,7 @@ export function Admin() {
   const [activeBannerIndex, setActiveBannerIndex] = useState<number>(0);
 
   // Dynamic Settings / Ajustes tabs
-  const [settingsSubTab, setSettingsSubTab] = useState<'points' | 'help' | 'branches' | 'combos'>('points');
+  const [settingsSubTab, setSettingsSubTab] = useState<'points' | 'help' | 'branches'>('points');
   
   // FAQs form editing states
   const [editingFaqIndex, setEditingFaqIndex] = useState<number | null>(null);
@@ -354,7 +354,7 @@ export function Admin() {
     setSelectedClients([]);
     if (activeTab === 'settings') {
       fetchSettings();
-    } else if (activeTab === 'design') {
+    } else if (activeTab === 'design' || activeTab === 'combos') {
       setLoading(false);
     } else if (activeTab === 'dashboard') {
       // Dashboard needs transactions and clients
@@ -993,11 +993,12 @@ export function Admin() {
           "flex flex-row lg:flex-col p-1 lg:p-0 bg-slate-100 dark:bg-slate-950 lg:bg-transparent rounded-2xl border border-slate-200 dark:border-slate-800 lg:border-none overflow-x-auto lg:overflow-x-visible scrollbar-hide lg:w-full",
           isSidebarExpanded ? "lg:space-y-1.5" : "lg:space-y-3 lg:items-center"
         )}>
-          {['dashboard', 'clients', 'prizes', 'staff', 'history', 'settings', 'design', 'feedback'].map((tab) => {
+          {['dashboard', 'clients', 'prizes', 'combos', 'staff', 'history', 'settings', 'design', 'feedback'].map((tab) => {
             const labels: Record<string, string> = {
               dashboard: 'Dashboard',
               clients: 'Clientes',
               prizes: 'Premios',
+              combos: 'Combos Prepago',
               staff: 'Acceso / Permisos',
               history: 'Movimientos',
               settings: 'Ajustes',
@@ -1008,6 +1009,7 @@ export function Admin() {
               dashboard: <Award size={14} />,
               clients: <Users size={14} />,
               prizes: <Gift size={14} />,
+              combos: <Package size={14} />,
               staff: <UserPlus size={14} />,
               history: <History size={14} />,
               settings: <Settings size={14} />,
@@ -1507,6 +1509,245 @@ export function Admin() {
                   <p className="text-[8px] font-black uppercase tracking-widest text-slate-300">
                     CLUB CRAFT v1.0.6-FIX-DATABASE • DB Status: Connected
                   </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'combos' && (
+            <div className="w-full space-y-6">
+              <div className="space-y-8 text-left animate-in fade-in duration-300">
+                <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 md:p-8 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none space-y-6">
+                  <h4 className="text-sm font-black uppercase tracking-wider text-ink dark:text-white flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full bg-love animate-ping" />
+                    Gestión de Combos Prepago
+                  </h4>
+                  <p className="text-xs text-slate-400 font-medium">
+                    Ofrece a tus clientes paquetes de productos prepagos (Pases o Tarjetas de Abono) que pueden comprar desde la app y consumir gradualmente.
+                  </p>
+
+                  {/* Combos Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {((designConfig as any).combos || []).map((combo: any) => (
+                      <div key={combo.id} className="bg-slate-50 dark:bg-slate-950 p-4 rounded-3xl border border-slate-100 dark:border-slate-800 flex flex-col justify-between gap-4">
+                        <div className="flex gap-4">
+                          {combo.imageUrl ? (
+                            <img src={combo.imageUrl} alt={combo.title} className="w-20 h-20 rounded-2xl object-cover shrink-0 animate-in fade-in zoom-in-50" />
+                          ) : (
+                            <div className="w-20 h-20 rounded-2xl bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-400 font-bold text-xs shrink-0">Sin Foto</div>
+                          )}
+                          <div className="space-y-1 align-top">
+                            <div className="flex items-center gap-2">
+                              <span className={cn(
+                                "text-[8px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest",
+                                combo.isActive ? "bg-green-500/10 text-green-500" : "bg-slate-200 text-slate-400 dark:bg-slate-800"
+                              )}>
+                                {combo.isActive ? 'Activo' : 'Pausado'}
+                              </span>
+                              <span className="text-[8px] bg-love/10 text-love px-2 py-0.5 rounded-full font-black uppercase tracking-widest">{combo.totalUses} Usos</span>
+                            </div>
+                            <h5 className="text-xs font-black text-ink dark:text-white uppercase tracking-tight">{combo.title}</h5>
+                            <p className="text-[10px] text-slate-400 font-semibold line-clamp-2 leading-relaxed">{combo.description}</p>
+                            <p className="text-xs font-black text-love">${combo.price.toLocaleString('es-AR')}</p>
+                          </div>
+                        </div>
+
+                        <div className="flex gap-2 border-t border-slate-100 dark:border-slate-800 pt-3">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingComboId(combo.id);
+                              setComboForm(combo);
+                            }}
+                            className="flex-1 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-ink dark:text-white rounded-xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer border-none"
+                          >
+                            Editar
+                          </button>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (confirm(`¿Estás seguro de eliminar el combo "${combo.title}"?`)) {
+                                const updatedCombos = ((designConfig as any).combos || []).filter((c: any) => c.id !== combo.id);
+                                const updated = { ...designConfig, combos: updatedCombos };
+                                await saveDesignConfig(updated);
+                                alert("Combo eliminado exitosamente");
+                              }
+                            }}
+                            className="py-2 px-3 bg-red-500/10 hover:bg-rose-500 hover:text-white text-rose-500 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer border-none"
+                          >
+                            Eliminar
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Combos Form */}
+                  <div className="bg-slate-50 dark:bg-slate-950 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 mt-6 text-left">
+                    <h4 className="text-xs font-black uppercase tracking-widest text-love mb-6">
+                      {editingComboId ? `✏️ Editar Combo: ${comboForm.title}` : '✨ Crear Nuevo Combo Prepago'}
+                    </h4>
+
+                    <form 
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        const updatedCombos = [...((designConfig as any).combos || [])];
+                        if (editingComboId) {
+                          const idx = updatedCombos.findIndex((c: any) => c.id === editingComboId);
+                          if (idx !== -1) updatedCombos[idx] = comboForm;
+                        } else {
+                          const newCombo = {
+                            ...comboForm,
+                            id: 'combo-' + Date.now()
+                          };
+                          updatedCombos.push(newCombo);
+                        }
+
+                        const updated = { ...designConfig, combos: updatedCombos };
+                        await saveDesignConfig(updated);
+                        alert(editingComboId ? "Combo actualizado correctamente" : "Combo creado exitosamente");
+
+                        // Reset Form
+                        setEditingComboId(null);
+                        setComboForm({
+                          id: '',
+                          title: '',
+                          description: '',
+                          price: 65000,
+                          totalUses: 5,
+                          imageUrl: '',
+                          isActive: true
+                        });
+                      }} 
+                      className="space-y-4"
+                    >
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <label className="block text-[9px] uppercase font-black text-slate-400 tracking-widest pl-1">Título del Combo</label>
+                          <input
+                            required
+                            placeholder="Ej: Pase 5 Almuerzos Mediodía"
+                            className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-xs outline-none focus:border-love text-ink dark:text-white font-bold transition-all"
+                            value={comboForm.title}
+                            onChange={(e) => setComboForm({ ...comboForm, title: e.target.value })}
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="block text-[9px] uppercase font-black text-slate-400 tracking-widest pl-1">Precio Total ($)</label>
+                          <input
+                            type="number"
+                            required
+                            min="1"
+                            placeholder="65000"
+                            className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-xs outline-none focus:border-love text-ink dark:text-white font-bold transition-all"
+                            value={comboForm.price}
+                            onChange={(e) => setComboForm({ ...comboForm, price: parseFloat(e.target.value) || 0 })}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <label className="block text-[9px] uppercase font-black text-slate-400 tracking-widest pl-1">Cantidad de Usos/Consumos</label>
+                          <input
+                            type="number"
+                            required
+                            min="1"
+                            placeholder="5"
+                            className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-xs outline-none focus:border-love text-ink dark:text-white font-bold transition-all"
+                            value={comboForm.totalUses}
+                            onChange={(e) => setComboForm({ ...comboForm, totalUses: parseInt(e.target.value) || 1 })}
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="block text-[9px] uppercase font-black text-slate-400 tracking-widest pl-1">Estado</label>
+                          <select
+                            className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-xs outline-none focus:border-love text-ink dark:text-white font-bold transition-all"
+                            value={comboForm.isActive ? "true" : "false"}
+                            onChange={(e) => setComboForm({ ...comboForm, isActive: e.target.value === "true" })}
+                          >
+                            <option value="true">Activo (Para Venta)</option>
+                            <option value="false">Pausado (Inactivo / Ocultar)</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="block text-[9px] uppercase font-black text-slate-400 tracking-widest pl-1">Descripción corta y condiciones</label>
+                        <textarea
+                          required
+                          rows={3}
+                          placeholder="Describe qué comidas o artículos incluye el combo, y si tiene restricciones horarias o de días..."
+                          className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-xs outline-none focus:border-love text-ink dark:text-white font-bold transition-all leading-relaxed"
+                          value={comboForm.description}
+                          onChange={(e) => setComboForm({ ...comboForm, description: e.target.value })}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="block text-[9px] uppercase font-black text-slate-400 tracking-widest pl-1">Foto Ilustrativa (Upload Directo)</label>
+                        <div className="flex flex-col sm:flex-row items-center gap-4">
+                          {comboForm.imageUrl ? (
+                            <img src={comboForm.imageUrl} alt="Vista previa del combo" className="w-24 h-24 rounded-2xl object-cover border border-slate-200 dark:border-slate-800" />
+                          ) : (
+                            <div className="w-24 h-24 bg-slate-200 dark:bg-slate-800 rounded-2xl flex items-center justify-center font-bold text-slate-400 text-xs text-center p-2 shrink-0">
+                              Sin Imagen
+                            </div>
+                          )}
+                          <div className="flex-1 space-y-2 w-full">
+                            <div className="flex gap-2">
+                              <label className="flex-1 py-3 px-4 bg-slate-250 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-[10px] font-black uppercase tracking-widest text-center cursor-pointer transition-all border-none">
+                                📂 Seleccionar FOTO del Combo
+                                <input 
+                                  type="file" 
+                                  accept="image/*" 
+                                  className="hidden" 
+                                  onChange={handleComboFileChange}
+                                />
+                              </label>
+                            </div>
+                            <input
+                              placeholder="O introduce una URL de foto..."
+                              className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-[10px] outline-none focus:border-love text-ink dark:text-white font-semibold transition-all"
+                              value={comboForm.imageUrl}
+                              onChange={(e) => setComboForm({ ...comboForm, imageUrl: e.target.value })}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 pt-4">
+                        <button
+                          type="submit"
+                          className="px-6 py-3 bg-love text-white rounded-xl text-xs uppercase font-black tracking-widest hover:scale-[1.02] transition-colors cursor-pointer border-none"
+                        >
+                          {editingComboId ? 'Guardar Cambios' : 'Crear Combo'}
+                        </button>
+                        {editingComboId && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingComboId(null);
+                              setComboForm({
+                                id: '',
+                                title: '',
+                                description: '',
+                                price: 65000,
+                                totalUses: 5,
+                                imageUrl: '',
+                                isActive: true
+                              });
+                            }}
+                            className="px-6 py-3 bg-slate-200 dark:bg-slate-850 text-slate-500 rounded-xl text-xs uppercase font-black tracking-widest hover:bg-slate-350 cursor-pointer border-none"
+                          >
+                            Cancelar
+                          </button>
+                        )}
+                      </div>
+                    </form>
+                  </div>
                 </div>
               </div>
             </div>
@@ -2307,17 +2548,6 @@ export function Admin() {
                 >
                   Sucursales
                 </button>
-                <button 
-                  onClick={() => setSettingsSubTab('combos')}
-                  className={cn(
-                    "px-5 py-3 text-xs uppercase font-extrabold tracking-wider border-b-2 transition-all cursor-pointer bg-transparent outline-none shrink-0",
-                    settingsSubTab === 'combos' 
-                      ? "border-love text-love" 
-                      : "border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-                  )}
-                >
-                  Combos Prepago
-                </button>
               </div>
 
               {settingsSubTab === 'points' && (
@@ -3025,242 +3255,7 @@ export function Admin() {
                 </div>
               )}
 
-              {settingsSubTab === 'combos' && (
-                <div className="space-y-8 text-left animate-in fade-in duration-300">
-                  <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 md:p-8 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none space-y-6">
-                    <h4 className="text-sm font-black uppercase tracking-wider text-ink dark:text-white flex items-center gap-2">
-                      <div className="w-2.5 h-2.5 rounded-full bg-love animate-ping" />
-                      Gestión de Combos Prepago
-                    </h4>
-                    <p className="text-xs text-slate-400 font-medium">
-                      Ofrece a tus clientes paquetes de productos prepagos (Pases o Tarjetas de Abono) que pueden comprar desde la app y consumir gradualmente.
-                    </p>
 
-                    {/* Combos Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {((designConfig as any).combos || []).map((combo: any) => (
-                        <div key={combo.id} className="bg-slate-50 dark:bg-slate-950 p-4 rounded-3xl border border-slate-100 dark:border-slate-800 flex flex-col justify-between gap-4">
-                          <div className="flex gap-4">
-                            {combo.imageUrl ? (
-                              <img src={combo.imageUrl} alt={combo.title} className="w-20 h-20 rounded-2xl object-cover shrink-0 animate-in fade-in zoom-in-50" />
-                            ) : (
-                              <div className="w-20 h-20 rounded-2xl bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-slate-400 font-bold text-xs shrink-0">Sin Foto</div>
-                            )}
-                            <div className="space-y-1 align-top">
-                              <div className="flex items-center gap-2">
-                                <span className={cn(
-                                  "text-[8px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest",
-                                  combo.isActive ? "bg-green-500/10 text-green-500" : "bg-slate-200 text-slate-400 dark:bg-slate-800"
-                                )}>
-                                  {combo.isActive ? 'Activo' : 'Pausado'}
-                                </span>
-                                <span className="text-[8px] bg-love/10 text-love px-2 py-0.5 rounded-full font-black uppercase tracking-widest">{combo.totalUses} Usos</span>
-                              </div>
-                              <h5 className="text-xs font-black text-ink dark:text-white uppercase tracking-tight">{combo.title}</h5>
-                              <p className="text-[10px] text-slate-400 font-semibold line-clamp-2 leading-relaxed">{combo.description}</p>
-                              <p className="text-xs font-black text-love">${combo.price.toLocaleString('es-AR')}</p>
-                            </div>
-                          </div>
-
-                          <div className="flex gap-2 border-t border-slate-100 dark:border-slate-800 pt-3">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEditingComboId(combo.id);
-                                setComboForm(combo);
-                              }}
-                              className="flex-1 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-ink dark:text-white rounded-xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer border-none"
-                            >
-                              Editar
-                            </button>
-                            <button
-                              type="button"
-                              onClick={async () => {
-                                if (confirm(`¿Estás seguro de eliminar el combo "${combo.title}"?`)) {
-                                  const updatedCombos = ((designConfig as any).combos || []).filter((c: any) => c.id !== combo.id);
-                                  const updated = { ...designConfig, combos: updatedCombos };
-                                  await saveDesignConfig(updated);
-                                  alert("Combo eliminado exitosamente");
-                                }
-                              }}
-                              className="py-2 px-3 bg-red-500/10 hover:bg-rose-500 hover:text-white text-rose-500 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer border-none"
-                            >
-                              Eliminar
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    {/* Combos Form */}
-                    <div className="bg-slate-50 dark:bg-slate-950 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 mt-6 text-left">
-                      <h4 className="text-xs font-black uppercase tracking-widest text-love mb-6">
-                        {editingComboId ? `✏️ Editar Combo: ${comboForm.title}` : '✨ Crear Nuevo Combo Prepago'}
-                      </h4>
-
-                      <form 
-                        onSubmit={async (e) => {
-                          e.preventDefault();
-                          const updatedCombos = [...((designConfig as any).combos || [])];
-                          if (editingComboId) {
-                            const idx = updatedCombos.findIndex((c: any) => c.id === editingComboId);
-                            if (idx !== -1) updatedCombos[idx] = comboForm;
-                          } else {
-                            const newCombo = {
-                              ...comboForm,
-                              id: 'combo-' + Date.now()
-                            };
-                            updatedCombos.push(newCombo);
-                          }
-
-                          const updated = { ...designConfig, combos: updatedCombos };
-                          await saveDesignConfig(updated);
-                          alert(editingComboId ? "Combo actualizado correctamente" : "Combo creado exitosamente");
-
-                          // Reset Form
-                          setEditingComboId(null);
-                          setComboForm({
-                            id: '',
-                            title: '',
-                            description: '',
-                            price: 65000,
-                            totalUses: 5,
-                            imageUrl: '',
-                            isActive: true
-                          });
-                        }} 
-                        className="space-y-4"
-                      >
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-1">
-                            <label className="block text-[9px] uppercase font-black text-slate-400 tracking-widest pl-1">Título del Combo</label>
-                            <input
-                              required
-                              placeholder="Ej: Pase 5 Almuerzos Mediodía"
-                              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-xs outline-none focus:border-love text-ink dark:text-white font-bold transition-all"
-                              value={comboForm.title}
-                              onChange={(e) => setComboForm({ ...comboForm, title: e.target.value })}
-                            />
-                          </div>
-
-                          <div className="space-y-1">
-                            <label className="block text-[9px] uppercase font-black text-slate-400 tracking-widest pl-1">Precio Total ($)</label>
-                            <input
-                              type="number"
-                              required
-                              min="1"
-                              placeholder="65000"
-                              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-xs outline-none focus:border-love text-ink dark:text-white font-bold transition-all"
-                              value={comboForm.price}
-                              onChange={(e) => setComboForm({ ...comboForm, price: parseFloat(e.target.value) || 0 })}
-                            />
-                          </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="space-y-1">
-                            <label className="block text-[9px] uppercase font-black text-slate-400 tracking-widest pl-1">Cantidad de Usos/Consumos</label>
-                            <input
-                              type="number"
-                              required
-                              min="1"
-                              placeholder="5"
-                              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-xs outline-none focus:border-love text-ink dark:text-white font-bold transition-all"
-                              value={comboForm.totalUses}
-                              onChange={(e) => setComboForm({ ...comboForm, totalUses: parseInt(e.target.value) || 1 })}
-                            />
-                          </div>
-
-                          <div className="space-y-1">
-                            <label className="block text-[9px] uppercase font-black text-slate-400 tracking-widest pl-1">Estado</label>
-                            <select
-                              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-xs outline-none focus:border-love text-ink dark:text-white font-bold transition-all"
-                              value={comboForm.isActive ? "true" : "false"}
-                              onChange={(e) => setComboForm({ ...comboForm, isActive: e.target.value === "true" })}
-                            >
-                              <option value="true">Activo (Para Venta)</option>
-                              <option value="false">Pausado (Inactivo / Ocultar)</option>
-                            </select>
-                          </div>
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="block text-[9px] uppercase font-black text-slate-400 tracking-widest pl-1">Descripción corta y condiciones</label>
-                          <textarea
-                            required
-                            rows={3}
-                            placeholder="Describe qué comidas o artículos incluye el combo, y si tiene restricciones horarias o de días..."
-                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-xs outline-none focus:border-love text-ink dark:text-white font-bold transition-all leading-relaxed"
-                            value={comboForm.description}
-                            onChange={(e) => setComboForm({ ...comboForm, description: e.target.value })}
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <label className="block text-[9px] uppercase font-black text-slate-400 tracking-widest pl-1">Foto Ilustrativa (Upload Directo)</label>
-                          <div className="flex flex-col sm:flex-row items-center gap-4">
-                            {comboForm.imageUrl ? (
-                              <img src={comboForm.imageUrl} alt="Vista previa del combo" className="w-24 h-24 rounded-2xl object-cover border border-slate-200 dark:border-slate-800" />
-                            ) : (
-                              <div className="w-24 h-24 bg-slate-200 dark:bg-slate-800 rounded-2xl flex items-center justify-center font-bold text-slate-400 text-xs text-center p-2 shrink-0">
-                                Sin Imagen
-                              </div>
-                            )}
-                            <div className="flex-1 space-y-2 w-full">
-                              <div className="flex gap-2">
-                                <label className="flex-1 py-3 px-4 bg-slate-250 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl text-[10px] font-black uppercase tracking-widest text-center cursor-pointer transition-all border-none">
-                                  📂 Seleccionar FOTO del Combo
-                                  <input 
-                                    type="file" 
-                                    accept="image/*" 
-                                    className="hidden" 
-                                    onChange={handleComboFileChange}
-                                  />
-                                </label>
-                              </div>
-                              <input
-                                placeholder="O introduce una URL de foto..."
-                                className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-[10px] outline-none focus:border-love text-ink dark:text-white font-semibold transition-all"
-                                value={comboForm.imageUrl}
-                                onChange={(e) => setComboForm({ ...comboForm, imageUrl: e.target.value })}
-                              />
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2 pt-4">
-                          <button
-                            type="submit"
-                            className="px-6 py-3 bg-love text-white rounded-xl text-xs uppercase font-black tracking-widest hover:scale-[1.02] transition-colors cursor-pointer border-none"
-                          >
-                            {editingComboId ? 'Guardar Cambios' : 'Crear Combo'}
-                          </button>
-                          {editingComboId && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEditingComboId(null);
-                                setComboForm({
-                                  id: '',
-                                  title: '',
-                                  description: '',
-                                  price: 65000,
-                                  totalUses: 5,
-                                  imageUrl: '',
-                                  isActive: true
-                                });
-                              }}
-                              className="px-6 py-3 bg-slate-200 dark:bg-slate-800 text-slate-500 rounded-xl text-xs uppercase font-black tracking-widest hover:bg-slate-350 cursor-pointer border-none"
-                            >
-                              Cancelar
-                            </button>
-                          )}
-                        </div>
-                      </form>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
