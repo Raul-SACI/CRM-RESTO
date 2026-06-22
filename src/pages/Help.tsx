@@ -35,7 +35,7 @@ export function Help() {
               <HelpCircle size={18} className="text-love animate-pulse shrink-0" />
               <span className="text-xs uppercase font-extrabold tracking-widest text-[#92400E] dark:text-amber-400">Canal de Soporte</span>
             </div>
-            <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-ink dark:text-white" style={{ fontFamily: `"${designConfig?.fontHeadings || 'Inter'}", sans-serif` }}>
+            <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-black dark:text-white" style={{ fontFamily: `"${designConfig?.fontHeadings || 'Inter'}", sans-serif` }}>
               Centro de Ayuda
             </h1>
             <p className="text-slate-400 dark:text-slate-500 text-xs md:text-sm mt-1.5 font-medium max-w-xl">
@@ -95,7 +95,7 @@ export function Help() {
                   placeholder="Buscar respuestas, niveles, puntos o canjes..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl pl-12 pr-4 py-3 text-xs outline-none focus:border-love/50 text-ink dark:text-white font-semibold placeholder:text-slate-400"
+                  className="w-full bg-slate-50 dark:bg-slate-950/40 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl pl-12 pr-4 py-3 text-xs outline-none focus:border-love/50 text-black dark:text-white font-semibold placeholder:text-slate-400"
                 />
               </div>
             </div>
@@ -113,7 +113,7 @@ export function Help() {
                     >
                       <button
                         onClick={() => setActiveFaqIndex(isOpen ? null : index)}
-                        className="w-full text-left p-5 flex items-center justify-between gap-4 font-bold text-xs md:text-sm uppercase tracking-tight text-ink dark:text-white cursor-pointer bg-transparent border-0 outline-none"
+                        className="w-full text-left p-5 flex items-center justify-between gap-4 font-bold text-xs md:text-sm uppercase tracking-tight text-black dark:text-white cursor-pointer bg-transparent border-0 outline-none"
                       >
                         <div className="flex flex-col gap-1.5 min-w-0">
                           <span className="text-[8px] font-black uppercase text-love tracking-widest bg-love/5 dark:bg-love/15 px-2 py-0.5 rounded-lg self-start">

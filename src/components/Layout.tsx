@@ -213,7 +213,7 @@ export function Layout({ children }: LayoutProps) {
                     })}
                     className={({ isActive }) => cn(
                       "px-3 md:px-4 py-1.5 md:py-2 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-tighter transition-all shrink-0",
-                      isActive ? "" : "bg-slate-100 text-slate-600 hover:bg-slate-250 dark:bg-slate-800 dark:text-slate-405 hover:scale-[1.02]"
+                      isActive ? "" : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400 hover:scale-[1.02]"
                     )}
                   >
                     {data.label}
@@ -289,13 +289,13 @@ export function Layout({ children }: LayoutProps) {
             })}
 
             {(hasPermission(profile?.role, 'cargar_puntos') || hasPermission(realProfile?.role, 'cargar_puntos')) && (
-              <NavLink to="/waiter" className={({ isActive }) => `px-3 md:px-4 py-1.5 md:py-2 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-tighter transition-all shrink-0 ${isActive ? 'bg-love text-white shadow-lg shadow-love/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-405'}`}>
+              <NavLink to="/waiter" className={({ isActive }) => `px-3 md:px-4 py-1.5 md:py-2 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-tighter transition-all shrink-0 ${isActive ? 'bg-love text-white shadow-lg shadow-love/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400'}`}>
                 Carga de Puntos
               </NavLink>
             )}
 
             {(hasPermission(profile?.role, 'ver_admin') || hasPermission(realProfile?.role, 'ver_admin')) && (
-              <NavLink to="/admin" className={({ isActive }) => `px-3 md:px-4 py-1.5 md:py-2 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-tighter transition-all shrink-0 ${isActive ? 'bg-love text-white shadow-lg shadow-love/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-405'}`}>
+              <NavLink to="/admin" className={({ isActive }) => `px-3 md:px-4 py-1.5 md:py-2 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-tighter transition-all shrink-0 ${isActive ? 'bg-love text-white shadow-lg shadow-love/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400'}`}>
                 Admin
               </NavLink>
             )}
@@ -306,7 +306,7 @@ export function Layout({ children }: LayoutProps) {
             <div className="flex items-center gap-1 sm:hidden">
               <NavLink to="/admin" className={({ isActive }) => cn(
                 "px-2.5 py-1.5 rounded-lg transition-all shrink-0 font-black text-[9px] border-none",
-                isActive ? "bg-love text-white" : "bg-slate-105 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
+                isActive ? "bg-love text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
               )}>
                 ADMIN
               </NavLink>
@@ -364,13 +364,13 @@ export function Layout({ children }: LayoutProps) {
                 <>
                   <div className={cn(
                     "transition-transform duration-200",
-                    isActive ? "scale-110 text-love" : "text-slate-400 dark:text-slate-500"
+                    isActive ? "scale-110 text-love" : "text-slate-600 dark:text-slate-400"
                   )}>
                     {item.icon}
                   </div>
                   <span className={cn(
                     "text-[7px] uppercase tracking-wider font-extrabold transition-colors duration-200",
-                    isActive ? "text-love font-black" : "text-slate-400 dark:text-slate-500"
+                    isActive ? "text-love font-black" : "text-slate-600 dark:text-slate-400"
                   )}>
                     {item.label}
                   </span>
@@ -384,10 +384,10 @@ export function Layout({ children }: LayoutProps) {
             onClick={handleLogout}
             className="flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-2xl transition-all cursor-pointer border-none text-center bg-transparent shrink-0 group"
           >
-            <div className="transition-transform duration-200 text-slate-400 dark:text-slate-500 group-hover:text-love group-hover:scale-110">
+            <div className="transition-transform duration-200 text-slate-600 dark:text-slate-400 group-hover:text-love group-hover:scale-110">
               <LogOut size={19} />
             </div>
-            <span className="text-[7px] uppercase tracking-wider font-extrabold text-slate-400 dark:text-slate-500 group-hover:text-love transition-colors duration-200">
+            <span className="text-[7px] uppercase tracking-wider font-extrabold text-slate-600 dark:text-slate-400 group-hover:text-love transition-colors duration-200">
               Salir
             </span>
           </button>
@@ -424,7 +424,7 @@ export function Layout({ children }: LayoutProps) {
                   <HelpCircle size={22} />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black uppercase tracking-tighter text-ink dark:text-white">Preguntas <span className="text-love">Frecuentes</span></h3>
+                  <h3 className="text-xl font-black uppercase tracking-tighter text-black dark:text-white">Preguntas <span className="text-love">Frecuentes</span></h3>
                   <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mt-0.5">Todo sobre nuestro Club CRAFT</p>
                 </div>
               </div>
@@ -439,7 +439,7 @@ export function Layout({ children }: LayoutProps) {
                     >
                       <button
                         onClick={() => setActiveFaqIndex(isOpen ? null : index)}
-                        className="w-full text-left p-4 flex items-center justify-between gap-4 font-extrabold text-xs uppercase tracking-tight text-ink dark:text-white cursor-pointer bg-transparent border-0 outline-none"
+                        className="w-full text-left p-4 flex items-center justify-between gap-4 font-extrabold text-xs uppercase tracking-tight text-black dark:text-white cursor-pointer bg-transparent border-0 outline-none"
                       >
                         <span>{item.q}</span>
                         <ChevronRight 
@@ -497,7 +497,7 @@ export function Layout({ children }: LayoutProps) {
                   <FileText size={22} />
                 </div>
                 <div>
-                  <h3 className="text-xl font-black uppercase tracking-tighter text-ink dark:text-white">Bases y <span className="text-love">Condiciones</span></h3>
+                  <h3 className="text-xl font-black uppercase tracking-tighter text-black dark:text-white">Bases y <span className="text-love">Condiciones</span></h3>
                   <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mt-0.5">Letra chica del programa Club CRAFT</p>
                 </div>
               </div>

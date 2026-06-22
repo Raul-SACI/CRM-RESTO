@@ -143,7 +143,7 @@ export function MyAccount() {
           <User size={20} />
         </div>
         <div>
-          <h2 className="text-xl font-black uppercase text-ink dark:text-white leading-none tracking-tight">Mi Cuenta</h2>
+          <h2 className="text-xl font-black uppercase text-black dark:text-white leading-none tracking-tight">Mi Cuenta</h2>
           <p className="text-[10px] text-slate-400 mt-1 uppercase font-black tracking-widest">Gestiona tus datos de acceso, credenciales e historial</p>
         </div>
       </div>
@@ -152,7 +152,7 @@ export function MyAccount() {
       <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none space-y-5 text-left">
         <div className="flex items-center gap-2">
           <User size={16} className="text-love" />
-          <h3 className="text-xs font-black uppercase tracking-wider text-ink dark:text-white">Datos Personales</h3>
+          <h3 className="text-xs font-black uppercase tracking-wider text-black dark:text-white">Datos Personales</h3>
         </div>
 
         <form onSubmit={handleUpdateProfile} className="space-y-4">
@@ -208,7 +208,7 @@ export function MyAccount() {
       <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none space-y-5 text-left">
         <div className="flex items-center gap-2">
           <Key size={16} className="text-love" />
-          <h3 className="text-xs font-black uppercase tracking-wider text-ink dark:text-white">Cambiar Contraseña</h3>
+          <h3 className="text-xs font-black uppercase tracking-wider text-black dark:text-white">Cambiar Contraseña</h3>
         </div>
 
         <form onSubmit={handleUpdatePassword} className="space-y-4">
@@ -273,11 +273,11 @@ export function MyAccount() {
       </div>
 
       {/* Transaction History Movements Card */}
-      <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 border border-slate-105 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none space-y-5 text-left">
+      <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none space-y-5 text-left">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <History size={16} className="text-love" />
-            <h3 className="text-xs font-black uppercase tracking-wider text-ink dark:text-white">Mis Movimientos</h3>
+            <h3 className="text-xs font-black uppercase tracking-wider text-black dark:text-white">Mis Movimientos</h3>
           </div>
           <button 
             onClick={fetchTransactions}
@@ -310,7 +310,7 @@ export function MyAccount() {
                     )}>
                       {worksAsLoad ? "CARGA" : "CANJE"}
                     </span>
-                    <h5 className="text-[10px] font-black uppercase text-ink dark:text-white tracking-tight leading-normal mt-1 max-w-[200px] truncate">
+                    <h5 className="text-[10px] font-black uppercase text-black dark:text-white tracking-tight leading-normal mt-1 max-w-[200px] truncate">
                       {tx.description || (worksAsLoad ? `Carga de Puntos` : `Canje de Premio`)}
                     </h5>
                     <p className="text-[8px] text-slate-400 font-extrabold uppercase tracking-widest">

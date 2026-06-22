@@ -113,6 +113,24 @@ export function Auth() {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin,
+        },
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-paper flex flex-col items-center justify-center p-6 bg-[radial-gradient(circle_at_50%_30%,#ef444411_0%,transparent_60%)]">
       <div className="w-full max-w-sm space-y-8">
@@ -210,6 +228,28 @@ export function Auth() {
               {loading ? 'Procesando...' : isLogin ? 'Ingresar a la Experiencia' : 'Crear mi Perfil'}
             </button>
           </form>
+
+          <div className="relative my-6 flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-100"></div>
+            </div>
+            <span className="relative bg-white px-4 text-[9px] font-black uppercase tracking-widest text-slate-400">o ingresa con</span>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            disabled={loading}
+            className="w-full flex items-center justify-center bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/80 rounded-xl py-3.5 px-4 font-black text-[10px] uppercase tracking-widest transition-all disabled:opacity-50 active:scale-[0.98] cursor-pointer"
+          >
+            <svg className="w-4 h-4 mr-2 shrink-0" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path fill="#EA4335" d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.68 1.54 14.98 1 12 1 7.35 1 3.37 3.55 1.25 7.37l3.86 3C6.1 7.31 8.84 5.04 12 5.04z" />
+              <path fill="#4285F4" d="M23.49 12.27c0-.81-.07-1.59-.2-2.34H12v4.44h6.44c-.28 1.47-1.11 2.71-2.36 3.55l3.66 2.84c2.14-1.97 3.75-4.87 3.75-8.49z" />
+              <path fill="#FBBC05" d="M5.11 10.37c-.24-.72-.37-1.49-.37-2.37s.13-1.65.37-2.37L1.25 2.63C.45 4.24 0 6.07 0 8s.45 3.76 1.25 5.37l3.86-3z" />
+              <path fill="#34A853" d="M12 23c3.24 0 5.97-1.07 7.96-2.91l-3.66-2.84c-1.1.74-2.5 1.18-4.3 1.18-3.16 0-5.9-2.27-6.89-5.33L1.25 16.1C3.37 19.92 7.35 22.5 12 23z" />
+            </svg>
+            Ingresar con Google
+          </button>
 
           <div className="mt-8 text-center">
             <button
