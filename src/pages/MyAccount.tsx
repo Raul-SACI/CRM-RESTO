@@ -57,14 +57,7 @@ export function MyAccount() {
 
   const getCombinedTransactions = () => {
     if (!profile) return [];
-    try {
-      const localStr = localStorage.getItem(`local_txs_${profile.id}`);
-      if (localStr) {
-        const localTxs = JSON.parse(localStr);
-        const combined = [...localTxs, ...transactions];
-        return combined.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
-      }
-    } catch(e) {}
+    // Solo la base es la fuente de verdad: evita duplicar usos/movimientos.
     return transactions;
   };
 

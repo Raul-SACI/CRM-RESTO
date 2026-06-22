@@ -48,22 +48,7 @@ export function MyCombos() {
 
   const getCombinedTransactions = () => {
     if (!profile) return [];
-    try {
-      const localStr = localStorage.getItem(`local_txs_${profile.id}`);
-      if (localStr) {
-        const localTxs = JSON.parse(localStr);
-        const combined = [...localTxs, ...transactions];
-        const seen = new Set<string>();
-        return combined.filter((t: any) => {
-          const fingerprint = t.id || `${t.invoice_number || ''}|${t.description || ''}`;
-          const altFingerprint = `${t.invoice_number || ''}|${t.description || ''}`;
-          if (seen.has(fingerprint) || seen.has(altFingerprint)) return false;
-          seen.add(fingerprint);
-          seen.add(altFingerprint);
-          return true;
-        });
-      }
-    } catch(e) {}
+    // Solo la base es la fuente de verdad: evita duplicar usos de combos.
     return transactions;
   };
 

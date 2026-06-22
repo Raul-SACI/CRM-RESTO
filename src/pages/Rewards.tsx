@@ -128,26 +128,27 @@ export function Rewards() {
     if (!profile) return;
     setIsSubmittingRating(true);
 
-    const feedbackData = {
-      client_id: profile.id,
-      client_name: profile.full_name || 'Cliente de Club CRAFT',
-      rating: ratingScore,
-      comment: ratingComment,
-      prize_title: lastPrize?.title || 'General',
-      created_at: new Date().toISOString()
-    };
-
+    let savedOnline = false;
     try {
-      // Intentar insertar en Supabase
-      const { error } = await supabase.from('program_feedback').insert(feedbackData);
+      // Insertar en Supabase (fuente de verdad). No mandamos id ni created_at:
+      // los genera la base.
+      const { error } = await supabase.from('program_feedback').insert({
+        client_id: profile.id,
+        client_name: profile.full_name || 'Cliente de Club CRAFT',
+        rating: ratingScore,
+        comment: ratingComment,
+        prize_title: lastPrize?.title || 'General'
+      });
       if (error) {
-        console.warn("Table program_feedback might not exist, saving to local cache:", error);
+        console.warn("No se pudo guardar la opinion online:", error);
+      } else {
+        savedOnline = true;
       }
     } catch (err: any) {
-      console.warn("Error calling Supabase insert for rating. Fallback to localStorage:", err);
+      console.warn("Error al guardar la opinion online:", err);
     }
 
-    // Always append/save to localStorage so it persists locally
+    // Guardar tambien localmente como respaldo (por si la base fallo).
     try {
       const existingStr = localStorage.getItem('local_program_feedback');
       let existingFeedbacks: any[] = [];
@@ -156,7 +157,12 @@ export function Rewards() {
       }
       existingFeedbacks.unshift({
         id: 'user-' + Math.random().toString(36).substring(2, 9),
-        ...feedbackData
+        client_id: profile.id,
+        client_name: profile.full_name || 'Cliente de Club CRAFT',
+        rating: ratingScore,
+        comment: ratingComment,
+        prize_title: lastPrize?.title || 'General',
+        created_at: new Date().toISOString()
       });
       localStorage.setItem('local_program_feedback', JSON.stringify(existingFeedbacks));
     } catch (err) {
