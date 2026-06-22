@@ -790,11 +790,41 @@ export function Dashboard() {
   if (!profile || loading || designLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center min-h-[60vh]">
-        <motion.div 
-          animate={{ rotate: 360 }}
-          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-          className="w-10 h-10 border-2 border-love border-t-transparent rounded-full mb-6"
-        />
+        <div className="relative w-24 h-28 mb-6 flex items-end justify-center">
+          {/* Vapor */}
+          <motion.div
+            className="absolute -top-1 left-1/2 -translate-x-1/2 flex gap-1.5"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0, 0.5, 0] }}
+            transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+          >
+            {[0, 1, 2].map((i) => (
+              <motion.span
+                key={i}
+                className="block w-1 h-5 rounded-full bg-love/30"
+                animate={{ y: [4, -6, 4], opacity: [0.2, 0.6, 0.2] }}
+                transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut", delay: i * 0.3 }}
+              />
+            ))}
+          </motion.div>
+
+          {/* Taza */}
+          <div className="relative w-20 h-20">
+            {/* Cuerpo de la taza con el café que se llena */}
+            <div className="absolute inset-x-2 bottom-0 top-2 rounded-b-3xl rounded-t-lg border-[3px] border-ink overflow-hidden bg-white">
+              <motion.div
+                className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#5b3a1f] to-[#a9703f]"
+                initial={{ height: "0%" }}
+                animate={{ height: ["8%", "85%", "8%"] }}
+                transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}
+              />
+            </div>
+            {/* Asa */}
+            <div className="absolute right-[-6px] top-5 w-4 h-7 border-[3px] border-ink rounded-r-full" />
+            {/* Plato */}
+            <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-24 h-2 rounded-full bg-ink/80" />
+          </div>
+        </div>
         <h2 className="text-xl font-bold mb-2 uppercase tracking-tighter text-ink">
           {profile?.role === 'admin' ? 'Cargando Dashboard Administrativo' : 'Sincronizando Perfil'}
         </h2>

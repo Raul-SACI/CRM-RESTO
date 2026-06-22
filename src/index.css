@@ -23,6 +23,13 @@
 }
 
 @layer base {
+  :root {
+    color-scheme: light;
+  }
+  .dark {
+    color-scheme: dark;
+  }
+
   body {
     @apply bg-paper text-ink antialiased selection:bg-love/20 transition-colors duration-300;
     -webkit-tap-highlight-color: transparent;
