@@ -993,8 +993,7 @@ export function Dashboard() {
         {/* Header greeting */}
         <div className="flex justify-between items-center px-1">
           <div>
-            <h1 className="text-2xl font-black uppercase tracking-tight leading-none text-slate-905 dark:text-white" style={{ fontFamily: designConfig?.fontHeadings || 'inherit' }}>Club Craft</h1>
-            <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest mt-1">Hola, {profile.full_name?.split(' ')[0]} ⚡</p>
+            <h1 className="text-3xl font-black uppercase tracking-tight leading-none !text-slate-900" style={{ fontFamily: designConfig?.fontHeadings || 'inherit' }}>Hola, {profile.full_name?.split(' ')[0]} ⚡</h1>
           </div>
         </div>
 
