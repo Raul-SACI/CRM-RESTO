@@ -3,11 +3,10 @@ import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/src/lib/supabase';
 import { useAuth } from '@/src/App';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, Receipt, PlusCircle, CheckCircle2, AlertCircle, QrCode, X, Camera, Loader2 } from 'lucide-react';
+import { Search, Receipt, PlusCircle, CheckCircle2, AlertCircle, QrCode, X } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { Profile, SystemSettings } from '@/src/types';
 import { Html5QrcodeScanner } from 'html5-qrcode';
-import { extractDataFromReceipt, ExtractedReceiptItem } from '@/src/services/gemini';
 import { useDesign } from '@/src/components/DesignEngine';
 
 import { numberToWords } from '@/src/lib/numberToWords';
@@ -27,7 +26,6 @@ export function Waiter() {
   const [settings, setSettings] = useState<SystemSettings | null>(null);
   const [loading, setLoading] = useState(false);
   const [searching, setSearching] = useState(false);
-  const [analyzing, setAnalyzing] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
@@ -248,37 +246,6 @@ export function Waiter() {
         remaining: Math.max(0, item.totalPurchased - item.totalUsed),
       }))
       .filter(b => b.totalPurchased > 0);
-  };
-
-  const handleReceiptScan = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setAnalyzing(true);
-    setStatus(null);
-
-    try {
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        const base64 = event.target?.result as string;
-        try {
-          const data = await extractDataFromReceipt(base64);
-          
-          if (data.amount) setAmount(data.amount.toString());
-          if (data.invoice_number) setInvoiceNumber(data.invoice_number);
-          
-          setStatus({ type: 'success', message: 'Datos extraídos del ticket.' });
-        } catch (err: any) {
-          setStatus({ type: 'error', message: err.message || 'Error al analizar el ticket.' });
-        } finally {
-          setAnalyzing(false);
-        }
-      };
-      reader.readAsDataURL(file);
-    } catch (err) {
-      setAnalyzing(false);
-      setStatus({ type: 'error', message: 'Error al leer el archivo de imagen.' });
-    }
   };
 
   const getClientActiveTier = (clientObj: Profile, txsList: any[]) => {
@@ -626,26 +593,8 @@ export function Waiter() {
                   </div>
 
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between pl-2">
+                    <div className="flex items-center pl-2">
                       <label className="block text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">Monto consumo</label>
-                      <label className="flex items-center gap-2 cursor-pointer bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-full transition-all group">
-                        {analyzing ? (
-                          <Loader2 size={12} className="text-love animate-spin" />
-                        ) : (
-                          <Camera size={12} className="text-love group-hover:scale-110 transition-transform" />
-                        )}
-                        <span className="text-[8px] font-black uppercase tracking-widest text-ink">
-                          {analyzing ? 'Escaneando...' : 'Escanear Ticket'}
-                        </span>
-                        <input 
-                          type="file" 
-                          accept="image/*" 
-                          capture="environment" 
-                          className="hidden" 
-                          onChange={handleReceiptScan}
-                          disabled={analyzing}
-                        />
-                      </label>
                     </div>
                     <div className="relative">
                       <span className="absolute left-4 md:left-6 top-1/2 -translate-y-1/2 text-xl md:text-2xl font-black text-slate-300">$</span>
