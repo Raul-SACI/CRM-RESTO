@@ -993,6 +993,25 @@ export function Admin() {
           {isSidebarExpanded && <span>Vista Cliente</span>}
         </button>
 
+        <button
+          onClick={() => {
+            // No simulamos rol: el admin solo navega a la pantalla del mozo
+            // para ver exactamente lo que el mozo usa. Vuelve al panel cuando quiera.
+            setIsSimulatingClient(false);
+            window.location.hash = '#/waiter';
+          }}
+          className={cn(
+            "flex items-center justify-center bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-ink dark:text-white transition-all shadow-sm active:scale-95 cursor-pointer mt-2",
+            isSidebarExpanded
+              ? "w-full gap-2 px-4 py-3 text-[10px] font-black uppercase tracking-widest rounded-2xl"
+              : "w-11 h-11 p-0 rounded-xl lg:mx-auto"
+          )}
+          title="Ver la pantalla de carga de puntos tal como la usa el mozo"
+        >
+          <UserPlus size={13} className="text-love" />
+          {isSidebarExpanded && <span>Vista Mozo</span>}
+        </button>
+
         <div className={cn(
           "flex flex-row lg:flex-col p-1 lg:p-0 bg-slate-100 dark:bg-slate-950 lg:bg-transparent rounded-2xl border border-slate-200 dark:border-slate-800 lg:border-none overflow-x-auto lg:overflow-x-visible scrollbar-hide lg:w-full",
           isSidebarExpanded ? "lg:space-y-1.5" : "lg:space-y-3 lg:items-center"
