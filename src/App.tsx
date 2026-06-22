@@ -445,7 +445,16 @@ export default function App() {
       // Optimismo: Cerramos sesión localmente primero para feedback instantáneo
       setUser(null);
       setProfile(null);
-      localStorage.clear();
+      // Clear ONLY session-related items so configurations (custom users, design configs, roles) are preserved!
+      localStorage.removeItem('custom_user_session');
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('profile_')) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(k => localStorage.removeItem(k));
       sessionStorage.clear();
       
       // En segundo plano cerramos en Supabase
