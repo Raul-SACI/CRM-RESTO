@@ -215,6 +215,15 @@ export function Dashboard() {
 
   const soonToExpire = Math.max(0, Math.min(profile?.points || 0, soonEarned));
 
+  const isPurchaseExpired = (purchaseDate: string, days: number): boolean => {
+    const d = new Date(purchaseDate);
+    if (isNaN(d.getTime())) return false;
+    const limit = new Date(d.getFullYear(), d.getMonth(), d.getDate() + days);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return today > limit;
+  };
+
   const calculateComboBalances = (txList: Transaction[], availableCombos: any[]) => {
     const balances: Record<string, { title: string; totalPurchased: number; totalUsed: number; imageUrl?: string; price: number }> = {};
 
@@ -227,9 +236,14 @@ export function Dashboard() {
         if (lastUnderscore !== -1) {
           const id = comboPart.slice(0, lastUnderscore);
           const uses = parseInt(comboPart.slice(lastUnderscore + 1)) || 0;
-          
+
+          const matchedMeta = availableCombos.find(c => c.id === id);
+          const expDays = (matchedMeta && (matchedMeta as any).expirationDays) || 30;
+          if (tx.created_at && isPurchaseExpired(tx.created_at, expDays)) {
+            return; // compra vencida: no suma usos
+          }
+
           if (!balances[id]) {
-            const matchedMeta = availableCombos.find(c => c.id === id);
             balances[id] = { 
               title, 
               totalPurchased: 0, 
@@ -1271,6 +1285,11 @@ export function Dashboard() {
                         </span>
                       </div>
                     </div>
+
+                    <p className="text-[8px] text-slate-500 font-bold uppercase tracking-wide mt-2 flex items-center gap-1">
+                      <Clock size={9} className="text-love shrink-0" />
+                      Tenés {combo.expirationDays || 30} días para consumirlo desde la compra
+                    </p>
                   </div>
 
                   <div className="mt-3">

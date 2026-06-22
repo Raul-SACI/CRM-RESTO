@@ -52,6 +52,17 @@ export function MyCombos() {
     return transactions;
   };
 
+  // Devuelve true si una compra (fecha) ya pasó su plazo de días.
+  // Usa fechas locales a nivel de día para no correrse por zona horaria.
+  const isPurchaseExpired = (purchaseDate: string, days: number): boolean => {
+    const d = new Date(purchaseDate);
+    if (isNaN(d.getTime())) return false;
+    const limit = new Date(d.getFullYear(), d.getMonth(), d.getDate() + days);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return today > limit;
+  };
+
   const calculateComboBalances = (txList: Transaction[], availableCombos: any[]) => {
     const balances: Record<string, { title: string; totalPurchased: number; totalUsed: number; imageUrl?: string; price: number }> = {};
 
@@ -64,9 +75,15 @@ export function MyCombos() {
         if (lastUnderscore !== -1) {
           const id = comboPart.slice(0, lastUnderscore);
           const uses = parseInt(comboPart.slice(lastUnderscore + 1)) || 0;
-          
+
+          // Vencimiento: si la compra ya venció, sus usos no cuentan.
+          const matchedMeta = availableCombos.find(c => c.id === id);
+          const expDays = (matchedMeta && (matchedMeta as any).expirationDays) || 30;
+          if (tx.created_at && isPurchaseExpired(tx.created_at, expDays)) {
+            return; // compra vencida: no suma usos
+          }
+
           if (!balances[id]) {
-            const matchedMeta = availableCombos.find(c => c.id === id);
             balances[id] = { 
               title, 
               totalPurchased: 0, 

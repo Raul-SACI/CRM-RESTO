@@ -132,7 +132,8 @@ export function Admin() {
     price: 65000,
     totalUses: 5,
     imageUrl: '',
-    isActive: true
+    isActive: true,
+    expirationDays: 30
   });
 
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
@@ -1582,7 +1583,7 @@ export function Admin() {
                             type="button"
                             onClick={() => {
                               setEditingComboId(combo.id);
-                              setComboForm(combo);
+                              setComboForm({ ...combo, expirationDays: (combo as any).expirationDays || 30 });
                             }}
                             className="flex-1 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-ink dark:text-white rounded-xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer border-none"
                           >
@@ -1641,7 +1642,8 @@ export function Admin() {
                           price: 65000,
                           totalUses: 5,
                           imageUrl: '',
-                          isActive: true
+                          isActive: true,
+                          expirationDays: 30
                         });
                       }} 
                       className="space-y-4"
@@ -1683,6 +1685,19 @@ export function Admin() {
                             className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-xs outline-none focus:border-love text-ink dark:text-white font-bold transition-all"
                             value={comboForm.totalUses}
                             onChange={(e) => setComboForm({ ...comboForm, totalUses: parseInt(e.target.value) || 1 })}
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="block text-[9px] uppercase font-black text-slate-400 tracking-widest pl-1">Vencimiento (días para consumir)</label>
+                          <input
+                            type="number"
+                            required
+                            min="1"
+                            placeholder="30"
+                            className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-xs outline-none focus:border-love text-ink dark:text-white font-bold transition-all"
+                            value={comboForm.expirationDays}
+                            onChange={(e) => setComboForm({ ...comboForm, expirationDays: parseInt(e.target.value) || 1 })}
                           />
                         </div>
 
@@ -1762,7 +1777,8 @@ export function Admin() {
                                 price: 65000,
                                 totalUses: 5,
                                 imageUrl: '',
-                                isActive: true
+                                isActive: true,
+                                expirationDays: 30
                               });
                             }}
                             className="px-6 py-3 bg-slate-200 dark:bg-slate-850 text-slate-500 rounded-xl text-xs uppercase font-black tracking-widest hover:bg-slate-350 cursor-pointer border-none"

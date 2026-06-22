@@ -43,6 +43,7 @@ export interface ComboConfig {
   totalUses: number;
   imageUrl?: string;
   isActive: boolean;
+  expirationDays?: number;
 }
 
 export interface DesignConfig {
