@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { supabase } from '@/src/lib/supabase';
 import { motion } from 'motion/react';
-import { User, Mail, Lock, CreditCard, Calendar } from 'lucide-react';
+import { User, Mail, Lock, CreditCard, Calendar, Info, AlertTriangle, ExternalLink } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { getCustomUsers } from '@/src/lib/permissions';
 
@@ -9,6 +9,7 @@ export function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showGoogleGuide, setShowGoogleGuide] = useState(false);
 
   const [formData, setFormData] = useState({
     email: '',
@@ -113,7 +114,7 @@ export function Auth() {
     }
   };
 
-  const handleGoogleLogin = async () => {
+  const executeGoogleLogin = async () => {
     setLoading(true);
     setError(null);
     try {
@@ -129,6 +130,10 @@ export function Auth() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGoogleLoginClick = () => {
+    setShowGoogleGuide(true);
   };
 
   return (
@@ -238,7 +243,7 @@ export function Auth() {
 
           <button
             type="button"
-            onClick={handleGoogleLogin}
+            onClick={handleGoogleLoginClick}
             disabled={loading}
             className="w-full flex items-center justify-center bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/80 rounded-xl py-3.5 px-4 font-black text-[10px] uppercase tracking-widest transition-all disabled:opacity-50 active:scale-[0.98] cursor-pointer"
           >
@@ -261,6 +266,67 @@ export function Auth() {
           </div>
         </motion.div>
       </div>
+
+      {showGoogleGuide && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, y: 15 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-[2rem] p-6 max-w-md w-full shadow-2xl space-y-5 text-left text-ink dark:text-white"
+          >
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-amber-500/10 rounded-2xl flex items-center justify-center shrink-0 text-amber-500">
+                <AlertTriangle size={24} />
+              </div>
+              <div className="flex-1 space-y-1">
+                <h3 className="text-base font-black uppercase tracking-tight text-slate-900 dark:text-white">
+                  Ingreso con Google
+                </h3>
+                <p className="text-[11px] text-slate-400 font-extrabold uppercase tracking-widest">
+                  Requiere Configuración en Supabase
+                </p>
+              </div>
+            </div>
+
+            <div className="text-xs text-slate-600 dark:text-slate-300 space-y-3 leading-relaxed">
+              <p>
+                Por motivos de seguridad, la autenticación de Google se gestiona de forma directa a través de tu proyecto de base de datos en <strong>Supabase</strong>.
+              </p>
+              
+              <div className="bg-slate-50 dark:bg-slate-950/40 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-2.5">
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Cómo configurar Google en 3 pasos:</p>
+                <ol className="list-decimal pl-4 space-y-1.5 text-[11px] text-slate-600 dark:text-slate-300">
+                  <li>Inicia sesión en tu consola de <strong>Supabase</strong>.</li>
+                  <li>Ve a <strong className="text-love">Authentication</strong> &gt; <strong className="text-love">Providers</strong> &gt; <strong>Google</strong> y activa el interruptor.</li>
+                  <li>Escribe tu <strong>Client ID</strong> y <strong>Client Secret</strong> provistos por Google Cloud Console.</li>
+                </ol>
+              </div>
+
+              <p className="text-[10px] font-semibold text-slate-400 italic">
+                Si tú eres el administrador y ya agregaste las credenciales de Google OAuth en el panel de Supabase, puedes proceder a continuación.
+              </p>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={() => setShowGoogleGuide(false)}
+                className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer border-none text-center"
+              >
+                Volver
+              </button>
+              <button
+                onClick={() => {
+                  setShowGoogleGuide(false);
+                  executeGoogleLogin();
+                }}
+                className="flex-1 py-3 bg-love text-white hover:bg-opacity-90 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-red transition-all cursor-pointer border-none text-center flex items-center justify-center gap-1.5"
+              >
+                Continuar <ExternalLink size={12} />
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }
