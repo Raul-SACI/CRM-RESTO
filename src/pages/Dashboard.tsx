@@ -1221,7 +1221,7 @@ export function Dashboard() {
           <div className="flex justify-between items-center px-1">
             <div className="flex items-center gap-1.5">
               <Ticket size={16} className="text-love" />
-              <h3 className="text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white" style={{ fontFamily: designConfig?.fontHeadings || 'inherit' }}>Comprá Combos</h3>
+              <h3 className="text-sm font-black uppercase tracking-wider !text-slate-900" style={{ fontFamily: designConfig?.fontHeadings || 'inherit' }}>Comprá Combos</h3>
             </div>
             <span className="text-[8px] bg-love/15 text-love px-2 py-0.5 rounded-full font-black uppercase tracking-wider animate-pulse">Precios Promo</span>
           </div>
@@ -1292,7 +1292,7 @@ export function Dashboard() {
           <div className="flex justify-between items-center px-1">
             <div className="flex items-center gap-1.5">
               <Gift size={16} className="text-love" />
-              <h4 className="text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white" style={{ fontFamily: designConfig?.fontHeadings || 'inherit' }}>Recomendados para canje</h4>
+              <h4 className="text-sm font-black uppercase tracking-wider !text-slate-900" style={{ fontFamily: designConfig?.fontHeadings || 'inherit' }}>Recomendados para canje</h4>
             </div>
             <span className="text-[8px] uppercase font-extrabold text-slate-400">Tus Premios</span>
           </div>
@@ -1336,7 +1336,7 @@ export function Dashboard() {
         <div className="space-y-3">
           <div className="flex items-center gap-1.5 px-1">
             <MapPin size={16} className="text-love" />
-            <h4 className="text-sm font-black uppercase tracking-wider text-slate-900 dark:text-white" style={{ fontFamily: designConfig?.fontHeadings || 'inherit' }}>Sucursales</h4>
+            <h4 className="text-sm font-black uppercase tracking-wider !text-slate-900" style={{ fontFamily: designConfig?.fontHeadings || 'inherit' }}>Sucursales</h4>
           </div>
 
           <div className="space-y-2.5">

@@ -227,7 +227,9 @@ export default function App() {
     } else {
       root.classList.remove('dark');
     }
-    localStorage.setItem('theme', theme);
+    // El cliente (o vista cliente) nunca debe quedar en modo oscuro: si quedó
+    // guardado 'dark' de una sesión admin, lo dejamos claro para él.
+    localStorage.setItem('theme', isClient ? 'light' : theme);
   }, [theme, profile, isSimulatingClient]);
 
   const toggleTheme = () => {
