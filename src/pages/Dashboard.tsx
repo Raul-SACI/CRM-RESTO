@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '@/src/App';
 import QRCode from 'react-qr-code';
 import { motion, AnimatePresence } from 'motion/react';
@@ -21,6 +21,9 @@ export function Dashboard() {
   const { profile, realProfile, refreshProfile, isSimulatingClient, simDevice } = useAuth();
   const { designConfig, saveDesignConfig, loading: designLoading } = useDesign();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  // Candado para que el retorno de pago de Mercado Pago se procese UNA sola vez
+  // por carga de pagina, aunque el efecto se vuelva a disparar.
+  const mpProcessingRef = useRef(false);
   const [settings, setSettings] = useState<SystemSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -126,7 +129,15 @@ export function Dashboard() {
       if (localStr) {
         const localTxs = JSON.parse(localStr);
         const combined = [...localTxs, ...transactions];
-        return combined.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
+        const seen = new Set<string>();
+        return combined.filter((t: any) => {
+          const fingerprint = t.id || `${t.invoice_number || ''}|${t.description || ''}`;
+          const altFingerprint = `${t.invoice_number || ''}|${t.description || ''}`;
+          if (seen.has(fingerprint) || seen.has(altFingerprint)) return false;
+          seen.add(fingerprint);
+          seen.add(altFingerprint);
+          return true;
+        });
       }
     } catch(e) {}
     return transactions;
@@ -455,13 +466,21 @@ export function Dashboard() {
     const comboTitle = params.get('combo_title') || 'Abono Adquirido';
     const totalUses = parseInt(params.get('totalUses') || '0') || 5;
     const price = parseFloat(params.get('price') || '0') || 0;
-    const paymentId = params.get('payment_id') || params.get('preference_id') || ('sim_' + Date.now());
+    // ID de pago: usar el real de Mercado Pago. Si por algun motivo no llega,
+    // NO inventamos uno con la hora (cambia cada milisegundo y causa duplicados):
+    // usamos una clave estable por combo para que el anti-duplicado funcione.
+    const paymentId = params.get('payment_id') || params.get('preference_id') || ('mp_' + comboId);
 
     if ((paymentStatus === 'success' || paymentStatus === 'approved') && comboId) {
+      // Candado en memoria: si ya estamos procesando un retorno de pago en esta
+      // carga de pagina, no lo hacemos de nuevo aunque el efecto se re-dispare.
+      if (mpProcessingRef.current) return;
+
       const processedKey = `processed_mp_tx_${paymentId}_${comboId}`;
       const isAlreadyProcessed = localStorage.getItem(processedKey);
 
       if (!isAlreadyProcessed) {
+        mpProcessingRef.current = true;
         localStorage.setItem(processedKey, 'true');
         
         const conversionRate = settings?.points_conversion_rate || 1000;
@@ -481,6 +500,24 @@ export function Dashboard() {
 
         const executeLogging = async () => {
           try {
+            // Red de seguridad: si ya hay una compra de este combo para este
+            // cliente en los ultimos 10 minutos, no registrar de nuevo.
+            const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+            const { data: recentDup } = await supabase
+              .from('transactions')
+              .select('id')
+              .eq('client_id', profile.id)
+              .gte('created_at', tenMinAgo)
+              .ilike('description', `COMPRA_COMBO: ${comboId}\\_%`)
+              .limit(1);
+
+            if (recentDup && recentDup.length > 0) {
+              // Ya estaba registrada; limpiamos la URL y salimos sin duplicar.
+              const cleanHashDup = window.location.hash.split('?')[0];
+              window.history.replaceState(null, '', window.location.pathname + cleanHashDup);
+              return;
+            }
+
             // Guardar en el cache local de transacciones
             const existingStr = localStorage.getItem(`local_txs_${profile.id}`);
             const existing = existingStr ? JSON.parse(existingStr) : [];

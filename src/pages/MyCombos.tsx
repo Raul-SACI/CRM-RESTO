@@ -53,7 +53,15 @@ export function MyCombos() {
       if (localStr) {
         const localTxs = JSON.parse(localStr);
         const combined = [...localTxs, ...transactions];
-        return combined.filter((v, i, a) => a.findIndex(t => t.id === v.id) === i);
+        const seen = new Set<string>();
+        return combined.filter((t: any) => {
+          const fingerprint = t.id || `${t.invoice_number || ''}|${t.description || ''}`;
+          const altFingerprint = `${t.invoice_number || ''}|${t.description || ''}`;
+          if (seen.has(fingerprint) || seen.has(altFingerprint)) return false;
+          seen.add(fingerprint);
+          seen.add(altFingerprint);
+          return true;
+        });
       }
     } catch(e) {}
     return transactions;
@@ -315,7 +323,7 @@ export function MyCombos() {
           transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
           className="w-10 h-10 border-2 border-love border-t-transparent rounded-full mb-6"
         />
-        <h2 className="text-xl font-bold mb-2 uppercase tracking-tighter text-ink dark:text-white">
+        <h2 className="text-xl font-bold mb-2 uppercase tracking-tighter !text-slate-900">
           Sincronizando Combos
         </h2>
         <p className="text-slate-400 text-[10px] uppercase tracking-widest">Espera un momento...</p>
@@ -336,7 +344,7 @@ export function MyCombos() {
           <Ticket size={20} />
         </div>
         <div>
-          <h2 className="text-xl font-black uppercase text-black dark:text-white leading-none tracking-tight">Mis Combos</h2>
+          <h2 className="text-xl font-black uppercase !text-slate-900 leading-none tracking-tight">Mis Combos</h2>
           <p className="text-[10px] text-slate-400 mt-1 uppercase font-black tracking-widest">Pases comprados, usos y tienda de abonos</p>
         </div>
       </div>
@@ -345,7 +353,7 @@ export function MyCombos() {
       <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none space-y-5">
         <div className="flex items-center gap-2">
           <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-          <h3 className="text-xs font-black uppercase tracking-wider text-black dark:text-white">
+          <h3 className="text-xs font-black uppercase tracking-wider !text-slate-900">
             Combos Adquiridos
           </h3>
         </div>
@@ -459,7 +467,7 @@ export function MyCombos() {
       <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none space-y-5">
         <div className="flex items-center gap-2">
           <div className="w-2.5 h-2.5 rounded-full bg-love animate-ping" />
-          <h3 className="text-xs font-black uppercase tracking-wider text-black dark:text-white">
+          <h3 className="text-xs font-black uppercase tracking-wider !text-slate-900">
             Tienda de Abonos
           </h3>
         </div>

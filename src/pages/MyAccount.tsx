@@ -139,7 +139,7 @@ export function MyAccount() {
           transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
           className="w-10 h-10 border-2 border-love border-t-transparent rounded-full mb-6"
         />
-        <h2 className="text-xl font-bold mb-2 uppercase tracking-tighter text-ink dark:text-white">
+        <h2 className="text-xl font-bold mb-2 uppercase tracking-tighter !text-slate-900">
           Sincronizando Cuenta
         </h2>
         <p className="text-slate-400 text-[10px] uppercase tracking-widest">Espera un momento...</p>
@@ -157,7 +157,7 @@ export function MyAccount() {
           <User size={20} />
         </div>
         <div>
-          <h2 className="text-xl font-black uppercase text-black dark:text-white leading-none tracking-tight">Mi Cuenta</h2>
+          <h2 className="text-xl font-black uppercase !text-slate-900 leading-none tracking-tight">Mi Cuenta</h2>
           <p className="text-[10px] text-slate-400 mt-1 uppercase font-black tracking-widest">Gestiona tus datos de acceso, credenciales e historial</p>
         </div>
       </div>
@@ -166,7 +166,7 @@ export function MyAccount() {
       <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none space-y-5 text-left">
         <div className="flex items-center gap-2">
           <User size={16} className="text-love" />
-          <h3 className="text-xs font-black uppercase tracking-wider text-black dark:text-white">Datos Personales</h3>
+          <h3 className="text-xs font-black uppercase tracking-wider !text-slate-900">Datos Personales</h3>
         </div>
 
         <form onSubmit={handleUpdateProfile} className="space-y-4">
@@ -222,7 +222,7 @@ export function MyAccount() {
       <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none space-y-5 text-left">
         <div className="flex items-center gap-2">
           <Key size={16} className="text-love" />
-          <h3 className="text-xs font-black uppercase tracking-wider text-black dark:text-white">Cambiar Contraseña</h3>
+          <h3 className="text-xs font-black uppercase tracking-wider !text-slate-900">Cambiar Contraseña</h3>
         </div>
 
         <form onSubmit={handleUpdatePassword} className="space-y-4">
@@ -291,7 +291,7 @@ export function MyAccount() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <History size={16} className="text-love" />
-            <h3 className="text-xs font-black uppercase tracking-wider text-black dark:text-white">Mis Movimientos</h3>
+            <h3 className="text-xs font-black uppercase tracking-wider !text-slate-900">Mis Movimientos</h3>
           </div>
           <button 
             onClick={fetchTransactions}

@@ -183,7 +183,7 @@ export function Rewards() {
           transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
           className="w-10 h-10 border-2 border-love border-t-transparent rounded-full mb-6"
         />
-        <h2 className="text-xl font-bold mb-2 uppercase tracking-tighter text-ink dark:text-white">
+        <h2 className="text-xl font-bold mb-2 uppercase tracking-tighter !text-slate-900">
           Sincronizando Premios
         </h2>
         <p className="text-slate-400 text-[10px] uppercase tracking-widest">Espera un momento...</p>
@@ -201,7 +201,7 @@ export function Rewards() {
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-love rounded-lg flex items-center justify-center font-bold text-xl uppercase shadow-lg shadow-love/30 text-white">P</div>
           <div>
-            <h2 className="text-lg font-black tracking-tighter uppercase leading-none text-ink">Premios <span className="text-love">& Regalos</span></h2>
+            <h2 className="text-lg font-black tracking-tighter uppercase leading-none !text-slate-900">Premios <span className="text-love">& Regalos</span></h2>
             <p className="text-[10px] uppercase tracking-widest text-slate-400 mt-1 font-bold">Canjea tus puntos acumulados</p>
           </div>
         </div>
@@ -303,13 +303,13 @@ export function Rewards() {
 
               {ratingSubmitted ? (
                 <div className="py-6 animate-pulse">
-                  <h3 className="text-2xl font-black text-ink dark:text-white uppercase italic">¡Muchas Gracias!</h3>
+                  <h3 className="text-2xl font-black !text-slate-900 uppercase italic">¡Muchas Gracias!</h3>
                   <p className="text-slate-500 dark:text-slate-400 text-xs font-bold mt-2 uppercase tracking-widest">Tus opiniones nos ayudan a mejorar el sistema.</p>
                 </div>
               ) : (
                 <form onSubmit={handleSubmitRating} className="space-y-6">
                   <div>
-                    <h3 className="text-xl font-black uppercase tracking-tight text-ink dark:text-white">Puntúa el Club CRAFT</h3>
+                    <h3 className="text-xl font-black uppercase tracking-tight !text-slate-900">Puntúa el Club CRAFT</h3>
                     <p className="text-slate-400 dark:text-slate-500 text-[10px] font-semibold mt-1.5 leading-normal">
                       ¿Qué te pareció el canje de <span className="font-extrabold text-love">"{lastPrize?.title}"</span> y tu experiencia con el sistema de puntos?
                     </p>
