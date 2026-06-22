@@ -838,12 +838,21 @@ export function Dashboard() {
           <div className="relative w-20 h-20">
             {/* Cuerpo de la taza con el café que se llena */}
             <div className="absolute inset-x-2 bottom-0 top-2 rounded-b-3xl rounded-t-lg border-[3px] border-ink overflow-hidden bg-white">
+              {/* CRAFT oscuro (visible sobre el fondo blanco, antes de que suba el café) */}
+              <span className="absolute inset-0 flex items-center justify-center text-ink font-black text-[10px] tracking-tight uppercase select-none">CRAFT</span>
+              {/* Café que sube */}
               <motion.div
-                className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#5b3a1f] to-[#a9703f]"
+                className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#5b3a1f] to-[#a9703f] overflow-hidden"
                 initial={{ height: "0%" }}
                 animate={{ height: ["8%", "85%", "8%"] }}
                 transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}
-              />
+              >
+                {/* CRAFT claro: vive dentro del café, alineado al fondo de la taza,
+                    así aparece "a través" del café a medida que sube */}
+                <div className="absolute left-0 right-0 bottom-0 h-20 flex items-center justify-center">
+                  <span className="text-white/90 font-black text-[10px] tracking-tight uppercase select-none">CRAFT</span>
+                </div>
+              </motion.div>
             </div>
             {/* Asa */}
             <div className="absolute right-[-6px] top-5 w-4 h-7 border-[3px] border-ink rounded-r-full" />
@@ -852,7 +861,7 @@ export function Dashboard() {
           </div>
         </div>
         <h2 className="text-xl font-bold mb-2 uppercase tracking-tighter text-ink">
-          {profile?.role === 'admin' ? 'Cargando Dashboard Administrativo' : 'Sincronizando Perfil'}
+          {profile?.role === 'admin' ? 'Cargando Dashboard Administrativo' : 'Cargando tus puntos'}
         </h2>
         <p className="text-slate-400 text-[10px] uppercase tracking-widest mb-8">Espera un momento...</p>
         
