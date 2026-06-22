@@ -999,7 +999,7 @@ export function Admin() {
               clients: 'Clientes',
               prizes: 'Premios',
               combos: 'Combos Prepago',
-              staff: 'Acceso / Permisos',
+              staff: 'Staff',
               history: 'Movimientos',
               settings: 'Ajustes',
               design: 'Diseño',

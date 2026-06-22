@@ -90,32 +90,80 @@ function AppRoutes() {
         
         <Route 
           path="/" 
-          element={user ? <Layout><Dashboard /></Layout> : <Navigate to="/auth" state={{ from: location }} replace />} 
+          element={
+            user ? (
+              realProfile?.role === 'waiter'
+                ? <Navigate to="/waiter" replace />
+                : <Layout><Dashboard /></Layout>
+            ) : (
+              <Navigate to="/auth" state={{ from: location }} replace />
+            )
+          } 
         />
         
         <Route 
           path="/rewards" 
-          element={user ? <Layout><Rewards /></Layout> : <Navigate to="/auth" state={{ from: location }} replace />} 
+          element={
+            user ? (
+              realProfile?.role === 'waiter'
+                ? <Navigate to="/waiter" replace />
+                : <Layout><Rewards /></Layout>
+            ) : (
+              <Navigate to="/auth" state={{ from: location }} replace />
+            )
+          } 
         />
 
         <Route 
           path="/help" 
-          element={user ? <Layout><Help /></Layout> : <Navigate to="/auth" state={{ from: location }} replace />} 
+          element={
+            user ? (
+              realProfile?.role === 'waiter'
+                ? <Navigate to="/waiter" replace />
+                : <Layout><Help /></Layout>
+            ) : (
+              <Navigate to="/auth" state={{ from: location }} replace />
+            )
+          } 
         />
 
         <Route 
           path="/branches" 
-          element={user ? <Layout><Branches /></Layout> : <Navigate to="/auth" state={{ from: location }} replace />} 
+          element={
+            user ? (
+              realProfile?.role === 'waiter'
+                ? <Navigate to="/waiter" replace />
+                : <Layout><Branches /></Layout>
+            ) : (
+              <Navigate to="/auth" state={{ from: location }} replace />
+            )
+          } 
         />
 
         <Route 
           path="/my-combos" 
-          element={user ? <Layout><MyCombos /></Layout> : <Navigate to="/auth" state={{ from: location }} replace />} 
+          element={
+            user ? (
+              realProfile?.role === 'waiter'
+                ? <Navigate to="/waiter" replace />
+                : <Layout><MyCombos /></Layout>
+            ) : (
+              <Navigate to="/auth" state={{ from: location }} replace />
+            )
+          } 
         />
 
         <Route 
           path="/my-account" 
-          element={user ? <Layout><MyAccount /></Layout> : <Navigate to="/auth" state={{ from: location }} replace />} 
+          element={
+            user ? (
+              realProfile?.role === 'waiter'
+                ? <Navigate to="/waiter" replace />
+                : <Layout><MyAccount /></Layout>
+            ) : (
+              <Navigate to="/auth" state={{ from: location }} replace />
+            )
+          } 
         />
         
         <Route 

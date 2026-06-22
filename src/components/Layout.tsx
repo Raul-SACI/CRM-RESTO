@@ -195,7 +195,7 @@ export function Layout({ children }: LayoutProps) {
             "hidden sm:flex",
             (isSimulatingClient && simDevice === 'phone') && "!hidden"
           )}>
-            {resolvedOrder.map((route, idx) => {
+            {realProfile?.role !== 'waiter' && resolvedOrder.map((route, idx) => {
               const data = routesMap[route];
               if (!data) return null;
 
@@ -288,6 +288,7 @@ export function Layout({ children }: LayoutProps) {
               );
             })}
 
+
             {(hasPermission(profile?.role, 'cargar_puntos') || hasPermission(realProfile?.role, 'cargar_puntos')) && (
               <NavLink to="/waiter" className={({ isActive }) => `px-3 md:px-4 py-1.5 md:py-2 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-tighter transition-all shrink-0 ${isActive ? 'bg-love text-white shadow-lg shadow-love/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400'}`}>
                 Carga de Puntos
@@ -337,61 +338,63 @@ export function Layout({ children }: LayoutProps) {
         </main>
 
         {/* Bottom Floating Navigation Dock - Renders on actual Mobile and Simulated Phone */}
-        <div className={cn(
-          "z-[90] transition-all duration-300",
-          (isSimulatingClient && simDevice === 'phone') 
-            ? "sticky bottom-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 p-2.5 flex justify-around shrink-0 -mx-4 -mb-4 rounded-b-[1.7rem] shadow-[0_-8px_30px_rgba(0,0,0,0.08)]" 
-            : "fixed bottom-0 left-0 right-0 sm:hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border-t border-slate-200/60 dark:border-slate-800 px-2 py-2 shadow-[0_-8px_25px_rgba(0,0,0,0.06)] flex items-center justify-around z-[90]"
-        )}>
-          {[
-            { label: 'Inicio', to: '/', icon: <Home size={19} /> },
-            { label: 'Premios', to: '/rewards', icon: <Gift size={19} /> },
-            { label: 'Mis combos', to: '/my-combos', icon: <Ticket size={19} /> },
-            { label: 'Mi Cuenta', to: '/my-account', icon: <User size={19} /> },
-            { label: 'Ayuda', to: '/help', icon: <HelpCircle size={19} /> }
-          ].map((item) => (
-            <NavLink 
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) => cn(
-                "flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-2xl transition-all cursor-pointer border-none text-center bg-transparent shrink-0",
-                isActive 
-                  ? "scale-105" 
-                  : "hover:text-slate-600 dark:hover:text-slate-300"
-              )}
-            >
-              {({ isActive }) => (
-                <>
-                  <div className={cn(
-                    "transition-transform duration-200",
-                    isActive ? "scale-110 text-love" : "text-slate-600 dark:text-slate-400"
-                  )}>
-                    {item.icon}
-                  </div>
-                  <span className={cn(
-                    "text-[7px] uppercase tracking-wider font-extrabold transition-colors duration-200",
-                    isActive ? "text-love font-black" : "text-slate-600 dark:text-slate-400"
-                  )}>
-                    {item.label}
-                  </span>
-                </>
-              )}
-            </NavLink>
-          ))}
+        {realProfile?.role !== 'waiter' && (
+          <div className={cn(
+            "z-[90] transition-all duration-300",
+            (isSimulatingClient && simDevice === 'phone') 
+              ? "sticky bottom-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 p-2.5 flex justify-around shrink-0 -mx-4 -mb-4 rounded-b-[1.7rem] shadow-[0_-8px_30px_rgba(0,0,0,0.08)]" 
+              : "fixed bottom-0 left-0 right-0 sm:hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border-t border-slate-200/60 dark:border-slate-800 px-2 py-2 shadow-[0_-8px_25px_rgba(0,0,0,0.06)] flex items-center justify-around z-[90]"
+          )}>
+            {[
+              { label: 'Inicio', to: '/', icon: <Home size={19} /> },
+              { label: 'Premios', to: '/rewards', icon: <Gift size={19} /> },
+              { label: 'Mis combos', to: '/my-combos', icon: <Ticket size={19} /> },
+              { label: 'Mi Cuenta', to: '/my-account', icon: <User size={19} /> },
+              { label: 'Ayuda', to: '/help', icon: <HelpCircle size={19} /> }
+            ].map((item) => (
+              <NavLink 
+                key={item.to}
+                to={item.to}
+                className={({ isActive }) => cn(
+                  "flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-2xl transition-all cursor-pointer border-none text-center bg-transparent shrink-0",
+                  isActive 
+                    ? "scale-105" 
+                    : "hover:text-slate-600 dark:hover:text-slate-300"
+                )}
+              >
+                {({ isActive }) => (
+                  <>
+                    <div className={cn(
+                      "transition-transform duration-200",
+                      isActive ? "scale-110 text-love" : "text-slate-600 dark:text-slate-400"
+                    )}>
+                      {item.icon}
+                    </div>
+                    <span className={cn(
+                      "text-[7px] uppercase tracking-wider font-extrabold transition-colors duration-200",
+                      isActive ? "text-love font-black" : "text-slate-600 dark:text-slate-400"
+                    )}>
+                      {item.label}
+                    </span>
+                  </>
+                )}
+              </NavLink>
+            ))}
 
-          {/* mobile logout button at the very end */}
-          <button 
-            onClick={handleLogout}
-            className="flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-2xl transition-all cursor-pointer border-none text-center bg-transparent shrink-0 group"
-          >
-            <div className="transition-transform duration-200 text-slate-600 dark:text-slate-400 group-hover:text-love group-hover:scale-110">
-              <LogOut size={19} />
-            </div>
-            <span className="text-[7px] uppercase tracking-wider font-extrabold text-slate-600 dark:text-slate-400 group-hover:text-love transition-colors duration-200">
-              Salir
-            </span>
-          </button>
-        </div>
+            {/* mobile logout button at the very end */}
+            <button 
+              onClick={handleLogout}
+              className="flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-2xl transition-all cursor-pointer border-none text-center bg-transparent shrink-0 group"
+            >
+              <div className="transition-transform duration-200 text-slate-600 dark:text-slate-400 group-hover:text-love group-hover:scale-110">
+                <LogOut size={19} />
+              </div>
+              <span className="text-[7px] uppercase tracking-wider font-extrabold text-slate-600 dark:text-slate-400 group-hover:text-love transition-colors duration-200">
+                Salir
+              </span>
+            </button>
+          </div>
+        )}
 
           </div>
         </div>
