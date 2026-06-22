@@ -27,15 +27,8 @@ export function Rewards() {
 
   useEffect(() => {
     const fetchPrizes = async () => {
-      // 1. Cargar desde caché para velocidad instantánea
-      const cached = localStorage.getItem('rewards_cache');
-      if (cached) {
-        try {
-          setPrizes(JSON.parse(cached));
-        } catch (e) {
-          console.error("Rewards cache error:", e);
-        }
-      }
+      // Siempre mostramos lo que viene de la base. El cache solo se usa como
+      // respaldo si la base falla (ver catch).
 
       // Timeout de seguridad de 6s
       const timeout = setTimeout(() => {
@@ -59,6 +52,11 @@ export function Rewards() {
         }
       } catch (err) {
         console.error("Rewards fetch error:", err);
+        // Respaldo: si la base no responde, mostramos el ultimo cache conocido.
+        const cached = localStorage.getItem('rewards_cache');
+        if (cached) {
+          try { setPrizes(JSON.parse(cached)); } catch (e) {}
+        }
       } finally {
         clearTimeout(timeout);
         setLoading(false);

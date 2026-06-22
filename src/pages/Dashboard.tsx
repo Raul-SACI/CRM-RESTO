@@ -297,14 +297,7 @@ export function Dashboard() {
 
   const fetchClientData = async () => {
     if (!profile) return;
-    const cached = localStorage.getItem(`tx_cache_${profile.id}`);
-    if (cached) {
-      try {
-        setTransactions(JSON.parse(cached));
-      } catch (e) {
-        console.error("TX cache error:", e);
-      }
-    }
+    // Siempre desde la base. El cache solo se usa como respaldo si falla (catch).
 
     const { data, error } = await supabase
       .from('transactions')
@@ -319,6 +312,12 @@ export function Dashboard() {
         localStorage.setItem(`tx_cache_${profile.id}`, JSON.stringify(data));
       } catch (e) {
         console.warn("[LocalStorage] No se pudo guardar tx_cache por límite de cuota:", e);
+      }
+    } else if (error) {
+      // Respaldo: si la base no responde, usamos el ultimo cache conocido.
+      const cached = localStorage.getItem(`tx_cache_${profile.id}`);
+      if (cached) {
+        try { setTransactions(JSON.parse(cached)); } catch (e) {}
       }
     }
   };
@@ -652,16 +651,7 @@ export function Dashboard() {
       };
 
       const fetchPopularPrizes = async () => {
-        const cached = localStorage.getItem('rewards_cache');
-        if (cached && isMounted) {
-          try {
-            const allPrizes: Prize[] = JSON.parse(cached);
-            setPopularPrizes(allPrizes.filter(p => p.is_active).slice(0, 3));
-          } catch (e) {
-            console.error("Popular rewards cache error:", e);
-          }
-        }
-
+        // Siempre desde la base; sin precarga de cache.
         try {
           const { data, error } = await supabase
             .from('catalogo_premios')
@@ -1381,7 +1371,7 @@ export function Dashboard() {
                     </div>
                     <div className="space-y-0.5 text-left flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2.5">
-                        <h5 className="text-[11px] font-black uppercase text-ink dark:text-white tracking-tight">{branch.name}</h5>
+                        <h5 className="text-[11px] font-black uppercase text-ink dark:text-white tracking-tight">{branch.name || branch.address}</h5>
                         <span className="text-[7px] text-slate-400 font-extrabold uppercase shrink-0">
                           {isExpanded ? "Cerrar ▲" : "Ver Más ▼"}
                         </span>
@@ -1389,7 +1379,7 @@ export function Dashboard() {
                       <p className="text-[9px] text-slate-400 font-bold truncate uppercase">{branch.address} • {branch.city}</p>
                       <p className="text-[8px] text-slate-400 flex items-center gap-1">
                         <Clock size={10} className="text-slate-400 shrink-0" />
-                        <span>Lun a Vie: {branch.hoursWeekday || '08:00 - 20:00'}</span>
+                        <span>Todos los días: 08:00 a 01:00 hs</span>
                       </p>
                     </div>
                   </div>
