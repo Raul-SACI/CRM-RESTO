@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { LogOut, Home, Gift, User, ShieldCheck, Moon, Sun, HelpCircle, FileText, ChevronRight, X, ArrowLeft, ArrowRight, Palette, Check, MapPin, Ticket } from 'lucide-react';
 import { supabase } from '@/src/lib/supabase';
 import { useAuth, useTheme } from '@/src/App';
@@ -17,6 +17,10 @@ export function Layout({ children }: LayoutProps) {
   const { theme, toggleTheme } = useTheme();
   const { designConfig, saveDesignConfig } = useDesign();
   const navigate = useNavigate();
+  const location = useLocation();
+  // En la pantalla de Admin ocultamos la barra superior: la navegación
+  // se hace por el menú lateral. No aplica cuando se está simulando cliente.
+  const isAdminPage = location.pathname.startsWith('/admin') && !isSimulatingClient;
 
   const [showFAQ, setShowFAQ] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
@@ -154,6 +158,7 @@ export function Layout({ children }: LayoutProps) {
             "w-full mx-auto flex-1 flex flex-col",
             !(isSimulatingClient && simDevice !== 'pc') && "max-w-[1800px] px-4 md:px-8"
           )}>
+            {!isAdminPage && (
             <header className={cn(
               "mt-2 md:mt-6 bg-white dark:bg-slate-900 p-3 md:p-4 rounded-xl md:rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none flex justify-between items-center sticky z-50",
               (isSimulatingClient && simDevice === 'pc') ? "top-14" : "top-2 md:top-6"
@@ -332,6 +337,7 @@ export function Layout({ children }: LayoutProps) {
           )}
         </nav>
         </header>
+            )}
         
         <main className="flex-1 w-full py-4 md:py-6 mt-2 md:mt-4">
           {children}

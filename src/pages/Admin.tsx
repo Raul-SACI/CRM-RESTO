@@ -2,11 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '@/src/lib/supabase';
 import { Profile, Prize, Transaction, SystemSettings } from '@/src/types';
 import { motion, AnimatePresence } from 'motion/react';
-import { Users, Gift, Settings, Search, Plus, Trash2, Pencil, Calendar, Award, History, DollarSign, Upload, Image as ImageIcon, FileSpreadsheet, UserPlus, X, Palette, Home, User, Star, MessageSquare, FileText, HelpCircle, LogOut, MapPin, ChevronLeft, ChevronRight, Package } from 'lucide-react';
+import { Users, Gift, Settings, Search, Plus, Trash2, Pencil, Calendar, Award, History, DollarSign, Upload, Image as ImageIcon, FileSpreadsheet, UserPlus, X, Palette, Home, User, Star, MessageSquare, FileText, HelpCircle, LogOut, MapPin, ChevronLeft, ChevronRight, Package, Moon, Sun } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import * as XLSX from 'xlsx';
 import { useDesign, COLOR_PRESETS, CORNER_PRESETS, AVAILABLE_FONTS, type DesignConfig, type BannerConfig } from '@/src/components/DesignEngine';
-import { useAuth } from '@/src/App';
+import { useAuth, useTheme } from '@/src/App';
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell, PieChart, Pie } from 'recharts';
 import { 
@@ -22,7 +22,8 @@ import {
 } from '@/src/lib/permissions';
 
 export function Admin() {
-  const { isSimulatingClient, setIsSimulatingClient } = useAuth();
+  const { isSimulatingClient, setIsSimulatingClient, signOut } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'clients' | 'prizes' | 'combos' | 'staff' | 'history' | 'settings' | 'design' | 'feedback'>('dashboard');
   
   // Custom permissions module states
@@ -1039,6 +1040,39 @@ export function Admin() {
               </button>
             );
           })}
+        </div>
+
+        {/* Acciones inferiores: modo oscuro y cerrar sesión (antes estaban en la barra superior) */}
+        <div className={cn(
+          "hidden lg:flex flex-col gap-1.5 mt-3 pt-3 border-t border-slate-200 dark:border-slate-800",
+          !isSidebarExpanded && "items-center"
+        )}>
+          <button
+            onClick={toggleTheme}
+            className={cn(
+              "flex items-center rounded-xl text-[10px] md:text-sm font-black uppercase tracking-wider transition-all whitespace-nowrap text-slate-405 dark:text-slate-400 hover:text-ink dark:hover:text-white lg:hover:bg-slate-50 lg:dark:hover:bg-slate-800/50",
+              isSidebarExpanded
+                ? "gap-2.5 px-4 lg:px-5 py-2.5 lg:py-3.5 lg:w-full lg:justify-start"
+                : "justify-center p-3 lg:w-12 lg:h-12"
+            )}
+            title={theme === 'light' ? 'Modo Oscuro' : 'Modo Claro'}
+          >
+            {theme === 'light' ? <Moon size={14} /> : <Sun size={14} />}
+            {isSidebarExpanded && <span>{theme === 'light' ? 'Modo Oscuro' : 'Modo Claro'}</span>}
+          </button>
+          <button
+            onClick={signOut}
+            className={cn(
+              "flex items-center rounded-xl text-[10px] md:text-sm font-black uppercase tracking-wider transition-all whitespace-nowrap text-rose-500 hover:text-white hover:bg-rose-500",
+              isSidebarExpanded
+                ? "gap-2.5 px-4 lg:px-5 py-2.5 lg:py-3.5 lg:w-full lg:justify-start"
+                : "justify-center p-3 lg:w-12 lg:h-12"
+            )}
+            title="Cerrar Sesión"
+          >
+            <LogOut size={14} />
+            {isSidebarExpanded && <span>Cerrar Sesión</span>}
+          </button>
         </div>
       </div>
 
