@@ -1371,7 +1371,7 @@ export function Dashboard() {
                     </div>
                     <div className="space-y-0.5 text-left flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2.5">
-                        <h5 className="text-[11px] font-black uppercase text-ink dark:text-white tracking-tight">{branch.name || branch.address}</h5>
+                        <h5 className="text-[11px] font-black uppercase !text-slate-900 tracking-tight">{branch.name || branch.address}</h5>
                         <span className="text-[7px] text-slate-400 font-extrabold uppercase shrink-0">
                           {isExpanded ? "Cerrar ▲" : "Ver Más ▼"}
                         </span>
