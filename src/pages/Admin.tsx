@@ -1090,10 +1090,10 @@ export function Admin() {
     <div className="flex flex-col lg:flex-row gap-6 md:gap-8 items-start w-full">
       {/* Menú Lateral Izquierdo (Admin Sidebar) */}
       <div className={cn(
-        "shrink-0 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none flex flex-col gap-6 lg:sticky lg:top-24 transition-all duration-300",
+        "shrink-0 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-5 lg:sticky lg:top-24 transition-all duration-300",
         isSidebarExpanded 
-          ? "w-full lg:w-64 xl:w-72 p-6 rounded-[2rem]" 
-          : "w-full lg:w-20 p-4 rounded-3xl"
+          ? "w-full lg:w-64 xl:w-72 p-5 rounded-2xl" 
+          : "w-full lg:w-20 p-4 rounded-2xl"
       )}>
         <div className={cn(
           "flex items-center justify-between",
@@ -1105,7 +1105,7 @@ export function Admin() {
                 CLUB <span className="text-love">CRAFT</span>
               </h2>
               <p className="text-[9px] md:text-[10px] uppercase tracking-[0.25em] text-slate-400 font-bold font-mono">
-                Sistemas & Control
+                Panel Administrativo
               </p>
             </div>
           ) : (
@@ -1275,6 +1275,29 @@ export function Admin() {
 
       {/* Área de Contenido Principal - Derecha */}
       <div className="flex-1 w-full space-y-6">
+        {/* Encabezado de sección (estilo sistema de gestión) */}
+        {(() => {
+          const heads: Record<string, { t: string; s: string }> = {
+            dashboard: { t: 'Dashboard', s: 'Resumen de ventas, canjes y clientes' },
+            clients: { t: 'Clientes', s: 'Base de datos de miembros del programa' },
+            prizes: { t: 'Premios', s: 'Catálogo de premios canjeables' },
+            combos: { t: 'Combos Prepago', s: 'Productos prepagos y abonos' },
+            staff: { t: 'Staff', s: 'Control de accesos y permisos' },
+            history: { t: 'Movimientos', s: 'Registro de transacciones' },
+            notifications: { t: 'Notificaciones', s: 'Avisos manuales y campañas' },
+            autonotif: { t: 'Avisos Automáticos', s: 'Cumpleaños, vencimientos e inactividad' },
+            settings: { t: 'Ajustes', s: 'Configuración general del programa' },
+            design: { t: 'Diseño', s: 'Apariencia y contenido de la app' },
+            feedback: { t: 'Opiniones', s: 'Valoraciones de los miembros' }
+          };
+          const h = heads[activeTab] || { t: '', s: '' };
+          return (
+            <div className="border-b border-slate-200 dark:border-slate-800 pb-4 mb-2">
+              <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tighter italic text-ink dark:text-white leading-none">{h.t}</h1>
+              <p className="text-[10px] uppercase tracking-[0.18em] text-slate-400 font-bold font-mono mt-1.5">{h.s}</p>
+            </div>
+          );
+        })()}
         {loading ? (
           <div className="py-20 text-center animate-pulse text-slate-450 dark:text-slate-505 uppercase font-black tracking-widest text-[10px] italic bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-100 dark:border-slate-800 p-8 shadow-sm">Cargando datos del panel...</div>
         ) : (
