@@ -1304,6 +1304,32 @@ export function Admin() {
           <>
           {activeTab === 'dashboard' && (
             <div className="space-y-6">
+              {/* Grid de Métricas Rápidas (arriba) */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-col items-center">
+                  <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Total Recaudado</p>
+                  <p className="text-lg font-black text-ink mt-1 font-mono">
+                    ${dashboardData.filteredTransactions.reduce((acc, tx) => acc + (tx.amount || 0), 0).toLocaleString('es-AR')}
+                  </p>
+                </div>
+                <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-col items-center">
+                  <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Puntos Emitidos</p>
+                  <p className="text-lg font-black text-love mt-1 font-mono">
+                    {dashboardData.filteredTransactions.reduce((acc, tx) => acc + (tx.points_earned || 0), 0).toLocaleString()}
+                  </p>
+                </div>
+                <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-col items-center">
+                  <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Prom Ticket</p>
+                  <p className="text-lg font-black text-ink mt-1 font-mono">
+                    ${dashboardData.filteredTransactions.length > 0 ? (dashboardData.filteredTransactions.reduce((acc, tx) => acc + (tx.amount || 0), 0) / dashboardData.filteredTransactions.length).toLocaleString('es-AR', { maximumFractionDigits: 0 }) : '0'}
+                  </p>
+                </div>
+                <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-col items-center">
+                   <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Transacciones</p>
+                   <p className="text-lg font-black text-ink mt-1 font-mono">{dashboardData.filteredTransactions.length}</p>
+                </div>
+              </div>
+
               {/* Filters */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-wrap gap-2 items-center">
@@ -1373,22 +1399,31 @@ export function Admin() {
                   </div>
                   <div className="h-[300px]">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={dashboardData.clientData} layout="vertical" margin={{ left: 40, right: 20 }}>
-                        <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
-                        <XAxis type="number" hide />
-                        <YAxis 
-                          type="category" 
-                          dataKey="name" 
-                          width={100} 
+                      <BarChart data={dashboardData.clientData} margin={{ left: 10, right: 10, top: 10, bottom: 10 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                        <XAxis
+                          type="category"
+                          dataKey="name"
                           tick={{ fontSize: 9, fontWeight: 700, fill: '#64748b' }}
                           axisLine={false}
                           tickLine={false}
+                          interval={0}
+                          angle={-25}
+                          textAnchor="end"
+                          height={60}
+                        />
+                        <YAxis
+                          type="number"
+                          tick={{ fontSize: 8, fontWeight: 700, fill: '#64748b' }}
+                          axisLine={false}
+                          tickLine={false}
+                          tickFormatter={(v: number) => `$${(v / 1000).toLocaleString('es-AR')}k`}
                         />
                         <Tooltip 
                           contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '10px', fontWeight: 800 }}
                           formatter={(val: number) => [`$${val.toLocaleString('es-AR')}`, 'Total Gastado']}
                         />
-                        <Bar dataKey="total" fill="#FF4757" radius={[0, 4, 4, 0]} barSize={20} />
+                        <Bar dataKey="total" fill="#FF4757" radius={[4, 4, 0, 0]} barSize={36} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -1471,32 +1506,6 @@ export function Admin() {
                       )}
                     </div>
                   </div>
-                </div>
-              </div>
-
-              {/* Grid de Métricas Rápidas */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center">
-                  <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Total Recaudado</p>
-                  <p className="text-lg font-black text-ink mt-1">
-                    ${dashboardData.filteredTransactions.reduce((acc, tx) => acc + (tx.amount || 0), 0).toLocaleString('es-AR')}
-                  </p>
-                </div>
-                <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center">
-                  <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Puntos Emitidos</p>
-                  <p className="text-lg font-black text-love mt-1">
-                    {dashboardData.filteredTransactions.reduce((acc, tx) => acc + (tx.points_earned || 0), 0).toLocaleString()}
-                  </p>
-                </div>
-                <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center">
-                  <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Prom Ticket</p>
-                  <p className="text-lg font-black text-ink mt-1">
-                    ${dashboardData.filteredTransactions.length > 0 ? (dashboardData.filteredTransactions.reduce((acc, tx) => acc + (tx.amount || 0), 0) / dashboardData.filteredTransactions.length).toLocaleString('es-AR', { maximumFractionDigits: 0 }) : '0'}
-                  </p>
-                </div>
-                <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center">
-                   <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Transacciones</p>
-                   <p className="text-lg font-black text-ink mt-1">{dashboardData.filteredTransactions.length}</p>
                 </div>
               </div>
             </div>
