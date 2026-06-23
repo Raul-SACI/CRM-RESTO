@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/src/lib/supabase';
+import { notifyClient } from '@/src/lib/notify';
 import { motion, AnimatePresence } from 'motion/react';
 import { Prize } from '@/src/types';
 import { Gift, Sparkles, ChevronRight, Star, X } from 'lucide-react';
@@ -95,6 +96,14 @@ export function Rewards() {
         .eq('id', profile.id);
 
       if (updateError) throw updateError;
+
+      // Aviso automático al cliente (campanita + email)
+      notifyClient({
+        clientId: profile.id,
+        clientEmail: (profile as any).email,
+        title: '¡Canjeaste un premio en CRAFT!',
+        message: `Canjeaste "${prize.title}" por ${prize.points_cost} puntos. Tu código de canje es ${redemptionCode}. ¡Presentalo en el local para retirarlo!`
+      });
 
       setLastPrize(prize);
       setGeneratedCode(redemptionCode);

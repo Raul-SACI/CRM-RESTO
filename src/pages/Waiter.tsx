@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/src/lib/supabase';
+import { notifyClient } from '@/src/lib/notify';
 import { useAuth } from '@/src/App';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, Receipt, PlusCircle, CheckCircle2, AlertCircle, QrCode, X } from 'lucide-react';
@@ -360,6 +361,14 @@ export function Waiter() {
 
       console.log("Points updated successfully!");
 
+      // Aviso automático al cliente (campanita + email)
+      notifyClient({
+        clientId: client.id,
+        clientEmail: (client as any).email,
+        title: '¡Sumaste puntos en CRAFT!',
+        message: `Acabás de sumar ${pointsToAdd} puntos por tu consumo de $${amountNum.toLocaleString('es-AR')} en ${selectedBranch}. ¡Gracias por elegirnos!`
+      });
+
       setStatus({ 
         type: 'success', 
         message: `¡Éxito! +${pointsToAdd} pts para ${client.full_name}.` 
@@ -547,6 +556,12 @@ export function Waiter() {
 
                                       if (!error) {
                                         setStatus({ type: 'success', message: `¡Consumo validado! Descontando 1 uso de "${combo.title}" con éxito.` });
+                                        notifyClient({
+                                          clientId: client.id,
+                                          clientEmail: (client as any).email,
+                                          title: 'Usaste un consumo de tu combo',
+                                          message: `Se descontó 1 uso de "${combo.title}". Te quedan ${Math.max(0, (combo.remaining || 1) - 1)} consumos disponibles.`
+                                        });
                                         fetchClientTransactions(client.id);
                                       } else {
                                         alert("Error al descontar consumo: " + error.message);

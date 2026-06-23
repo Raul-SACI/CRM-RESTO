@@ -9,6 +9,7 @@ import {
   Pencil, Check, Ticket, MapPin, Clock, Phone, Loader2
 } from 'lucide-react';
 import { supabase } from '@/src/lib/supabase';
+import { notifyClient } from '@/src/lib/notify';
 import { Transaction, SystemSettings, Profile, Prize } from '@/src/types';
 import { cn } from '@/src/lib/utils';
 import { useDesign } from '@/src/components/DesignEngine';
@@ -538,6 +539,14 @@ export function Dashboard() {
               .from('profiles')
               .update({ points: (profile.points || 0) + bonusPoints })
               .eq('id', profile.id);
+
+            // Aviso automático al cliente (campanita + email)
+            notifyClient({
+              clientId: profile.id,
+              clientEmail: (profile as any).email,
+              title: '¡Compraste un combo en CRAFT!',
+              message: `Tu compra de "${comboTitle}" se confirmó con éxito. Ya tenés ${totalUses} usos disponibles. ¡Además sumaste ${bonusPoints} puntos!`
+            });
 
             // Refrescar el perfil de autenticación para actualizar puntos en la app
             if (refreshProfile) {
