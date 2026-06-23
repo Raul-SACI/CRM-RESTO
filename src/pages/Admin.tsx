@@ -2678,6 +2678,43 @@ export function Admin() {
 
           {activeTab === 'history' && (
             <div className="space-y-4">
+              {/* Resumen por tipo de movimiento */}
+              {(() => {
+                let cargas = 0, canjes = 0, compras = 0, usos = 0;
+                allTransactions
+                  .filter(tx => selectedBranchFilter === 'Todas' || tx.branch === selectedBranchFilter)
+                  .forEach(tx => {
+                  const d = (tx.description || '').toUpperCase().trim();
+                  if (d.startsWith('CANJE:')) canjes++;
+                  else if (d.startsWith('COMPRA_COMBO:')) compras++;
+                  else if (d.startsWith('CONSUMO_COMBO:')) usos++;
+                  else if ((tx.points_earned || 0) > 0) cargas++;
+                });
+                const rows = [
+                  { label: 'Carga de Puntos', value: cargas, color: 'text-emerald-600' },
+                  { label: 'Canjes', value: canjes, color: 'text-red-500' },
+                  { label: 'Compra de Productos', value: compras, color: 'text-amber-600' },
+                  { label: 'Uso de Pase por Compra', value: usos, color: 'text-ink dark:text-white' }
+                ];
+                return (
+                  <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
+                    <div className="px-5 py-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-950">
+                      <h3 className="text-xs font-black uppercase tracking-widest text-ink dark:text-white flex items-center gap-2">
+                        <History size={15} className="text-love" /> Resumen por tipo de movimiento
+                      </h3>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-slate-100 dark:divide-slate-800">
+                      {rows.map(r => (
+                        <div key={r.label} className="p-4 flex flex-col items-center text-center">
+                          <p className="text-[8px] font-black uppercase tracking-widest text-slate-400 leading-tight">{r.label}</p>
+                          <p className={cn("text-2xl font-black mt-1 font-mono", r.color)}>{r.value.toLocaleString('es-AR')}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
               <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
                 <div className="flex flex-wrap gap-2 items-center">
                   <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 mr-2">Filtro Período:</span>
