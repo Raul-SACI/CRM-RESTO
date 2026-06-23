@@ -36,7 +36,8 @@ export function Admin() {
   const defaultAutoNotif = {
     birthday: { enabled: true, message: '¡Feliz cumple, {nombre}! Que tengas un día genial. Te esperamos en CRAFT.', giftPoints: 0 },
     comboExpiring: { enabled: true, message: '¡Atención {nombre}! A tu combo "{combo}" le quedan {dias} días para usarlo. ¡Te esperamos en CRAFT!', daysBefore: 7 },
-    inactive: { enabled: true, message: 'Hace tiempo que no te vemos, {nombre}. ¡Volvé a CRAFT y seguí sumando puntos!', daysInactive: 60, giftPoints: 0 }
+    inactive: { enabled: true, message: 'Hace tiempo que no te vemos, {nombre}. ¡Volvé a CRAFT y seguí sumando puntos!', daysInactive: 60, giftPoints: 0 },
+    levelUp: { enabled: true, message: '¡Felicitaciones {nombre}! Subiste a la categoría {categoria}. ¡Gracias por ser parte de CRAFT!', giftPoints: 0 }
   };
   const [autoNotifForm, setAutoNotifForm] = useState<any>(defaultAutoNotif);
   const [autoNotifSaving, setAutoNotifSaving] = useState(false);
@@ -385,7 +386,8 @@ export function Admin() {
         setAutoNotifForm({
           birthday: { ...defaultAutoNotif.birthday, ...(saved.birthday || {}) },
           comboExpiring: { ...defaultAutoNotif.comboExpiring, ...(saved.comboExpiring || {}) },
-          inactive: { ...defaultAutoNotif.inactive, ...(saved.inactive || {}) }
+          inactive: { ...defaultAutoNotif.inactive, ...(saved.inactive || {}) },
+          levelUp: { ...defaultAutoNotif.levelUp, ...(saved.levelUp || {}) }
         });
       }
     } else if (activeTab === 'design' || activeTab === 'combos') {
@@ -4278,6 +4280,26 @@ export function Admin() {
                         value={autoNotifForm.inactive.giftPoints}
                         onChange={(e) => setAutoNotifForm({ ...autoNotifForm, inactive: { ...autoNotifForm.inactive, giftPoints: parseInt(e.target.value) || 0 } })} />
                     </div>
+                  </div>
+                </div>
+
+                {/* SUBIÓ DE CATEGORÍA */}
+                <div className="border border-slate-100 dark:border-slate-800 rounded-2xl p-4 mb-5">
+                  <label className="flex items-center justify-between mb-3 cursor-pointer">
+                    <span className="text-xs font-black uppercase tracking-wider !text-slate-900">⭐ Subió de categoría</span>
+                    <input type="checkbox" className="w-4 h-4 accent-love cursor-pointer"
+                      checked={autoNotifForm.levelUp?.enabled ?? true}
+                      onChange={(e) => setAutoNotifForm({ ...autoNotifForm, levelUp: { ...autoNotifForm.levelUp, enabled: e.target.checked } })} />
+                  </label>
+                  <p className="text-[9px] text-slate-400 mb-2 pl-1">Se envía al instante cuando el cliente sube de nivel (FAN → GOLD → BLACK). Podés usar <span className="font-black">{'{categoria}'}</span>.</p>
+                  <textarea rows={2} className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs outline-none focus:border-love text-ink dark:text-white resize-none mb-2"
+                    value={autoNotifForm.levelUp?.message ?? ''}
+                    onChange={(e) => setAutoNotifForm({ ...autoNotifForm, levelUp: { ...autoNotifForm.levelUp, message: e.target.value } })} />
+                  <div className="flex items-center gap-2">
+                    <label className="text-[9px] uppercase font-black text-slate-400 tracking-widest">Puntos de regalo al subir:</label>
+                    <input type="number" min="0" className="w-24 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-love text-ink dark:text-white font-bold"
+                      value={autoNotifForm.levelUp?.giftPoints ?? 0}
+                      onChange={(e) => setAutoNotifForm({ ...autoNotifForm, levelUp: { ...autoNotifForm.levelUp, giftPoints: parseInt(e.target.value) || 0 } })} />
                   </div>
                 </div>
 

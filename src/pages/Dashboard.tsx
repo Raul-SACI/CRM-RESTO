@@ -9,7 +9,7 @@ import {
   Pencil, Check, Ticket, MapPin, Clock, Phone, Loader2
 } from 'lucide-react';
 import { supabase } from '@/src/lib/supabase';
-import { notifyClient } from '@/src/lib/notify';
+import { notifyClient, checkLevelUp } from '@/src/lib/notify';
 import { Transaction, SystemSettings, Profile, Prize } from '@/src/types';
 import { cn } from '@/src/lib/utils';
 import { useDesign } from '@/src/components/DesignEngine';
@@ -546,6 +546,20 @@ export function Dashboard() {
               clientEmail: (profile as any).email,
               title: '¡Compraste un combo en CRAFT!',
               message: `Tu compra de "${comboTitle}" se confirmó con éxito. Ya tenés ${totalUses} usos disponibles. ¡Además sumaste ${bonusPoints} puntos!`
+            });
+
+            // ¿Subió de categoría con los puntos de la compra?
+            const oldP = profile.points || 0;
+            const newP = oldP + bonusPoints;
+            const tiersC = ((designConfig as any)?.loyaltyTiers || []).map((t: any) => ({ name: t.name, minPoints: t.minPoints }));
+            const lvlCfg = (designConfig as any)?.autoNotif?.levelUp;
+            checkLevelUp({
+              client: { id: profile.id, full_name: profile.full_name, email: (profile as any).email, points: newP },
+              oldPoints: oldP, newPoints: newP, tiers: tiersC, cfg: lvlCfg
+            }).then(async (gift) => {
+              if (gift > 0) {
+                await supabase.from('profiles').update({ points: newP + gift }).eq('id', profile.id);
+              }
             });
 
             // Refrescar el perfil de autenticación para actualizar puntos en la app

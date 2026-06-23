@@ -51,6 +51,7 @@ export interface AutoNotifConfig {
   birthday: { enabled: boolean; message: string; giftPoints: number };
   comboExpiring: { enabled: boolean; message: string; daysBefore: number };
   inactive: { enabled: boolean; message: string; daysInactive: number; giftPoints: number };
+  levelUp?: { enabled: boolean; message: string; giftPoints: number };
 }
 
 export interface DesignConfig {
@@ -306,6 +307,11 @@ export const DEFAULT_DESIGN: DesignConfig = {
       enabled: true,
       message: 'Hace tiempo que no te vemos, {nombre}. Volvé a CRAFT y seguí sumando puntos. ¡Te esperamos!',
       daysInactive: 60,
+      giftPoints: 0
+    },
+    levelUp: {
+      enabled: true,
+      message: '¡Felicitaciones {nombre}! Subiste a la categoría {categoria}. ¡Gracias por ser parte de CRAFT!',
       giftPoints: 0
     }
   },

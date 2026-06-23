@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/src/lib/supabase';
-import { notifyClient } from '@/src/lib/notify';
+import { notifyClient, checkLevelUp } from '@/src/lib/notify';
 import { useAuth } from '@/src/App';
 import { motion, AnimatePresence } from 'motion/react';
 import { Search, Receipt, PlusCircle, CheckCircle2, AlertCircle, QrCode, X } from 'lucide-react';
@@ -367,6 +367,24 @@ export function Waiter() {
         clientEmail: (client as any).email,
         title: '¡Sumaste puntos en CRAFT!',
         message: `Acabás de sumar ${pointsToAdd} puntos por tu consumo de $${amountNum.toLocaleString('es-AR')} en ${selectedBranch}. ¡Gracias por elegirnos!`
+      });
+
+      // ¿Subió de categoría con esta carga?
+      const oldPts = client.points || 0;
+      const newPts = oldPts + pointsToAdd;
+      const tiers = (designConfig?.loyaltyTiers || []).map((t: any) => ({ name: t.name, minPoints: t.minPoints }));
+      const levelCfg = (designConfig as any)?.autoNotif?.levelUp;
+      checkLevelUp({
+        client: { id: client.id, full_name: client.full_name, email: (client as any).email, points: newPts },
+        oldPoints: oldPts,
+        newPoints: newPts,
+        tiers,
+        cfg: levelCfg
+      }).then(async (gift) => {
+        if (gift > 0) {
+          // Sumamos el regalo al saldo (la transacción ya quedó registrada)
+          await supabase.from('profiles').update({ points: newPts + gift }).eq('id', client.id);
+        }
       });
 
       setStatus({ 
