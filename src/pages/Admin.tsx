@@ -1098,7 +1098,7 @@ export function Admin() {
     <div className="flex flex-col lg:flex-row gap-6 md:gap-8 items-start w-full">
       {/* Menú Lateral Izquierdo (Admin Sidebar) */}
       <div className={cn(
-        "shrink-0 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-5 lg:sticky lg:top-6 transition-all duration-300",
+        "shrink-0 bg-white dark:bg-[#7f1d1d] border border-slate-200 dark:border-[#991b1b] shadow-sm flex flex-col gap-5 lg:sticky lg:top-6 transition-all duration-300",
         isSidebarExpanded 
           ? "w-full lg:w-64 xl:w-72 p-5 rounded-2xl" 
           : "w-full lg:w-20 p-4 rounded-2xl"
@@ -1110,9 +1110,9 @@ export function Admin() {
           {isSidebarExpanded ? (
             <div>
               <h2 className="text-xl md:text-2xl font-black uppercase tracking-tighter italic text-ink dark:text-white">
-                CLUB <span className="text-love">CRAFT</span>
+                CLUB <span className="text-love dark:text-white">CRAFT</span>
               </h2>
-              <p className="text-[9px] md:text-[10px] uppercase tracking-[0.25em] text-slate-400 font-bold font-mono">
+              <p className="text-[9px] md:text-[10px] uppercase tracking-[0.25em] text-slate-400 dark:text-white/50 font-bold font-mono">
                 Panel Administrativo
               </p>
             </div>
@@ -1124,7 +1124,7 @@ export function Admin() {
           
           <button
             onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
-            className="p-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-705 text-slate-400 dark:text-slate-400 transition-colors border-none cursor-pointer flex items-center justify-center"
+            className="p-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-black/20 dark:hover:bg-black/30 text-slate-400 dark:text-white/80 transition-colors border-none cursor-pointer flex items-center justify-center"
             title={isSidebarExpanded ? "Minimizar Menú" : "Expandir Menú"}
           >
             {isSidebarExpanded ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
@@ -1137,7 +1137,7 @@ export function Admin() {
             window.location.hash = '#/';
           }}
           className={cn(
-            "flex items-center justify-center bg-slate-950 hover:bg-slate-900 dark:bg-slate-800 dark:hover:bg-slate-700 text-white transition-all shadow-lg shadow-slate-950/15 active:scale-95 cursor-pointer",
+            "flex items-center justify-center bg-slate-950 hover:bg-slate-900 dark:bg-black/25 dark:hover:bg-black/40 text-white transition-all shadow-lg shadow-slate-950/15 active:scale-95 cursor-pointer",
             isSidebarExpanded 
               ? "w-full gap-2 px-4 py-3 text-[10px] font-black uppercase tracking-widest rounded-2xl" 
               : "w-11 h-11 p-0 rounded-xl lg:mx-auto"
@@ -1156,7 +1156,7 @@ export function Admin() {
             window.location.hash = '#/waiter';
           }}
           className={cn(
-            "flex items-center justify-center bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-ink dark:text-white transition-all shadow-sm active:scale-95 cursor-pointer mt-2",
+            "flex items-center justify-center bg-slate-100 hover:bg-slate-200 dark:bg-black/25 dark:hover:bg-black/40 text-ink dark:text-white transition-all shadow-sm active:scale-95 cursor-pointer mt-2",
             isSidebarExpanded
               ? "w-full gap-2 px-4 py-3 text-[10px] font-black uppercase tracking-widest rounded-2xl"
               : "w-11 h-11 p-0 rounded-xl lg:mx-auto"
@@ -1216,8 +1216,8 @@ export function Admin() {
                     ? "gap-2.5 px-3 lg:px-4 py-2 lg:py-2.5 lg:w-full lg:justify-start"
                     : "justify-center p-3 lg:w-12 lg:h-12 lg:mx-auto",
                   activeTab === tab
-                    ? "bg-love text-white shadow-md shadow-love/25"
-                    : "text-slate-500 dark:text-slate-400 hover:text-ink dark:hover:text-white lg:hover:bg-slate-100 lg:dark:hover:bg-slate-800/50"
+                    ? "bg-love text-white shadow-md shadow-love/25 dark:bg-white dark:text-[#7f1d1d]"
+                    : "text-slate-500 hover:text-ink lg:hover:bg-slate-100 dark:text-white/70 dark:hover:text-white dark:hover:bg-white/10"
                 )}
                 title={labels[tab]}
               >
@@ -1233,7 +1233,7 @@ export function Admin() {
                   <div key={g.title} className={cn("contents lg:block", isSidebarExpanded ? "lg:mb-2" : "")}>
                     {isSidebarExpanded && (
                       <p className={cn(
-                        "hidden lg:block text-[8px] uppercase tracking-[0.2em] font-black text-slate-300 dark:text-slate-600 px-4 mb-2",
+                        "hidden lg:block text-[8px] uppercase tracking-[0.2em] font-black text-slate-300 dark:text-white/40 px-4 mb-2",
                         gi > 0 ? "mt-5" : "mt-1"
                       )}>
                         {g.title}
@@ -1249,26 +1249,13 @@ export function Admin() {
 
         {/* Acciones inferiores: cerrar sesión */}
         <div className={cn(
-          "hidden lg:flex flex-col gap-1.5 mt-3 pt-3 border-t border-slate-200 dark:border-slate-800",
+          "hidden lg:flex flex-col gap-1.5 mt-3 pt-3 border-t border-slate-200 dark:border-white/15",
           !isSidebarExpanded && "items-center"
         )}>
           <button
             onClick={signOut}
             className={cn(
-              "flex items-center rounded-xl text-[10px] md:text-sm font-black uppercase tracking-wider transition-all whitespace-nowrap text-rose-500 hover:text-white hover:bg-rose-500",
-              isSidebarExpanded
-                ? "gap-2.5 px-4 lg:px-5 py-2.5 lg:py-3.5 lg:w-full lg:justify-start"
-                : "justify-center p-3 lg:w-12 lg:h-12"
-            )}
-            title="Cerrar Sesión"
-          >
-            <LogOut size={14} />
-            {isSidebarExpanded && <span>Cerrar Sesión</span>}
-          </button>
-          <button
-            onClick={signOut}
-            className={cn(
-              "flex items-center rounded-xl text-[10px] md:text-sm font-black uppercase tracking-wider transition-all whitespace-nowrap text-rose-500 hover:text-white hover:bg-rose-500",
+              "flex items-center rounded-xl text-[10px] md:text-sm font-black uppercase tracking-wider transition-all whitespace-nowrap text-rose-500 dark:text-white hover:text-white hover:bg-rose-500 dark:hover:bg-white/15",
               isSidebarExpanded
                 ? "gap-2.5 px-4 lg:px-5 py-2.5 lg:py-3.5 lg:w-full lg:justify-start"
                 : "justify-center p-3 lg:w-12 lg:h-12"
