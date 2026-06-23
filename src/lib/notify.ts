@@ -16,9 +16,13 @@ interface NotifyParams {
 export async function notifyClient({ clientId, clientEmail, title, message, sendEmail = true }: NotifyParams) {
   // 1) Guardar el aviso en la app (campanita)
   try {
-    await supabase.from('notifications').insert([{ client_id: clientId, title, message }]);
+    const { error } = await supabase.from('notifications').insert([{ client_id: clientId, title, message }]);
+    if (error) {
+      // Supabase devuelve el error en .error (no lo lanza), por eso lo revisamos acá.
+      console.warn('No se pudo guardar la notificación en la app:', error.message, error);
+    }
   } catch (e) {
-    console.warn('No se pudo guardar la notificación en la app:', e);
+    console.warn('Excepción al guardar la notificación en la app:', e);
   }
 
   // 2) Enviar email (opcional)
