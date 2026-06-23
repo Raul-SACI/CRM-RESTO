@@ -370,7 +370,7 @@ export function MyCombos() {
         </div>
         <div>
           <h2 className="text-xl font-black uppercase !text-slate-900 leading-none tracking-tight">Mis Combos</h2>
-          <p className="text-[10px] text-slate-400 mt-1 uppercase font-black tracking-widest">Pases comprados, usos y tienda de abonos</p>
+          <p className="text-[10px] text-slate-400 mt-1 uppercase font-black tracking-widest">Productos comprados, usos y Tienda CRAFT</p>
         </div>
       </div>
 
@@ -379,7 +379,7 @@ export function MyCombos() {
         <div className="flex items-center gap-2">
           <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
           <h3 className="text-xs font-black uppercase tracking-wider !text-slate-900">
-            Combos Adquiridos
+            Productos Adquiridos
           </h3>
         </div>
 
@@ -493,7 +493,7 @@ export function MyCombos() {
         <div className="flex items-center gap-2">
           <div className="w-2.5 h-2.5 rounded-full bg-love animate-ping" />
           <h3 className="text-xs font-black uppercase tracking-wider !text-slate-900">
-            Tienda de Abonos
+            Tienda CRAFT
           </h3>
         </div>
 
@@ -517,7 +517,13 @@ export function MyCombos() {
                 </div>
 
                 <div className="text-right shrink-0">
-                  <p className="text-xs font-black text-love">${combo.price.toLocaleString('es-AR')}</p>
+                  {(combo as any).normalPrice && (combo as any).normalPrice > combo.price && (
+                    <p className="text-[9px] text-slate-400 font-bold line-through leading-none">${(combo as any).normalPrice.toLocaleString('es-AR')}</p>
+                  )}
+                  <p className="text-sm font-black text-love leading-none mt-0.5">${combo.price.toLocaleString('es-AR')}</p>
+                  {(combo as any).normalPrice && (combo as any).normalPrice > combo.price && (
+                    <p className="text-[7px] text-emerald-600 font-black uppercase tracking-wide mt-0.5">Ahorrás ${((combo as any).normalPrice - combo.price).toLocaleString('es-AR')}</p>
+                  )}
                   <button
                     type="button"
                     onClick={() => {
@@ -610,6 +616,9 @@ export function MyCombos() {
                   <p className="text-[11px] text-slate-400 font-semibold">Ahorra con packs de productos premium</p>
                 </div>
                 <div className="text-right">
+                  {(selectedComboForPurchase as any).normalPrice && (selectedComboForPurchase as any).normalPrice > selectedComboForPurchase.price && (
+                    <span className="text-[11px] text-slate-400 font-bold line-through block leading-none">${(selectedComboForPurchase as any).normalPrice.toLocaleString('es-AR')}</span>
+                  )}
                   <span className="text-lg font-black text-love">${selectedComboForPurchase.price.toLocaleString('es-AR')}</span>
                   <p className="text-[8px] font-black uppercase tracking-wide text-slate-400">{selectedComboForPurchase.totalUses || 5} pases de abono</p>
                 </div>
