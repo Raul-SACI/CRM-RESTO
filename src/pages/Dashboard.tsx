@@ -842,7 +842,7 @@ export function Dashboard() {
               <span className="absolute inset-0 flex items-center justify-center text-ink font-black text-[10px] tracking-tight uppercase select-none">CRAFT</span>
               {/* Café que sube */}
               <motion.div
-                className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#5b3a1f] to-[#a9703f] overflow-hidden"
+                className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#b91c1c] to-[#ef4444] overflow-hidden"
                 initial={{ height: "0%" }}
                 animate={{ height: ["8%", "85%", "8%"] }}
                 transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}

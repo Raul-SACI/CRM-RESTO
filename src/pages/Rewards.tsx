@@ -186,31 +186,35 @@ export function Rewards() {
             ✦
           </motion.div>
 
-          {/* Tapa de la caja (rebota) */}
+          {/* Caja de regalo completa, rebota suave */}
           <motion.div
-            className="absolute left-1/2 -translate-x-1/2 z-10"
-            style={{ top: "18px" }}
-            animate={{ y: [0, -8, 0] }}
-            transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
+            className="relative"
+            animate={{ y: [0, -5, 0] }}
+            transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
           >
-            <div className="w-16 h-5 bg-love rounded-md border-[3px] border-ink relative">
-              {/* Moño / nudo */}
-              <div className="absolute left-1/2 -top-2 -translate-x-1/2 w-3 h-3 rounded-full bg-love border-[2px] border-ink" />
+            {/* Moño: dos lazos + nudo */}
+            <div className="absolute left-1/2 -translate-x-1/2 -top-[14px] z-20 flex items-end">
+              <div className="w-4 h-5 bg-love border-[3px] border-ink rounded-full -rotate-12 -mr-1.5" />
+              <div className="w-3 h-3 bg-love border-[3px] border-ink rounded-full z-10" />
+              <div className="w-4 h-5 bg-love border-[3px] border-ink rounded-full rotate-12 -ml-1.5" />
+            </div>
+
+            {/* Tapa, pegada arriba del cuerpo */}
+            <div className="relative w-[68px] h-4 bg-love border-[3px] border-ink rounded-md mx-auto z-10" />
+
+            {/* Cuerpo de la caja */}
+            <div className="relative w-[60px] h-12 bg-white border-[3px] border-ink border-t-0 rounded-b-md mx-auto overflow-hidden">
+              {/* Cinta vertical */}
+              <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-3 bg-love" />
+              {/* Relleno animado (se "carga") */}
+              <motion.div
+                className="absolute bottom-0 left-0 right-0 bg-love/20"
+                initial={{ height: "0%" }}
+                animate={{ height: ["10%", "100%", "10%"] }}
+                transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+              />
             </div>
           </motion.div>
-
-          {/* Cuerpo de la caja */}
-          <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-14 h-12 bg-white border-[3px] border-ink rounded-b-md overflow-hidden">
-            {/* Cinta vertical */}
-            <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-2.5 bg-love/80" />
-            {/* Relleno animado (se "carga") */}
-            <motion.div
-              className="absolute bottom-0 left-0 right-0 bg-love/15"
-              initial={{ height: "0%" }}
-              animate={{ height: ["10%", "100%", "10%"] }}
-              transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
-            />
-          </div>
         </div>
         <h2 className="text-xl font-bold mb-2 uppercase tracking-tighter !text-slate-900">
           Cargando Premios
