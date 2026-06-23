@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { supabase } from '@/src/lib/supabase';
+import { supabase, createIsolatedClient } from '@/src/lib/supabase';
 import { Profile, Prize, Transaction, SystemSettings } from '@/src/types';
 import { motion, AnimatePresence } from 'motion/react';
 import { Users, Gift, Settings, Search, Plus, Trash2, Pencil, Calendar, Award, History, DollarSign, Upload, Image as ImageIcon, FileSpreadsheet, UserPlus, X, Palette, Home, User, Star, MessageSquare, FileText, HelpCircle, LogOut, MapPin, ChevronLeft, ChevronRight, Package, Moon, Sun } from 'lucide-react';
@@ -1810,35 +1810,75 @@ export function Admin() {
           )}
 
           {activeTab === 'staff' && (() => {
-            const handleAddCustomUser = (e: React.FormEvent) => {
+            const handleAddCustomUser = async (e: React.FormEvent) => {
               e.preventDefault();
               if (!newCustomUser.email || !newCustomUser.password || !newCustomUser.fullName || !newCustomUser.dni) {
                 alert("Por favor, rellene todos los campos requeridos.");
                 return;
               }
-              const newUserObj: CustomUser = {
-                id: 'custom-' + Date.now(),
-                email: newCustomUser.email.trim(),
-                password: newCustomUser.password,
-                full_name: newCustomUser.fullName.trim(),
-                dni: newCustomUser.dni.trim(),
-                role: newCustomUser.role,
-                birth_date: newCustomUser.birthDate || undefined,
-                created_at: new Date().toISOString()
-              };
-              const updated = [...customUsersList, newUserObj];
-              setCustomUsersList(updated);
-              saveCustomUsers(updated);
-              
-              setNewCustomUser({
-                email: '',
-                password: '',
-                fullName: '',
-                dni: '',
-                role: 'waiter',
-                birthDate: ''
-              });
-              setShowAddCustomUserModal(false);
+
+              const email = newCustomUser.email.trim();
+              const dni = newCustomUser.dni.trim();
+              const fullName = newCustomUser.fullName.trim();
+              const role = newCustomUser.role;
+
+              try {
+                // Creamos el usuario REAL en Supabase con un cliente aislado,
+                // para que la cuenta funcione desde cualquier dispositivo y sin
+                // cerrar la sesión del admin.
+                const iso = createIsolatedClient();
+                const { data: authData, error: authError } = await iso.auth.signUp({
+                  email,
+                  password: newCustomUser.password,
+                  options: { data: { full_name: fullName, dni } }
+                });
+
+                if (authError) {
+                  alert("No se pudo crear la cuenta: " + authError.message);
+                  return;
+                }
+
+                const userId = authData.user?.id;
+                if (userId) {
+                  // Guardamos el perfil con el rol elegido (mozo/staff/etc.)
+                  const { error: profileError } = await supabase
+                    .from('profiles')
+                    .upsert({
+                      id: userId,
+                      full_name: fullName,
+                      email,
+                      dni,
+                      role,
+                      points: 0
+                    }, { onConflict: 'id' });
+
+                  if (profileError) {
+                    alert("Cuenta creada pero el perfil falló: " + profileError.message);
+                    return;
+                  }
+                }
+
+                // Mantenemos la lista local solo para mostrarla en el panel.
+                const newUserObj: CustomUser = {
+                  id: userId || ('custom-' + Date.now()),
+                  email,
+                  password: newCustomUser.password,
+                  full_name: fullName,
+                  dni,
+                  role,
+                  birth_date: newCustomUser.birthDate || undefined,
+                  created_at: new Date().toISOString()
+                };
+                const updated = [...customUsersList, newUserObj];
+                setCustomUsersList(updated);
+                saveCustomUsers(updated);
+
+                setNewCustomUser({ email: '', password: '', fullName: '', dni: '', role: 'waiter', birthDate: '' });
+                setShowAddCustomUserModal(false);
+                alert("¡Cuenta creada! El usuario ya puede iniciar sesión desde cualquier dispositivo.");
+              } catch (err: any) {
+                alert("Error al crear la cuenta: " + (err?.message || err));
+              }
             };
 
             const handleDeleteCustomUser = (userId: string) => {

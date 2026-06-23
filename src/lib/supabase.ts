@@ -8,3 +8,10 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Cliente secundario con sesión aislada: sirve para crear usuarios (signUp)
+// SIN cambiar ni cerrar la sesión del admin que está usando la app.
+export const createIsolatedClient = () =>
+  createClient(supabaseUrl, supabaseAnonKey, {
+    auth: { persistSession: false, autoRefreshToken: false, storageKey: 'sb-isolated-' + Date.now() }
+  });
