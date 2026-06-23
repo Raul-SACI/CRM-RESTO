@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Bell, X } from 'lucide-react';
 import { supabase } from '@/src/lib/supabase';
 import { AppNotification } from '@/src/types';
@@ -13,7 +13,6 @@ export function NotificationBell({ clientId }: NotificationBellProps) {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
-  const panelRef = useRef<HTMLDivElement>(null);
 
   const fetchNotifications = async () => {
     if (!clientId) return;
@@ -56,22 +55,6 @@ export function NotificationBell({ clientId }: NotificationBellProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clientId]);
 
-  // Cerrar al hacer clic fuera (registramos el listener con un pequeño
-  // retardo para no capturar el mismo clic que abrió el panel)
-  useEffect(() => {
-    if (!open) return;
-    const onClick = (e: MouseEvent) => {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    const t = setTimeout(() => document.addEventListener('mousedown', onClick), 0);
-    return () => {
-      clearTimeout(t);
-      document.removeEventListener('mousedown', onClick);
-    };
-  }, [open]);
-
   const unreadCount = notifications.filter(n => !readIds.has(n.id)).length;
 
   const handleOpen = () => {
@@ -104,7 +87,7 @@ export function NotificationBell({ clientId }: NotificationBellProps) {
   };
 
   return (
-    <div className="relative" ref={panelRef}>
+    <div className="relative">
       <button
         type="button"
         onClick={handleOpen}
@@ -121,44 +104,51 @@ export function NotificationBell({ clientId }: NotificationBellProps) {
 
       <AnimatePresence>
         {open && (
-          <motion.div
-            initial={{ opacity: 0, y: -8, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -8, scale: 0.98 }}
-            transition={{ duration: 0.15 }}
-            className="absolute right-0 mt-2 w-[300px] max-w-[85vw] bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl z-[100] overflow-hidden"
-          >
-            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-800">
-              <h4 className="text-xs font-black uppercase tracking-widest !text-slate-900">Notificaciones</h4>
-              <button type="button" onClick={() => setOpen(false)} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 border-none bg-transparent cursor-pointer">
-                <X size={14} className="text-slate-400" />
-              </button>
-            </div>
+          <>
+            {/* Fondo: cubre toda la pantalla y cierra al tocar afuera */}
+            <div
+              className="fixed inset-0 z-[998]"
+              onClick={() => setOpen(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, y: -8, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -8, scale: 0.98 }}
+              transition={{ duration: 0.15 }}
+              className="fixed right-3 top-20 w-[300px] max-w-[90vw] bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl z-[999] overflow-hidden"
+            >
+              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-800">
+                <h4 className="text-xs font-black uppercase tracking-widest !text-slate-900">Notificaciones</h4>
+                <button type="button" onClick={() => setOpen(false)} className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 border-none bg-transparent cursor-pointer">
+                  <X size={14} className="text-slate-400" />
+                </button>
+              </div>
 
-            <div className="max-h-[320px] overflow-y-auto">
-              {loading ? (
-                <p className="text-center py-8 text-[10px] uppercase tracking-widest text-slate-400 font-bold">Cargando...</p>
-              ) : notifications.length === 0 ? (
-                <p className="text-center py-8 text-[10px] uppercase tracking-widest text-slate-400 font-bold">No tenés avisos por ahora</p>
-              ) : (
-                notifications.map(n => (
-                  <div
-                    key={n.id}
-                    className={`px-4 py-3 border-b border-slate-50 dark:border-slate-800/50 ${!readIds.has(n.id) ? 'bg-love/5' : ''}`}
-                  >
-                    <div className="flex items-start gap-2">
-                      {!readIds.has(n.id) && <span className="w-2 h-2 rounded-full bg-love mt-1.5 shrink-0" />}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-black !text-slate-900 leading-tight">{n.title}</p>
-                        <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">{n.message}</p>
-                        <p className="text-[8px] uppercase tracking-widest text-slate-400 font-bold mt-1.5">{formatDate(n.created_at)}</p>
+              <div className="max-h-[320px] overflow-y-auto">
+                {loading ? (
+                  <p className="text-center py-8 text-[10px] uppercase tracking-widest text-slate-400 font-bold">Cargando...</p>
+                ) : notifications.length === 0 ? (
+                  <p className="text-center py-8 text-[10px] uppercase tracking-widest text-slate-400 font-bold">No tenés avisos por ahora</p>
+                ) : (
+                  notifications.map(n => (
+                    <div
+                      key={n.id}
+                      className={`px-4 py-3 border-b border-slate-50 dark:border-slate-800/50 ${!readIds.has(n.id) ? 'bg-love/5' : ''}`}
+                    >
+                      <div className="flex items-start gap-2">
+                        {!readIds.has(n.id) && <span className="w-2 h-2 rounded-full bg-love mt-1.5 shrink-0" />}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-black !text-slate-900 leading-tight">{n.title}</p>
+                          <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">{n.message}</p>
+                          <p className="text-[8px] uppercase tracking-widest text-slate-400 font-bold mt-1.5">{formatDate(n.created_at)}</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </motion.div>
+                  ))
+                )}
+              </div>
+            </motion.div>
+          </>
         )}
       </AnimatePresence>
     </div>
