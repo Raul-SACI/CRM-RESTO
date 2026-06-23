@@ -56,36 +56,44 @@ export function NotificationBell({ clientId }: NotificationBellProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clientId]);
 
-  // Cerrar al hacer clic fuera
+  // Cerrar al hacer clic fuera (registramos el listener con un pequeño
+  // retardo para no capturar el mismo clic que abrió el panel)
   useEffect(() => {
+    if (!open) return;
     const onClick = (e: MouseEvent) => {
       if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
         setOpen(false);
       }
     };
-    if (open) document.addEventListener('mousedown', onClick);
-    return () => document.removeEventListener('mousedown', onClick);
+    const t = setTimeout(() => document.addEventListener('mousedown', onClick), 0);
+    return () => {
+      clearTimeout(t);
+      document.removeEventListener('mousedown', onClick);
+    };
   }, [open]);
 
   const unreadCount = notifications.filter(n => !readIds.has(n.id)).length;
 
-  const handleOpen = async () => {
+  const handleOpen = () => {
     const willOpen = !open;
     setOpen(willOpen);
     if (willOpen && unreadCount > 0) {
-      // Marcar como leídos los que aún no lo están
+      // Marcamos como leídos DESPUÉS de un momento, para que el cliente
+      // alcance a ver los avisos resaltados antes de que el punto desaparezca.
       const toMark = notifications.filter(n => !readIds.has(n.id));
       const rows = toMark.map(n => ({ notification_id: n.id, client_id: clientId }));
-      try {
-        await supabase.from('notification_reads').insert(rows);
-        setReadIds(prev => {
-          const next = new Set(prev);
-          toMark.forEach(n => next.add(n.id));
-          return next;
-        });
-      } catch (e) {
-        console.warn('Error marcando leídos:', e);
-      }
+      setTimeout(async () => {
+        try {
+          await supabase.from('notification_reads').insert(rows);
+          setReadIds(prev => {
+            const next = new Set(prev);
+            toMark.forEach(n => next.add(n.id));
+            return next;
+          });
+        } catch (e) {
+          console.warn('Error marcando leídos:', e);
+        }
+      }, 2500);
     }
   };
 
