@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase, createIsolatedClient } from '@/src/lib/supabase';
 import { Profile, Prize, Transaction, SystemSettings } from '@/src/types';
 import { motion, AnimatePresence } from 'motion/react';
-import { Users, Gift, Settings, Search, Plus, Trash2, Pencil, Calendar, Award, History, DollarSign, Upload, Image as ImageIcon, FileSpreadsheet, UserPlus, X, Palette, Home, User, Star, MessageSquare, FileText, HelpCircle, LogOut, MapPin, ChevronLeft, ChevronRight, Package, Moon, Sun, Bell, Send } from 'lucide-react';
+import { Users, Gift, Settings, Search, Plus, Trash2, Pencil, Calendar, Award, History, DollarSign, Upload, Image as ImageIcon, FileSpreadsheet, UserPlus, X, Palette, Home, User, Star, MessageSquare, FileText, HelpCircle, LogOut, MapPin, ChevronLeft, ChevronRight, Package, Bell, Send } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import * as XLSX from 'xlsx';
 import { useDesign, COLOR_PRESETS, CORNER_PRESETS, AVAILABLE_FONTS, type DesignConfig, type BannerConfig } from '@/src/components/DesignEngine';
@@ -143,6 +143,14 @@ export function Admin() {
     active: true
   });
   const [newFeatureText, setNewFeatureText] = useState('');
+
+  // El panel admin siempre usa modo oscuro (paleta negro/rojo/blanco).
+  useEffect(() => {
+    if (theme !== 'dark') {
+      toggleTheme();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Combos form editing states
   const [editingComboId, setEditingComboId] = useState<string | null>(null);
@@ -1225,8 +1233,8 @@ export function Admin() {
                   <div key={g.title} className={cn("contents lg:block", isSidebarExpanded ? "lg:mb-2" : "")}>
                     {isSidebarExpanded && (
                       <p className={cn(
-                        "hidden lg:block text-[8px] uppercase tracking-[0.2em] font-black text-slate-300 dark:text-slate-600 px-4 mb-1",
-                        gi > 0 && "mt-3"
+                        "hidden lg:block text-[8px] uppercase tracking-[0.2em] font-black text-slate-300 dark:text-slate-600 px-4 mb-2",
+                        gi > 0 ? "mt-5" : "mt-1"
                       )}>
                         {g.title}
                       </p>
@@ -1239,23 +1247,23 @@ export function Admin() {
           })()}
         </div>
 
-        {/* Acciones inferiores: modo oscuro y cerrar sesión (antes estaban en la barra superior) */}
+        {/* Acciones inferiores: cerrar sesión */}
         <div className={cn(
           "hidden lg:flex flex-col gap-1.5 mt-3 pt-3 border-t border-slate-200 dark:border-slate-800",
           !isSidebarExpanded && "items-center"
         )}>
           <button
-            onClick={toggleTheme}
+            onClick={signOut}
             className={cn(
-              "flex items-center rounded-xl text-[10px] md:text-sm font-black uppercase tracking-wider transition-all whitespace-nowrap text-slate-405 dark:text-slate-400 hover:text-ink dark:hover:text-white lg:hover:bg-slate-50 lg:dark:hover:bg-slate-800/50",
+              "flex items-center rounded-xl text-[10px] md:text-sm font-black uppercase tracking-wider transition-all whitespace-nowrap text-rose-500 hover:text-white hover:bg-rose-500",
               isSidebarExpanded
                 ? "gap-2.5 px-4 lg:px-5 py-2.5 lg:py-3.5 lg:w-full lg:justify-start"
                 : "justify-center p-3 lg:w-12 lg:h-12"
             )}
-            title={theme === 'light' ? 'Modo Oscuro' : 'Modo Claro'}
+            title="Cerrar Sesión"
           >
-            {theme === 'light' ? <Moon size={14} /> : <Sun size={14} />}
-            {isSidebarExpanded && <span>{theme === 'light' ? 'Modo Oscuro' : 'Modo Claro'}</span>}
+            <LogOut size={14} />
+            {isSidebarExpanded && <span>Cerrar Sesión</span>}
           </button>
           <button
             onClick={signOut}

@@ -17,10 +17,10 @@
   --shadow-bento: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   --shadow-red: 0 10px 15px -3px rgba(239, 68, 68, 0.2);
 
-  --color-dark-paper: #020617;
-  --color-dark-ink: #f8fafc;
-  --color-dark-card: #0f172a;
-  --color-dark-border: #1e293b;
+  --color-dark-paper: #0a0a0a;
+  --color-dark-ink: #fafafa;
+  --color-dark-card: #161616;
+  --color-dark-border: #2a2a2a;
 }
 
 @layer base {
@@ -43,6 +43,13 @@
   .dark .bg-white {
     @apply !bg-dark-card;
   }
+
+  /* Paleta admin (modo oscuro): neutralizar los slate azulados a negro */
+  .dark .bg-slate-900 { background-color: #161616 !important; }
+  .dark .bg-slate-950 { background-color: #0a0a0a !important; }
+  .dark .bg-slate-800 { background-color: #222222 !important; }
+  .dark .border-slate-800 { border-color: #2a2a2a !important; }
+  .dark .border-slate-700 { border-color: #333333 !important; }
 
   /* Specific override for QR code container to stay light for scanning */
   .dark .qr-container, .dark .qr-container * {
