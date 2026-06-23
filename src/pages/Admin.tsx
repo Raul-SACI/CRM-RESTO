@@ -1104,8 +1104,8 @@ export function Admin() {
               <h2 className="text-xl md:text-2xl font-black uppercase tracking-tighter italic text-ink dark:text-white">
                 CLUB <span className="text-love">CRAFT</span>
               </h2>
-              <p className="text-[9px] md:text-[10px] uppercase tracking-[0.2em] text-slate-400 font-black">
-                Panel Administrativo
+              <p className="text-[9px] md:text-[10px] uppercase tracking-[0.25em] text-slate-400 font-bold font-mono">
+                Sistemas & Control
               </p>
             </div>
           ) : (
@@ -1161,9 +1161,9 @@ export function Admin() {
 
         <div className={cn(
           "flex flex-row lg:flex-col p-1 lg:p-0 bg-slate-100 dark:bg-slate-950 lg:bg-transparent rounded-2xl border border-slate-200 dark:border-slate-800 lg:border-none overflow-x-auto lg:overflow-x-visible scrollbar-hide lg:w-full",
-          isSidebarExpanded ? "lg:space-y-1.5" : "lg:space-y-3 lg:items-center"
+          isSidebarExpanded ? "lg:space-y-1" : "lg:space-y-3 lg:items-center"
         )}>
-          {['dashboard', 'clients', 'prizes', 'combos', 'staff', 'history', 'notifications', 'autonotif', 'settings', 'design', 'feedback'].map((tab) => {
+          {(() => {
             const labels: Record<string, string> = {
               dashboard: 'Dashboard',
               clients: 'Clientes',
@@ -1190,18 +1190,26 @@ export function Admin() {
               design: <Palette size={14} />,
               feedback: <MessageSquare size={14} />
             };
-            return (
-              <button 
+            // Menú agrupado por secciones (estilo sistema de gestión)
+            const groups: { title: string; tabs: string[] }[] = [
+              { title: 'General', tabs: ['dashboard', 'clients', 'history'] },
+              { title: 'Programa', tabs: ['prizes', 'combos', 'feedback'] },
+              { title: 'Comunicación', tabs: ['notifications', 'autonotif'] },
+              { title: 'Configuración', tabs: ['staff', 'settings', 'design'] }
+            ];
+
+            const renderBtn = (tab: string) => (
+              <button
                 key={tab}
                 onClick={() => setActiveTab(tab as any)}
                 className={cn(
-                  "flex items-center rounded-xl text-[10px] md:text-sm font-black uppercase tracking-wider transition-all whitespace-nowrap", 
-                  isSidebarExpanded 
-                    ? "gap-2.5 px-4 lg:px-5 py-2.5 lg:py-3.5 lg:w-full lg:justify-start" 
+                  "flex items-center rounded-lg text-[10px] md:text-[13px] font-bold tracking-wide transition-all whitespace-nowrap font-mono",
+                  isSidebarExpanded
+                    ? "gap-2.5 px-3 lg:px-4 py-2 lg:py-2.5 lg:w-full lg:justify-start"
                     : "justify-center p-3 lg:w-12 lg:h-12 lg:mx-auto",
-                  activeTab === tab 
-                    ? "bg-love text-white shadow-lg shadow-love/30 scale-[1.02]" 
-                    : "text-slate-405 dark:text-slate-400 hover:text-ink dark:hover:text-white lg:hover:bg-slate-50 lg:dark:hover:bg-slate-800/50"
+                  activeTab === tab
+                    ? "bg-love text-white shadow-md shadow-love/25"
+                    : "text-slate-500 dark:text-slate-400 hover:text-ink dark:hover:text-white lg:hover:bg-slate-100 lg:dark:hover:bg-slate-800/50"
                 )}
                 title={labels[tab]}
               >
@@ -1209,7 +1217,26 @@ export function Admin() {
                 {isSidebarExpanded && <span>{labels[tab]}</span>}
               </button>
             );
-          })}
+
+            // En móvil (fila horizontal) o menú colapsado: lista plana sin títulos
+            return (
+              <>
+                {groups.map((g, gi) => (
+                  <div key={g.title} className={cn("contents lg:block", isSidebarExpanded ? "lg:mb-2" : "")}>
+                    {isSidebarExpanded && (
+                      <p className={cn(
+                        "hidden lg:block text-[8px] uppercase tracking-[0.2em] font-black text-slate-300 dark:text-slate-600 px-4 mb-1",
+                        gi > 0 && "mt-3"
+                      )}>
+                        {g.title}
+                      </p>
+                    )}
+                    {g.tabs.map(renderBtn)}
+                  </div>
+                ))}
+              </>
+            );
+          })()}
         </div>
 
         {/* Acciones inferiores: modo oscuro y cerrar sesión (antes estaban en la barra superior) */}
