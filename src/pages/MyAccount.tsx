@@ -35,6 +35,18 @@ export function MyAccount() {
     }
   }, [profile]);
 
+  // Si se llega con #/my-account?seccion=movimientos (o el hash incluye
+  // 'movimientos'), hacemos scroll a la seccion de movimientos.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (window.location.hash.includes('movimientos')) {
+      const t = setTimeout(() => {
+        document.getElementById('mis-movimientos')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 400);
+      return () => clearTimeout(t);
+    }
+  }, [loading]);
+
   const fetchTransactions = async () => {
     if (!profile) return;
     setLoading(true);
@@ -280,7 +292,7 @@ export function MyAccount() {
       </div>
 
       {/* Transaction History Movements Card */}
-      <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none space-y-5 text-left">
+      <div id="mis-movimientos" className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none space-y-5 text-left scroll-mt-24">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <History size={16} className="text-love" />

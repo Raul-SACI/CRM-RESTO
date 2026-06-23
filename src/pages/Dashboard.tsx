@@ -1223,30 +1223,32 @@ export function Dashboard() {
           >
             <div className="absolute top-0 right-0 -mr-16 -mt-16 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none" />
             
-            <div className="relative text-left">
-              <h2 className="text-[9px] uppercase font-bold tracking-widest opacity-80 mb-1">Mi Saldo Disponible</h2>
-              <div className="flex items-baseline gap-2">
-                <span className="text-4xl font-black italic">{profile.points.toLocaleString()}</span>
-                <span className="text-xs font-bold uppercase tracking-tighter">puntos</span>
+            <div className="relative flex items-center justify-between gap-3">
+              <div className="text-left flex-1 min-w-0">
+                <h2 className="text-[9px] uppercase font-bold tracking-widest opacity-80 mb-1">Mi Saldo Disponible</h2>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-4xl font-black italic">{profile.points.toLocaleString()}</span>
+                  <span className="text-xs font-bold uppercase tracking-tighter">puntos</span>
+                </div>
+                <button
+                  onClick={() => { window.location.hash = '#/my-account?seccion=movimientos'; }}
+                  className="mt-3 inline-flex items-center gap-1.5 bg-white/20 hover:bg-white/30 transition-all rounded-full px-3 py-1.5 text-[9px] font-black uppercase tracking-widest cursor-pointer"
+                >
+                  <History size={11} /> Mis movimientos
+                </button>
+              </div>
+
+              {/* QR chico a la derecha */}
+              <div className="shrink-0 bg-white rounded-2xl p-2 shadow-md flex flex-col items-center">
+                <QRCode
+                  value={`${window.location.origin}/#/waiter?dni=${profile.dni || profile.id}`}
+                  size={72}
+                  style={{ height: "72px", width: "72px" }}
+                  viewBox={`0 0 256 256`}
+                />
+                <p className="text-[6px] uppercase font-bold text-slate-400 mt-1">DNI {profile.dni || 's/d'}</p>
               </div>
             </div>
-          </div>
-
-          {/* QR Scan Container */}
-          <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-100 dark:border-slate-800 shadow-md text-center flex flex-col items-center justify-center">
-            <span className="text-[9px] uppercase tracking-widest font-black text-slate-400 mb-3.5 flex items-center gap-1.5">
-              ⚡ Presenta este código en caja para sumar/canjear
-            </span>
-            <div className="qr-container p-3.5 bg-white rounded-2xl border border-slate-100 shadow-sm flex items-center justify-center mb-3">
-              <QRCode 
-                value={`${window.location.origin}/#/waiter?dni=${profile.dni || profile.id}`} 
-                size={125}
-                style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-                viewBox={`0 0 256 256`}
-              />
-            </div>
-            <p className="text-[8px] uppercase font-bold text-slate-400">DNI registrado</p>
-            <p className="text-ink dark:text-white font-black mt-0.5 text-xs tracking-tight">{profile.dni || 'No asignado'}</p>
           </div>
         </div>
 
