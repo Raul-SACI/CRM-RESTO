@@ -1090,7 +1090,7 @@ export function Admin() {
     <div className="flex flex-col lg:flex-row gap-6 md:gap-8 items-start w-full">
       {/* Menú Lateral Izquierdo (Admin Sidebar) */}
       <div className={cn(
-        "shrink-0 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-5 lg:sticky lg:top-24 transition-all duration-300",
+        "shrink-0 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col gap-5 lg:sticky lg:top-6 transition-all duration-300",
         isSidebarExpanded 
           ? "w-full lg:w-64 xl:w-72 p-5 rounded-2xl" 
           : "w-full lg:w-20 p-4 rounded-2xl"

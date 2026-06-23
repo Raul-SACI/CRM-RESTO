@@ -343,7 +343,10 @@ export function Layout({ children }: LayoutProps) {
         </header>
             )}
         
-        <main className="flex-1 w-full py-4 md:py-6 mt-2 md:mt-4">
+        <main className={cn(
+          "flex-1 w-full py-4 md:py-6",
+          isAdminPage ? "mt-2 md:mt-4 lg:mt-0" : "mt-2 md:mt-4"
+        )}>
           {children}
         </main>
 
