@@ -46,3 +46,11 @@ export interface Prize {
   image_url: string;
   is_active: boolean;
 }
+
+export interface AppNotification {
+  id: string;
+  client_id: string | null; // null = para todos
+  title: string;
+  message: string;
+  created_at: string;
+}

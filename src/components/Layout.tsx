@@ -7,6 +7,7 @@ import { useDesign } from '@/src/components/DesignEngine';
 import { cn } from '@/src/lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { hasPermission } from '@/src/lib/permissions';
+import { NotificationBell } from '@/src/components/NotificationBell';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -194,6 +195,9 @@ export function Layout({ children }: LayoutProps) {
         </div>
         
         <nav className="flex items-center gap-1 md:gap-4 overflow-x-auto no-scrollbar">
+          {profile?.role === 'client' && profile?.id && (
+            <NotificationBell clientId={profile.id} />
+          )}
           {/* Main page navigation links - Hidden on small screen sizes and phone simulation */}
           <div className={cn(
             "flex items-center gap-1 md:gap-4",

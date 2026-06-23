@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase, createIsolatedClient } from '@/src/lib/supabase';
 import { Profile, Prize, Transaction, SystemSettings } from '@/src/types';
 import { motion, AnimatePresence } from 'motion/react';
-import { Users, Gift, Settings, Search, Plus, Trash2, Pencil, Calendar, Award, History, DollarSign, Upload, Image as ImageIcon, FileSpreadsheet, UserPlus, X, Palette, Home, User, Star, MessageSquare, FileText, HelpCircle, LogOut, MapPin, ChevronLeft, ChevronRight, Package, Moon, Sun } from 'lucide-react';
+import { Users, Gift, Settings, Search, Plus, Trash2, Pencil, Calendar, Award, History, DollarSign, Upload, Image as ImageIcon, FileSpreadsheet, UserPlus, X, Palette, Home, User, Star, MessageSquare, FileText, HelpCircle, LogOut, MapPin, ChevronLeft, ChevronRight, Package, Moon, Sun, Bell, Send } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import * as XLSX from 'xlsx';
 import { useDesign, COLOR_PRESETS, CORNER_PRESETS, AVAILABLE_FONTS, type DesignConfig, type BannerConfig } from '@/src/components/DesignEngine';
@@ -24,7 +24,13 @@ import {
 export function Admin() {
   const { isSimulatingClient, setIsSimulatingClient, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'clients' | 'prizes' | 'combos' | 'staff' | 'history' | 'settings' | 'design' | 'feedback'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'clients' | 'prizes' | 'combos' | 'staff' | 'history' | 'settings' | 'design' | 'feedback' | 'notifications'>('dashboard');
+
+  // Notificaciones (avisos)
+  const [notifForm, setNotifForm] = useState({ title: '', message: '', target: 'all', clientId: '' });
+  const [notifSending, setNotifSending] = useState(false);
+  const [notifClientSearch, setNotifClientSearch] = useState('');
+  const [sentNotifications, setSentNotifications] = useState<any[]>([]);
   
   // Custom permissions module states
   const [staffSubTab, setStaffSubTab] = useState<'usuarios' | 'roles' | 'permisos'>('usuarios');
@@ -360,6 +366,9 @@ export function Admin() {
     setSelectedClients([]);
     if (activeTab === 'settings') {
       fetchSettings();
+    } else if (activeTab === 'notifications') {
+      fetchSentNotifications();
+      void fetchData(); // para tener la lista de clientes disponible
     } else if (activeTab === 'design' || activeTab === 'combos') {
       setLoading(false);
     } else if (activeTab === 'dashboard') {
@@ -738,6 +747,52 @@ export function Admin() {
     }
   };
 
+  const fetchSentNotifications = async () => {
+    try {
+      const { data } = await supabase
+        .from('notifications')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(30);
+      if (data) setSentNotifications(data);
+    } catch (e) {
+      console.warn('Error cargando notificaciones enviadas:', e);
+    }
+  };
+
+  const handleSendNotification = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!notifForm.title.trim() || !notifForm.message.trim()) {
+      alert('Escribí un título y un mensaje.');
+      return;
+    }
+    if (notifForm.target === 'one' && !notifForm.clientId) {
+      alert('Elegí un cliente destinatario.');
+      return;
+    }
+    setNotifSending(true);
+    try {
+      const row = {
+        client_id: notifForm.target === 'all' ? null : notifForm.clientId,
+        title: notifForm.title.trim(),
+        message: notifForm.message.trim()
+      };
+      const { error } = await supabase.from('notifications').insert([row]);
+      if (error) throw error;
+
+      alert(notifForm.target === 'all'
+        ? '¡Aviso enviado a todos los clientes!'
+        : '¡Aviso enviado al cliente seleccionado!');
+      setNotifForm({ title: '', message: '', target: 'all', clientId: '' });
+      setNotifClientSearch('');
+      fetchSentNotifications();
+    } catch (err: any) {
+      alert('Error al enviar el aviso: ' + (err?.message || err));
+    } finally {
+      setNotifSending(false);
+    }
+  };
+
   const handleSubmitPrize = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPrize.image_url) {
@@ -987,7 +1042,7 @@ export function Admin() {
           "flex flex-row lg:flex-col p-1 lg:p-0 bg-slate-100 dark:bg-slate-950 lg:bg-transparent rounded-2xl border border-slate-200 dark:border-slate-800 lg:border-none overflow-x-auto lg:overflow-x-visible scrollbar-hide lg:w-full",
           isSidebarExpanded ? "lg:space-y-1.5" : "lg:space-y-3 lg:items-center"
         )}>
-          {['dashboard', 'clients', 'prizes', 'combos', 'staff', 'history', 'settings', 'design', 'feedback'].map((tab) => {
+          {['dashboard', 'clients', 'prizes', 'combos', 'staff', 'history', 'notifications', 'settings', 'design', 'feedback'].map((tab) => {
             const labels: Record<string, string> = {
               dashboard: 'Dashboard',
               clients: 'Clientes',
@@ -995,6 +1050,7 @@ export function Admin() {
               combos: 'Combos Prepago',
               staff: 'Staff',
               history: 'Movimientos',
+              notifications: 'Notificaciones',
               settings: 'Ajustes',
               design: 'Diseño',
               feedback: 'Opiniones'
@@ -1006,6 +1062,7 @@ export function Admin() {
               combos: <Package size={14} />,
               staff: <UserPlus size={14} />,
               history: <History size={14} />,
+              notifications: <Bell size={14} />,
               settings: <Settings size={14} />,
               design: <Palette size={14} />,
               feedback: <MessageSquare size={14} />
@@ -4075,6 +4132,137 @@ export function Admin() {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {activeTab === 'notifications' && (
+            <div className="space-y-6">
+              <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none">
+                <div className="flex items-center gap-2 mb-1">
+                  <Bell size={18} className="text-love" />
+                  <h3 className="text-sm font-black uppercase tracking-wider !text-slate-900">Enviar un aviso</h3>
+                </div>
+                <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-5">Llega a la campanita del cliente dentro de la app</p>
+
+                <form onSubmit={handleSendNotification} className="space-y-4">
+                  <div className="space-y-1">
+                    <label className="block text-[9px] uppercase font-black text-slate-400 tracking-widest pl-1">Título</label>
+                    <input
+                      type="text"
+                      maxLength={80}
+                      placeholder="Ej: ¡Nueva promo de café!"
+                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-xs outline-none focus:border-love text-ink dark:text-white font-bold"
+                      value={notifForm.title}
+                      onChange={(e) => setNotifForm({ ...notifForm, title: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-[9px] uppercase font-black text-slate-400 tracking-widest pl-1">Mensaje</label>
+                    <textarea
+                      maxLength={300}
+                      rows={3}
+                      placeholder="Escribí el aviso que verá el cliente..."
+                      className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-xs outline-none focus:border-love text-ink dark:text-white font-bold resize-none"
+                      value={notifForm.message}
+                      onChange={(e) => setNotifForm({ ...notifForm, message: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-[9px] uppercase font-black text-slate-400 tracking-widest pl-1">Destinatario</label>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setNotifForm({ ...notifForm, target: 'all', clientId: '' })}
+                        className={cn("flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border cursor-pointer transition-all",
+                          notifForm.target === 'all' ? "bg-love text-white border-love" : "bg-white dark:bg-slate-950 text-slate-500 border-slate-200 dark:border-slate-800")}
+                      >
+                        Todos los clientes
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setNotifForm({ ...notifForm, target: 'one' })}
+                        className={cn("flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border cursor-pointer transition-all",
+                          notifForm.target === 'one' ? "bg-love text-white border-love" : "bg-white dark:bg-slate-950 text-slate-500 border-slate-200 dark:border-slate-800")}
+                      >
+                        Un cliente puntual
+                      </button>
+                    </div>
+                  </div>
+
+                  {notifForm.target === 'one' && (
+                    <div className="space-y-1">
+                      <label className="block text-[9px] uppercase font-black text-slate-400 tracking-widest pl-1">Buscar cliente (nombre, email o DNI)</label>
+                      <input
+                        type="text"
+                        placeholder="Escribí para buscar..."
+                        className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-xs outline-none focus:border-love text-ink dark:text-white font-bold"
+                        value={notifClientSearch}
+                        onChange={(e) => setNotifClientSearch(e.target.value)}
+                      />
+                      {notifClientSearch.trim().length >= 2 && (
+                        <div className="max-h-44 overflow-y-auto border border-slate-100 dark:border-slate-800 rounded-xl mt-1">
+                          {clients
+                            .filter(c => {
+                              const q = notifClientSearch.toLowerCase();
+                              return (c.full_name || '').toLowerCase().includes(q) ||
+                                (c.email || '').toLowerCase().includes(q) ||
+                                (c.dni || '').toLowerCase().includes(q);
+                            })
+                            .slice(0, 20)
+                            .map(c => (
+                              <button
+                                key={c.id}
+                                type="button"
+                                onClick={() => { setNotifForm({ ...notifForm, clientId: c.id }); setNotifClientSearch(c.full_name || c.email || ''); }}
+                                className={cn("w-full text-left px-3 py-2 text-xs border-b border-slate-50 dark:border-slate-800/50 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 border-x-0 border-t-0 bg-transparent",
+                                  notifForm.clientId === c.id ? "bg-love/10" : "")}
+                              >
+                                <span className="font-black !text-slate-900">{c.full_name || 'Sin nombre'}</span>
+                                <span className="text-slate-400 ml-2">{c.email} · DNI {c.dni}</span>
+                              </button>
+                            ))}
+                        </div>
+                      )}
+                      {notifForm.clientId && (
+                        <p className="text-[10px] text-emerald-600 font-black uppercase tracking-wide pl-1 mt-1">Cliente seleccionado ✓</p>
+                      )}
+                    </div>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={notifSending}
+                    className="w-full py-3 bg-love text-white rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer border-none shadow-lg shadow-love/15 flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    <Send size={13} /> {notifSending ? 'Enviando...' : 'Enviar aviso'}
+                  </button>
+                </form>
+              </div>
+
+              {/* Avisos enviados */}
+              <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none">
+                <h3 className="text-sm font-black uppercase tracking-wider !text-slate-900 mb-4">Últimos avisos enviados</h3>
+                {sentNotifications.length === 0 ? (
+                  <p className="text-center py-6 text-[10px] uppercase tracking-widest text-slate-400 font-bold">Todavía no enviaste avisos</p>
+                ) : (
+                  <div className="space-y-2">
+                    {sentNotifications.map((n) => (
+                      <div key={n.id} className="border border-slate-100 dark:border-slate-800 rounded-xl px-4 py-3">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-black !text-slate-900">{n.title}</p>
+                          <span className={cn("text-[8px] uppercase font-black tracking-widest px-2 py-0.5 rounded-full",
+                            n.client_id ? "bg-amber-500/10 text-amber-600" : "bg-love/10 text-love")}>
+                            {n.client_id ? 'Cliente puntual' : 'Todos'}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 mt-1">{n.message}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
