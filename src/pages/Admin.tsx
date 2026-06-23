@@ -1299,14 +1299,14 @@ export function Admin() {
           );
         })()}
         {loading ? (
-          <div className="py-20 text-center animate-pulse text-slate-450 dark:text-slate-505 uppercase font-black tracking-widest text-[10px] italic bg-white dark:bg-slate-900 rounded-[2rem] border border-slate-100 dark:border-slate-800 p-8 shadow-sm">Cargando datos del panel...</div>
+          <div className="py-20 text-center animate-pulse text-slate-450 dark:text-slate-505 uppercase font-black tracking-widest text-[10px] italic bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 p-8 shadow-sm">Cargando datos del panel...</div>
         ) : (
           <>
           {activeTab === 'dashboard' && (
             <div className="space-y-6">
               {/* Filters */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex flex-wrap gap-2 items-center">
+                <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-wrap gap-2 items-center">
                   <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 mr-2">Sucursal:</span>
                   <div className="flex flex-wrap gap-1">
                     <button
@@ -1333,7 +1333,7 @@ export function Admin() {
                   </div>
                 </div>
 
-                <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex items-center justify-between gap-4">
+                <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between gap-4">
                   <div className="flex items-center gap-2 flex-1">
                     <Calendar size={14} className="text-slate-300" />
                     <div className="flex items-center gap-1 flex-1">
@@ -1364,7 +1364,7 @@ export function Admin() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Visual Cards */}
-                <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50">
+                <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm">
                   <div className="flex items-center justify-between mb-6">
                     <h3 className="text-xs font-black uppercase tracking-widest text-ink flex items-center gap-2">
                        <Award size={16} className="text-love" />
@@ -1394,7 +1394,7 @@ export function Admin() {
                   </div>
                 </div>
 
-                <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50">
+                <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm">
                    <div className="flex items-center justify-between mb-6">
                     <h3 className="text-xs font-black uppercase tracking-widest text-ink flex items-center gap-2">
                        <Gift size={16} className="text-ink" />
@@ -1426,7 +1426,7 @@ export function Admin() {
                   </div>
                 </div>
 
-                <div className="bg-white p-6 rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50 md:col-span-2">
+                <div className="bg-white p-6 rounded-xl border border-slate-100 shadow-sm md:col-span-2">
                    <div className="flex items-center justify-between mb-6">
                     <h3 className="text-xs font-black uppercase tracking-widest text-ink flex items-center gap-2">
                        <UserPlus size={16} className="text-love" />
@@ -1506,7 +1506,7 @@ export function Admin() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <button 
                   onClick={() => setShowAddModal(true)}
-                  className="bg-love text-white p-6 rounded-3xl flex items-center justify-between shadow-xl shadow-love/20 hover:scale-[1.02] transition-all"
+                  className="bg-love text-white p-6 rounded-xl flex items-center justify-between shadow-sm hover:scale-[1.02] transition-all"
                 >
                   <div className="text-left">
                     <p className="text-[10px] font-black uppercase tracking-widest opacity-80">Nuevo</p>
@@ -1515,7 +1515,7 @@ export function Admin() {
                   <UserPlus size={32} />
                 </button>
 
-                <div className="relative group overflow-hidden bg-ink text-white p-6 rounded-3xl flex items-center justify-between shadow-xl shadow-ink/20 hover:scale-[1.02] transition-all cursor-pointer">
+                <div className="relative group overflow-hidden bg-ink text-white p-6 rounded-xl flex items-center justify-between shadow-sm hover:scale-[1.02] transition-all cursor-pointer">
                   <input 
                     type="file" 
                     accept=".xlsx, .xls, .csv" 
@@ -1530,7 +1530,7 @@ export function Admin() {
                   <FileSpreadsheet size={32} />
                 </div>
 
-                <div className="bg-white p-6 rounded-3xl border border-slate-100 flex items-center justify-between shadow-xl shadow-slate-200/50">
+                <div className="bg-white p-6 rounded-xl border border-slate-100 flex items-center justify-between shadow-sm">
                   <div className="text-left">
                     <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total en Base</p>
                     <h4 className="text-xl font-black italic text-ink">{clients.length} Clientes</h4>
@@ -1539,7 +1539,7 @@ export function Admin() {
                 </div>
               </div>
 
-              <div className="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-xl shadow-slate-200/50">
+              <div className="bg-white rounded-xl border border-slate-100 overflow-hidden shadow-sm">
                 <div className="p-6 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
                   <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-ink">
                     <Users size={16} className="text-love" />
@@ -1671,7 +1671,7 @@ export function Admin() {
 
           {activeTab === 'prizes' && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="md:col-span-1 bg-white rounded-3xl p-6 border border-slate-100 shadow-xl shadow-slate-200/50 h-fit">
+              <div className="md:col-span-1 bg-white rounded-xl p-6 border border-slate-100 shadow-sm h-fit">
                 <h3 className="text-xs font-black uppercase tracking-widest mb-6 flex items-center gap-2 text-ink">
                   {editingPrizeId ? <Pencil size={16} className="text-love" /> : <Plus size={16} className="text-love" />}
                   {editingPrizeId ? 'Editar Premio' : 'Nuevo Premio'}
@@ -1739,13 +1739,13 @@ export function Admin() {
               </div>
               <div className="md:col-span-2 space-y-4">
                 {prizes.length === 0 && (
-                  <div className="bg-white p-12 rounded-3xl border border-dashed border-slate-200 text-center shadow-xl shadow-slate-200/50">
+                  <div className="bg-white p-12 rounded-xl border border-dashed border-slate-200 text-center shadow-sm">
                     <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-2 italic">No hay premios cargados</p>
                     <p className="text-[10px] text-slate-300 max-w-xs mx-auto font-bold uppercase tracking-tight">Si no puedes agregar, consulta con soporte técnico de Supabase.</p>
                   </div>
                 )}
                 {prizes.map(prize => (
-                  <div key={prize.id} className="bg-white p-4 rounded-2xl border border-slate-100 flex items-center gap-4 group transition-all shadow-xl shadow-slate-200/50">
+                  <div key={prize.id} className="bg-white p-4 rounded-2xl border border-slate-100 flex items-center gap-4 group transition-all shadow-sm">
                     <img src={prize.image_url} className="w-16 h-16 rounded-xl object-cover shrink-0" />
                     <div className="flex-1 min-w-0">
                       <h4 className="font-black text-sm uppercase tracking-tighter text-ink">{prize.title}</h4>
@@ -1774,7 +1774,7 @@ export function Admin() {
           {activeTab === 'combos' && (
             <div className="w-full space-y-6">
               <div className="space-y-8 text-left animate-in fade-in duration-300">
-                <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 md:p-8 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none space-y-6">
+                <div className="bg-white dark:bg-slate-900 rounded-xl p-6 md:p-8 border border-slate-100 dark:border-slate-800 shadow-sm dark:shadow-none space-y-6">
                   <h4 className="text-sm font-black uppercase tracking-wider text-ink dark:text-white flex items-center gap-2">
                     <div className="w-2.5 h-2.5 rounded-full bg-love animate-ping" />
                     Gestión de Combos Prepago
@@ -1786,7 +1786,7 @@ export function Admin() {
                   {/* Combos Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {((designConfig as any).combos || []).map((combo: any) => (
-                      <div key={combo.id} className="bg-slate-50 dark:bg-slate-950 p-4 rounded-3xl border border-slate-100 dark:border-slate-800 flex flex-col justify-between gap-4">
+                      <div key={combo.id} className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-100 dark:border-slate-800 flex flex-col justify-between gap-4">
                         <div className="flex gap-4">
                           {combo.imageUrl ? (
                             <img src={combo.imageUrl} alt={combo.title} className="w-20 h-20 rounded-2xl object-cover shrink-0 animate-in fade-in zoom-in-50" />
@@ -1840,7 +1840,7 @@ export function Admin() {
                   </div>
 
                   {/* Combos Form */}
-                  <div className="bg-slate-50 dark:bg-slate-950 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 mt-6 text-left">
+                  <div className="bg-slate-50 dark:bg-slate-950 p-6 rounded-xl border border-slate-100 dark:border-slate-800 mt-6 text-left">
                     <h4 className="text-xs font-black uppercase tracking-widest text-love mb-6">
                       {editingComboId ? `✏️ Editar Combo: ${comboForm.title}` : '✨ Crear Nuevo Combo Prepago'}
                     </h4>
@@ -2187,7 +2187,7 @@ export function Admin() {
             return (
               <div className="space-y-6">
                 {/* Cabecera del Módulo con Sub-pestañas */}
-                <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 p-6 shadow-xl shadow-slate-200/50 dark:shadow-none">
+                <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 p-6 shadow-sm dark:shadow-none">
                   <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                     <div>
                       <h2 className="text-xl md:text-2xl font-black uppercase tracking-tighter italic text-ink dark:text-white flex items-center gap-2">
@@ -2253,7 +2253,7 @@ export function Admin() {
 
                 {/* Sub-pestaña 1: USUARIOS Y CUENTAS */}
                 {staffSubTab === 'usuarios' && (
-                  <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 p-6 shadow-xl shadow-slate-200/50 dark:shadow-none space-y-6">
+                  <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 p-6 shadow-sm dark:shadow-none space-y-6">
                     <div>
                       <h3 className="text-sm font-black uppercase tracking-wider text-ink dark:text-white">Cuentas creadas por el Administrador</h3>
                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-normal mt-0.5">Permiten acceso directo mediante email y contraseña sin pre-registro</p>
@@ -2339,7 +2339,7 @@ export function Admin() {
 
                 {/* Sub-pestaña 2: ROLES */}
                 {staffSubTab === 'roles' && (
-                  <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 p-6 shadow-xl shadow-slate-200/50 dark:shadow-none space-y-6">
+                  <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 p-6 shadow-sm dark:shadow-none space-y-6">
                     <div>
                       <h3 className="text-sm font-black uppercase tracking-wider text-ink dark:text-white">Matriz de Roles de Acceso</h3>
                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-normal mt-0.5">Asigne permisos directamente a cada rol del sistema en tiempo real</p>
@@ -2397,7 +2397,7 @@ export function Admin() {
 
                 {/* Sub-pestaña 3: PERMISOS */}
                 {staffSubTab === 'permisos' && (
-                  <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 p-6 shadow-xl shadow-slate-200/50 dark:shadow-none space-y-6">
+                  <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 p-6 shadow-sm dark:shadow-none space-y-6">
                     <div>
                       <h3 className="text-sm font-black uppercase tracking-wider text-ink dark:text-white">Llaves de Bloqueo Integradas (Permisos)</h3>
                       <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest leading-normal mt-0.5">Permisos específicos utilizados en los componentes y navegación para validar accesos</p>
@@ -2426,7 +2426,7 @@ export function Admin() {
                   <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-[999] flex items-center justify-center p-4">
                     <form 
                       onSubmit={handleAddCustomUser}
-                      className="bg-white dark:bg-slate-900 w-full max-w-md rounded-[2rem] border border-slate-100 dark:border-slate-800 p-6 space-y-4 shadow-2xl relative"
+                      className="bg-white dark:bg-slate-900 w-full max-w-md rounded-xl border border-slate-100 dark:border-slate-800 p-6 space-y-4 shadow-2xl relative"
                     >
                       <button 
                         type="button"
@@ -2528,7 +2528,7 @@ export function Admin() {
                   <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-[999] flex items-center justify-center p-4">
                     <form 
                       onSubmit={handleCreateRole}
-                      className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[2rem] border border-slate-100 dark:border-slate-800 p-6 space-y-4 shadow-2xl relative"
+                      className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-xl border border-slate-100 dark:border-slate-800 p-6 space-y-4 shadow-2xl relative"
                     >
                       <button 
                         type="button"
@@ -2593,7 +2593,7 @@ export function Admin() {
                   <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-[999] flex items-center justify-center p-4">
                     <form 
                       onSubmit={handleCreatePermission}
-                      className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[2rem] border border-slate-100 dark:border-slate-800 p-6 space-y-4 shadow-2xl relative"
+                      className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-xl border border-slate-100 dark:border-slate-800 p-6 space-y-4 shadow-2xl relative"
                     >
                       <button 
                         type="button"
@@ -2669,7 +2669,7 @@ export function Admin() {
 
           {activeTab === 'history' && (
             <div className="space-y-4">
-              <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50 flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
                 <div className="flex flex-wrap gap-2 items-center">
                   <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 mr-2">Filtro Período:</span>
                   <div className="flex items-center gap-2">
@@ -2714,7 +2714,7 @@ export function Admin() {
                 </div>
               </div>
 
-              <div className="bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-xl shadow-slate-200/50">
+              <div className="bg-white rounded-xl border border-slate-100 overflow-hidden shadow-sm">
                 <div className="p-6 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
                   <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-ink">
                     <History size={16} className="text-love" />
@@ -2883,7 +2883,7 @@ export function Admin() {
                       Cargando configuración...
                     </div>
                   ) : (
-                    <div className="bg-white rounded-[2rem] p-8 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none">
+                    <div className="bg-white rounded-xl p-8 border border-slate-100 dark:border-slate-800 shadow-sm dark:shadow-none">
                       <div className="flex items-center gap-3 mb-8">
                         <div className="w-12 h-12 bg-love/10 rounded-2xl flex items-center justify-center text-love">
                           <Settings size={21} />
@@ -2898,7 +2898,7 @@ export function Admin() {
                         {/* Conversión y Tasa */}
                         <div className="space-y-3">
                           <label className="block text-xs font-black uppercase tracking-widest text-slate-500 pl-1">Tasa de Conversión de Puntos</label>
-                          <div className="bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-3xl flex items-center justify-between group transition-all hover:border-love/30">
+                          <div className="bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-xl flex items-center justify-between group transition-all hover:border-love/30">
                             <div className="flex-1">
                               <div className="flex items-baseline gap-2">
                                 <span className="text-2xl font-black text-ink dark:text-slate-300">$</span>
@@ -2924,7 +2924,7 @@ export function Admin() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div className="space-y-3">
                             <label className="block text-xs font-black uppercase tracking-widest text-slate-500 pl-1">📅 Vencimiento de Puntos (Meses)</label>
-                            <div className="bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-5 rounded-3xl flex items-center gap-3">
+                            <div className="bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-5 rounded-xl flex items-center gap-3">
                               <input 
                                 type="number" 
                                 min="1"
@@ -2942,7 +2942,7 @@ export function Admin() {
 
                           <div className="space-y-3">
                             <label className="block text-xs font-black uppercase tracking-widest text-slate-500 pl-1">⚡ Ventana de Inactividad de Categoría</label>
-                            <div className="bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-5 rounded-3xl flex items-center gap-3">
+                            <div className="bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-5 rounded-xl flex items-center gap-3">
                               <input 
                                 type="number" 
                                 min="1"
@@ -2972,7 +2972,7 @@ export function Admin() {
 
                           <div className="space-y-6">
                             {(localLoyaltyTiers || []).map((tier, idx) => (
-                              <div key={tier.id || idx} className="bg-slate-50/50 dark:bg-slate-900/30 border border-slate-100 dark:border-slate-800/80 p-6 rounded-3xl space-y-4 relative overflow-hidden group">
+                              <div key={tier.id || idx} className="bg-slate-50/50 dark:bg-slate-900/30 border border-slate-100 dark:border-slate-800/80 p-6 rounded-xl space-y-4 relative overflow-hidden group">
                                 <div className="absolute top-0 left-0 w-1.5 h-full bg-love/50" />
                                 <div className="flex items-center justify-between">
                                   <span className="text-[10px] font-black uppercase bg-love/10 text-love px-3 py-1 rounded-full">
@@ -3107,7 +3107,7 @@ export function Admin() {
                         <button 
                           type="submit" 
                           disabled={updatingSettings}
-                          className="w-full bg-ink text-white dark:bg-love py-5 rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-xl shadow-ink/20 hover:bg-black transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+                          className="w-full bg-ink text-white dark:bg-love py-5 rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-sm hover:bg-black transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
                         >
                           {updatingSettings ? 'Guardando...' : 'Guardar Cambios'}
                         </button>
@@ -3120,7 +3120,7 @@ export function Admin() {
               {settingsSubTab === 'help' && (
                 <div className="space-y-8">
                   {/* Bases y Condiciones */}
-                  <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 md:p-8 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none text-left">
+                  <div className="bg-white dark:bg-slate-900 rounded-xl p-6 md:p-8 border border-slate-100 dark:border-slate-800 shadow-sm dark:shadow-none text-left">
                     <h4 className="text-sm font-black uppercase tracking-wider text-ink dark:text-white mb-4 flex items-center gap-2">
                       <FileText size={18} className="text-love" /> Bases y Condiciones (Reglamento)
                     </h4>
@@ -3153,7 +3153,7 @@ export function Admin() {
                   </div>
 
                   {/* Preguntas Frecuentes */}
-                  <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 md:p-8 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none space-y-6 text-left">
+                  <div className="bg-white dark:bg-slate-900 rounded-xl p-6 md:p-8 border border-slate-100 dark:border-slate-800 shadow-sm dark:shadow-none space-y-6 text-left">
                     <h4 className="text-sm font-black uppercase tracking-wider text-ink dark:text-white flex items-center gap-2">
                       <HelpCircle size={18} className="text-love" /> Preguntas Frecuentes (FAQs)
                     </h4>
@@ -3198,7 +3198,7 @@ export function Admin() {
                     </div>
 
                     {/* FAQ Add/Edit Form */}
-                    <div className="bg-slate-50 dark:bg-slate-950 p-5 rounded-3xl border border-slate-100 dark:border-slate-800">
+                    <div className="bg-slate-50 dark:bg-slate-950 p-5 rounded-xl border border-slate-100 dark:border-slate-800">
                       <h5 className="text-xs font-black uppercase tracking-widest text-love mb-4 pl-0.5">
                         {editingFaqIndex !== null ? 'Editar Pregunta Frecuente' : 'Agregar Nueva Pregunta'}
                       </h5>
@@ -3277,7 +3277,7 @@ export function Admin() {
 
               {settingsSubTab === 'branches' && (
                 <div className="space-y-8 text-left">
-                  <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 md:p-8 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none space-y-6">
+                  <div className="bg-white dark:bg-slate-900 rounded-xl p-6 md:p-8 border border-slate-100 dark:border-slate-800 shadow-sm dark:shadow-none space-y-6">
                     <h4 className="text-sm font-black uppercase tracking-wider text-ink dark:text-white flex items-center gap-2">
                       <MapPin size={18} className="text-love animate-bounce" /> Gestión de Sucursales
                     </h4>
@@ -3338,7 +3338,7 @@ export function Admin() {
                     </div>
 
                     {/* Branch Form */}
-                    <div className="bg-slate-50 dark:bg-slate-950 p-5 rounded-3xl border border-slate-100 dark:border-slate-800 text-left">
+                    <div className="bg-slate-50 dark:bg-slate-950 p-5 rounded-xl border border-slate-100 dark:border-slate-800 text-left">
                       <h5 className="text-xs font-black uppercase tracking-widest text-[#B45309] dark:text-amber-400 mb-4 font-black">
                         {editingBranchId ? `Editar Sucursal: ${branchForm.name}` : 'Agregar Nueva Sucursal'}
                       </h5>
@@ -3620,7 +3620,7 @@ export function Admin() {
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
                   {/* Left Column - Editing Controls */}
                   <div className="lg:col-span-7 space-y-6">
-                    <div className="bg-white rounded-[2rem] p-6 md:p-8 border border-slate-100 shadow-xl shadow-slate-200/50">
+                    <div className="bg-white rounded-xl p-6 md:p-8 border border-slate-100 shadow-sm">
                       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                         <div className="flex items-center gap-3">
                           <div className="w-12 h-12 bg-love/10 rounded-2xl flex items-center justify-center text-love">
@@ -4310,7 +4310,7 @@ export function Admin() {
 
           {activeTab === 'autonotif' && (
             <div className="space-y-6">
-              <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none">
+              <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-100 dark:border-slate-800 shadow-sm dark:shadow-none">
                 <div className="flex items-center gap-2 mb-1">
                   <Calendar size={18} className="text-love" />
                   <h3 className="text-sm font-black uppercase tracking-wider !text-slate-900">Avisos Automáticos</h3>
@@ -4413,7 +4413,7 @@ export function Admin() {
 
           {activeTab === 'notifications' && (
             <div className="space-y-6">
-              <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none">
+              <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-100 dark:border-slate-800 shadow-sm dark:shadow-none">
                 <div className="flex items-center gap-2 mb-1">
                   <Bell size={18} className="text-love" />
                   <h3 className="text-sm font-black uppercase tracking-wider !text-slate-900">Enviar un aviso</h3>
@@ -4528,7 +4528,7 @@ export function Admin() {
               </div>
 
               {/* Avisos enviados */}
-              <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none">
+              <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-100 dark:border-slate-800 shadow-sm dark:shadow-none">
                 <h3 className="text-sm font-black uppercase tracking-wider !text-slate-900 mb-4">Últimos avisos enviados</h3>
                 {sentNotifications.length === 0 ? (
                   <p className="text-center py-6 text-[10px] uppercase tracking-widest text-slate-400 font-bold">Todavía no enviaste avisos</p>
@@ -4551,7 +4551,7 @@ export function Admin() {
               </div>
 
               {/* Campañas por fecha */}
-              <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none">
+              <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-100 dark:border-slate-800 shadow-sm dark:shadow-none">
                 <div className="flex items-center gap-2 mb-1">
                   <Calendar size={18} className="text-love" />
                   <h3 className="text-sm font-black uppercase tracking-wider !text-slate-900">Campañas programadas</h3>
@@ -4646,10 +4646,10 @@ export function Admin() {
             <div className="space-y-6">
               {/* Header block with statistics cards */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-xl shadow-slate-200/50 flex flex-col justify-between">
+                <div className="bg-white rounded-xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between">
                   <div>
                     <p className="text-[10px] uppercase font-black tracking-widest text-slate-400">Puntuación de Miembros</p>
-                    <h4 className="text-4xl font-black text-ink mt-2 leading-none">
+                    <h4 className="text-4xl font-black text-ink mt-2 leading-none font-mono">
                       {feedbacks.length > 0 
                         ? (feedbacks.reduce((acc, current) => acc + current.rating, 0) / feedbacks.length).toFixed(1) 
                         : '5.0'}
@@ -4677,10 +4677,10 @@ export function Admin() {
                   </div>
                 </div>
 
-                <div className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-xl shadow-slate-200/50 flex flex-col justify-between">
+                <div className="bg-white rounded-xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between">
                   <div>
                     <p className="text-[10px] uppercase font-black tracking-widest text-slate-400">Total de Opiniones</p>
-                    <h4 className="text-4xl font-black text-love mt-2 leading-none">
+                    <h4 className="text-4xl font-black text-love mt-2 leading-none font-mono">
                       {feedbacks.length}
                     </h4>
                   </div>
@@ -4689,10 +4689,10 @@ export function Admin() {
                   </p>
                 </div>
 
-                <div className="bg-white rounded-[2rem] p-6 border border-slate-100 shadow-xl shadow-slate-200/50 flex flex-col justify-between">
+                <div className="bg-white rounded-xl p-6 border border-slate-100 shadow-sm flex flex-col justify-between">
                   <div>
                     <p className="text-[10px] uppercase font-black tracking-widest text-slate-400">Índice de Recomendación</p>
-                    <h4 className="text-4xl font-black text-ink mt-2 leading-none">
+                    <h4 className="text-4xl font-black text-ink mt-2 leading-none font-mono">
                       {feedbacks.length > 0 
                         ? Math.round((feedbacks.filter(f => f.rating >= 4).length / feedbacks.length) * 100) 
                         : '100'}%
@@ -4705,7 +4705,7 @@ export function Admin() {
               </div>
 
               {/* Feedbacks reviews table/cards */}
-              <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-xl shadow-slate-200/50">
+              <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-sm">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-10 h-10 bg-love/10 rounded-xl flex items-center justify-center text-love">
                     <MessageSquare size={20} />
@@ -4798,7 +4798,7 @@ export function Admin() {
             <motion.div 
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
-              className="bg-white border border-slate-200 p-8 rounded-[2rem] w-full max-w-md shadow-2xl relative"
+              className="bg-white border border-slate-200 p-8 rounded-xl w-full max-w-md shadow-2xl relative"
             >
               <button 
                 onClick={() => setShowEditModal(false)}
@@ -4871,7 +4871,7 @@ export function Admin() {
             <motion.div 
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
-              className="bg-white border border-slate-200 p-8 rounded-[2rem] w-full max-w-md shadow-2xl relative"
+              className="bg-white border border-slate-200 p-8 rounded-xl w-full max-w-md shadow-2xl relative"
             >
               <button 
                 onClick={() => setShowAddModal(false)}
