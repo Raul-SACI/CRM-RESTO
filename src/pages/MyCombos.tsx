@@ -3,7 +3,7 @@ import { useAuth } from '@/src/App';
 import { useDesign } from '@/src/components/DesignEngine';
 import { supabase } from '@/src/lib/supabase';
 import { motion, AnimatePresence } from 'motion/react';
-import { CreditCard, Check, ArrowRight, Sparkles, X, QrCode, Ticket, ArrowLeft, Loader2, DollarSign } from 'lucide-react';
+import { CreditCard, Check, ArrowRight, Sparkles, X, QrCode, Ticket, ArrowLeft, Loader2, DollarSign, ShoppingCart } from 'lucide-react';
 import QRCode from 'react-qr-code';
 import { Transaction } from '@/src/types';
 import { cn } from '@/src/lib/utils';
@@ -27,17 +27,26 @@ export function MyCombos() {
   const fetchClientData = async () => {
     if (!profile) return;
     setLoading(true);
-    const { data, error } = await supabase
-      .from('transactions')
-      .select('*')
-      .eq('client_id', profile.id)
-      .order('created_at', { ascending: false })
-      .limit(100);
-    
-    if (!error && data) {
-      setTransactions(data);
+    try {
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .eq('client_id', profile.id)
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (!error && data) {
+        setTransactions(data);
+        setLoading(false);
+      } else if (error) {
+        // Error de la base: no afirmamos "no hay combos"; reintentamos en breve.
+        console.warn("Error al cargar combos, reintentando:", error);
+        setTimeout(fetchClientData, 2000);
+      }
+    } catch (e) {
+      console.warn("Error de red al cargar combos, reintentando:", e);
+      setTimeout(fetchClientData, 2000);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -320,13 +329,27 @@ export function MyCombos() {
   if (!profile || loading || designLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center min-h-[60vh]">
-        <motion.div 
-          animate={{ rotate: 360 }}
-          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-          className="w-10 h-10 border-2 border-love border-t-transparent rounded-full mb-6"
-        />
+        <div className="relative w-28 h-20 mb-6 flex items-end justify-center">
+          {/* Productos cayendo dentro del carrito */}
+          {[0, 1].map((i) => (
+            <motion.span
+              key={i}
+              className="absolute w-2.5 h-2.5 rounded-sm bg-love"
+              style={{ left: `${42 + i * 12}%` }}
+              animate={{ y: [-18, 6], opacity: [0, 1, 1, 0] }}
+              transition={{ duration: 1.4, repeat: Infinity, ease: "easeIn", delay: i * 0.7 }}
+            />
+          ))}
+          {/* Carrito que se desliza */}
+          <motion.div
+            animate={{ x: [-10, 10, -10] }}
+            transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+          >
+            <ShoppingCart size={56} className="text-love" strokeWidth={2.5} />
+          </motion.div>
+        </div>
         <h2 className="text-xl font-bold mb-2 uppercase tracking-tighter !text-slate-900">
-          Sincronizando Combos
+          Cargando Combos
         </h2>
         <p className="text-slate-400 text-[10px] uppercase tracking-widest">Espera un momento...</p>
       </div>

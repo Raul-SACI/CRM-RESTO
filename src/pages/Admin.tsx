@@ -130,6 +130,7 @@ export function Admin() {
     title: '',
     description: '',
     price: 65000,
+    normalPrice: 80000,
     totalUses: 5,
     imageUrl: '',
     isActive: true,
@@ -1583,7 +1584,7 @@ export function Admin() {
                             type="button"
                             onClick={() => {
                               setEditingComboId(combo.id);
-                              setComboForm({ ...combo, expirationDays: (combo as any).expirationDays || 30 });
+                              setComboForm({ ...combo, expirationDays: (combo as any).expirationDays || 30, normalPrice: (combo as any).normalPrice || combo.price });
                             }}
                             className="flex-1 py-2 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-ink dark:text-white rounded-xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer border-none"
                           >
@@ -1640,6 +1641,7 @@ export function Admin() {
                           title: '',
                           description: '',
                           price: 65000,
+                          normalPrice: 80000,
                           totalUses: 5,
                           imageUrl: '',
                           isActive: true,
@@ -1661,7 +1663,19 @@ export function Admin() {
                         </div>
 
                         <div className="space-y-1">
-                          <label className="block text-[9px] uppercase font-black text-slate-400 tracking-widest pl-1">Precio Total ($)</label>
+                          <label className="block text-[9px] uppercase font-black text-slate-400 tracking-widest pl-1">Precio Normal ($) — tachado</label>
+                          <input
+                            type="number"
+                            min="0"
+                            placeholder="80000"
+                            className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-xs outline-none focus:border-love text-ink dark:text-white font-bold transition-all"
+                            value={comboForm.normalPrice}
+                            onChange={(e) => setComboForm({ ...comboForm, normalPrice: parseFloat(e.target.value) || 0 })}
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="block text-[9px] uppercase font-black text-slate-400 tracking-widest pl-1">Precio con Descuento ($) — se cobra</label>
                           <input
                             type="number"
                             required
@@ -1775,6 +1789,7 @@ export function Admin() {
                                 title: '',
                                 description: '',
                                 price: 65000,
+                                normalPrice: 80000,
                                 totalUses: 5,
                                 imageUrl: '',
                                 isActive: true,

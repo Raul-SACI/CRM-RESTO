@@ -40,6 +40,7 @@ export interface ComboConfig {
   title: string;
   description: string;
   price: number;
+  normalPrice?: number;
   totalUses: number;
   imageUrl?: string;
   isActive: boolean;

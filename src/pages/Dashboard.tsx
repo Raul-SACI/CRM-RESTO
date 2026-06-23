@@ -1290,12 +1290,22 @@ export function Dashboard() {
                         🎫 {combo.totalUses} usos
                       </span>
                       <div className="text-right">
-                        <span className="text-[7px] text-slate-400 uppercase font-black block leading-none select-none">Precio</span>
+                        {combo.normalPrice && combo.normalPrice > combo.price && (
+                          <span className="text-[9px] text-slate-400 font-bold line-through block leading-none select-none">
+                            ${combo.normalPrice.toLocaleString('es-AR')}
+                          </span>
+                        )}
                         <span className="text-base font-black text-love tracking-tight leading-none block mt-0.5">
                           ${combo.price.toLocaleString('es-AR')}
                         </span>
                       </div>
                     </div>
+
+                    {combo.normalPrice && combo.normalPrice > combo.price && (
+                      <p className="text-[8px] text-emerald-600 font-black uppercase tracking-wide mt-2">
+                        Ahorrás ${(combo.normalPrice - combo.price).toLocaleString('es-AR')} con este combo
+                      </p>
+                    )}
 
                     <p className="text-[8px] text-slate-500 font-bold uppercase tracking-wide mt-2 flex items-center gap-1">
                       <Clock size={9} className="text-love shrink-0" />
