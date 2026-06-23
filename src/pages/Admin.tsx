@@ -27,7 +27,7 @@ export function Admin() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'clients' | 'prizes' | 'combos' | 'staff' | 'history' | 'settings' | 'design' | 'feedback' | 'notifications'>('dashboard');
 
   // Notificaciones (avisos)
-  const [notifForm, setNotifForm] = useState({ title: '', message: '', target: 'all', clientId: '' });
+  const [notifForm, setNotifForm] = useState({ title: '', message: '', target: 'all', clientId: '', alsoEmail: false });
   const [notifSending, setNotifSending] = useState(false);
   const [notifClientSearch, setNotifClientSearch] = useState('');
   const [sentNotifications, setSentNotifications] = useState<any[]>([]);
@@ -780,10 +780,48 @@ export function Admin() {
       const { error } = await supabase.from('notifications').insert([row]);
       if (error) throw error;
 
-      alert(notifForm.target === 'all'
+      // Envío opcional por email
+      let emailNote = '';
+      if (notifForm.alsoEmail) {
+        try {
+          let recipients: string[] = [];
+          if (notifForm.target === 'all') {
+            recipients = clients
+              .map(c => (c.email || '').trim())
+              .filter(e => e && e.includes('@'));
+          } else {
+            const c = clients.find(cl => cl.id === notifForm.clientId);
+            if (c?.email) recipients = [c.email.trim()];
+          }
+
+          if (recipients.length === 0) {
+            emailNote = ' (No se enviaron emails: no había direcciones válidas)';
+          } else {
+            const resp = await fetch('/api/email/send', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                to: recipients,
+                subject: notifForm.title.trim(),
+                message: notifForm.message.trim()
+              })
+            });
+            const data = await resp.json();
+            if (resp.ok) {
+              emailNote = ` (Emails enviados: ${data.sent})`;
+            } else {
+              emailNote = ` (Aviso guardado, pero el email falló: ${data.error || 'error desconocido'})`;
+            }
+          }
+        } catch (mailErr: any) {
+          emailNote = ` (Aviso guardado, pero el email falló: ${mailErr?.message || 'error'})`;
+        }
+      }
+
+      alert((notifForm.target === 'all'
         ? '¡Aviso enviado a todos los clientes!'
-        : '¡Aviso enviado al cliente seleccionado!');
-      setNotifForm({ title: '', message: '', target: 'all', clientId: '' });
+        : '¡Aviso enviado al cliente seleccionado!') + emailNote);
+      setNotifForm({ title: '', message: '', target: 'all', clientId: '', alsoEmail: false });
       setNotifClientSearch('');
       fetchSentNotifications();
     } catch (err: any) {
@@ -4230,6 +4268,16 @@ export function Admin() {
                       )}
                     </div>
                   )}
+
+                  <label className="flex items-center gap-2 cursor-pointer select-none pl-1">
+                    <input
+                      type="checkbox"
+                      checked={notifForm.alsoEmail}
+                      onChange={(e) => setNotifForm({ ...notifForm, alsoEmail: e.target.checked })}
+                      className="w-4 h-4 accent-love cursor-pointer"
+                    />
+                    <span className="text-[10px] uppercase font-black tracking-widest text-slate-500">Enviar también por email</span>
+                  </label>
 
                   <button
                     type="submit"
