@@ -175,6 +175,64 @@ export default async function handler(req: any, res: any) {
       }
     }
 
+    // === 4) CAMPAÑAS POR FECHA ===
+    try {
+      const campaigns = await sb(`campaigns?enabled=eq.true&select=*`);
+      for (const camp of campaigns || []) {
+        // ¿Le toca hoy?
+        const sd = new Date(camp.send_date + "T00:00:00");
+        if (isNaN(sd.getTime())) continue;
+        const matchesToday = camp.yearly
+          ? (sd.getMonth() === ar.getMonth() && sd.getDate() === ar.getDate())
+          : (sd.getFullYear() === ar.getFullYear() && sd.getMonth() === ar.getMonth() && sd.getDate() === ar.getDate());
+        if (!matchesToday) continue;
+
+        // Clave de envío: para anuales incluye el año actual; para únicas, la fecha
+        const sentKey = camp.yearly ? `${ar.getFullYear()}-${todayKey}` : camp.send_date;
+        const already = await sb(`campaign_sends_log?campaign_id=eq.${camp.id}&sent_key=eq.${encodeURIComponent(sentKey)}&select=id`);
+        if (already && already.length > 0) continue;
+
+        // Determinar destinatarios según el grupo
+        let targets = clients || [];
+        if (camp.target === "fan") targets = (clients || []).filter((c: any) => (c.points || 0) < 500);
+        else if (camp.target === "gold") targets = (clients || []).filter((c: any) => (c.points || 0) >= 500 && (c.points || 0) < 1000);
+        else if (camp.target === "black") targets = (clients || []).filter((c: any) => (c.points || 0) >= 1000);
+        else if (camp.target === "inactive") {
+          const cutoff = new Date(ar.getTime() - 60 * 24 * 60 * 60 * 1000).toISOString();
+          const filtered: any[] = [];
+          for (const c of clients || []) {
+            const recent = await sb(`transactions?client_id=eq.${c.id}&points_earned=gt.0&created_at=gte.${cutoff}&select=id&limit=1`);
+            if (!recent || recent.length === 0) filtered.push(c);
+          }
+          targets = filtered;
+        }
+
+        const wantApp = camp.channel === "app" || camp.channel === "both";
+        const wantEmail = camp.channel === "email" || camp.channel === "both";
+
+        for (const c of targets) {
+          const msg = (camp.message || "").replace(/\{nombre\}/g, c.full_name || "crafter");
+          if (wantApp) {
+            await sb(`notifications`, { method: "POST", body: JSON.stringify({ client_id: c.id, title: camp.title, message: msg }) });
+          }
+          if (wantEmail && c.email && c.email.includes("@")) {
+            try {
+              await fetch(`${APP_URL}/api/email/send`, {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ to: c.email, subject: camp.title, message: msg })
+              });
+            } catch (e: any) { summary.errors.push(`camp-email ${c.id}: ${e?.message || e}`); }
+          }
+        }
+
+        // Registrar que se envió
+        await sb(`campaign_sends_log`, { method: "POST", body: JSON.stringify({ campaign_id: camp.id, sent_key: sentKey }) });
+        (summary as any).campaigns = ((summary as any).campaigns || 0) + 1;
+      }
+    } catch (e: any) {
+      summary.errors.push(`campaigns: ${e?.message || e}`);
+    }
+
     return res.status(200).json({ ok: true, summary });
   } catch (err: any) {
     console.error("Error en cron diario:", err);

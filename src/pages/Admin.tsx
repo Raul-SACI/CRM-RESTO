@@ -41,6 +41,11 @@ export function Admin() {
   };
   const [autoNotifForm, setAutoNotifForm] = useState<any>(defaultAutoNotif);
   const [autoNotifSaving, setAutoNotifSaving] = useState(false);
+
+  // Campañas por fecha
+  const [campaignForm, setCampaignForm] = useState({ title: '', message: '', send_date: '', target: 'all', channel: 'both', yearly: false });
+  const [campaignSaving, setCampaignSaving] = useState(false);
+  const [campaignsList, setCampaignsList] = useState<any[]>([]);
   
   // Custom permissions module states
   const [staffSubTab, setStaffSubTab] = useState<'usuarios' | 'roles' | 'permisos'>('usuarios');
@@ -378,6 +383,7 @@ export function Admin() {
       fetchSettings();
     } else if (activeTab === 'notifications') {
       fetchSentNotifications();
+      fetchCampaigns();
       void fetchData(); // para tener la lista de clientes disponible
     } else if (activeTab === 'autonotif') {
       // Cargar la config guardada (o defaults) en el formulario
@@ -849,6 +855,50 @@ export function Admin() {
       alert('Error al enviar el aviso: ' + (err?.message || err));
     } finally {
       setNotifSending(false);
+    }
+  };
+
+  const fetchCampaigns = async () => {
+    try {
+      const { data } = await supabase.from('campaigns').select('*').order('send_date', { ascending: true });
+      if (data) setCampaignsList(data);
+    } catch (e) { console.warn('Error cargando campañas:', e); }
+  };
+
+  const handleCreateCampaign = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!campaignForm.title.trim() || !campaignForm.message.trim() || !campaignForm.send_date) {
+      alert('Completá título, mensaje y fecha.');
+      return;
+    }
+    setCampaignSaving(true);
+    try {
+      const { error } = await supabase.from('campaigns').insert([{
+        title: campaignForm.title.trim(),
+        message: campaignForm.message.trim(),
+        send_date: campaignForm.send_date,
+        target: campaignForm.target,
+        channel: campaignForm.channel,
+        yearly: campaignForm.yearly
+      }]);
+      if (error) throw error;
+      alert('¡Campaña programada!');
+      setCampaignForm({ title: '', message: '', send_date: '', target: 'all', channel: 'both', yearly: false });
+      fetchCampaigns();
+    } catch (err: any) {
+      alert('Error al crear la campaña: ' + (err?.message || err));
+    } finally {
+      setCampaignSaving(false);
+    }
+  };
+
+  const handleDeleteCampaign = async (id: string) => {
+    if (!confirm('¿Eliminar esta campaña programada?')) return;
+    try {
+      await supabase.from('campaigns').delete().eq('id', id);
+      fetchCampaigns();
+    } catch (err: any) {
+      alert('Error al eliminar: ' + (err?.message || err));
     }
   };
 
@@ -4444,6 +4494,96 @@ export function Admin() {
                           </span>
                         </div>
                         <p className="text-[11px] text-slate-500 mt-1">{n.message}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Campañas por fecha */}
+              <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none">
+                <div className="flex items-center gap-2 mb-1">
+                  <Calendar size={18} className="text-love" />
+                  <h3 className="text-sm font-black uppercase tracking-wider !text-slate-900">Campañas programadas</h3>
+                </div>
+                <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-5">Se envían solas en la fecha elegida (las revisa el sistema cada día)</p>
+
+                <form onSubmit={handleCreateCampaign} className="space-y-3">
+                  <input type="text" maxLength={80} placeholder="Título (ej: ¡Feliz Navidad!)"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-xs outline-none focus:border-love text-ink dark:text-white font-bold"
+                    value={campaignForm.title}
+                    onChange={(e) => setCampaignForm({ ...campaignForm, title: e.target.value })} />
+
+                  <textarea rows={3} maxLength={300} placeholder="Mensaje... (podés usar {nombre})"
+                    className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-xs outline-none focus:border-love text-ink dark:text-white font-bold resize-none"
+                    value={campaignForm.message}
+                    onChange={(e) => setCampaignForm({ ...campaignForm, message: e.target.value })} />
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <label className="block text-[9px] uppercase font-black text-slate-400 tracking-widest pl-1">Fecha de envío</label>
+                      <input type="date"
+                        className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs outline-none focus:border-love text-ink dark:text-white font-bold"
+                        value={campaignForm.send_date}
+                        onChange={(e) => setCampaignForm({ ...campaignForm, send_date: e.target.value })} />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block text-[9px] uppercase font-black text-slate-400 tracking-widest pl-1">Destinatarios</label>
+                      <select
+                        className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs outline-none focus:border-love text-ink dark:text-white font-bold"
+                        value={campaignForm.target}
+                        onChange={(e) => setCampaignForm({ ...campaignForm, target: e.target.value })}>
+                        <option value="all">Todos</option>
+                        <option value="fan">Solo CRAFT FAN</option>
+                        <option value="gold">Solo CRAFT GOLD</option>
+                        <option value="black">Solo CRAFT BLACK</option>
+                        <option value="inactive">Solo inactivos (60 días)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 items-end">
+                    <div className="space-y-1">
+                      <label className="block text-[9px] uppercase font-black text-slate-400 tracking-widest pl-1">Canal</label>
+                      <select
+                        className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2.5 text-xs outline-none focus:border-love text-ink dark:text-white font-bold"
+                        value={campaignForm.channel}
+                        onChange={(e) => setCampaignForm({ ...campaignForm, channel: e.target.value })}>
+                        <option value="both">Campanita + Email</option>
+                        <option value="app">Solo campanita</option>
+                        <option value="email">Solo email</option>
+                      </select>
+                    </div>
+                    <label className="flex items-center gap-2 cursor-pointer select-none pb-2.5">
+                      <input type="checkbox" className="w-4 h-4 accent-love cursor-pointer"
+                        checked={campaignForm.yearly}
+                        onChange={(e) => setCampaignForm({ ...campaignForm, yearly: e.target.checked })} />
+                      <span className="text-[10px] uppercase font-black tracking-widest text-slate-500">Repetir cada año</span>
+                    </label>
+                  </div>
+
+                  <button type="submit" disabled={campaignSaving}
+                    className="w-full py-3 bg-love text-white rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer border-none shadow-lg shadow-love/15 flex items-center justify-center gap-2 disabled:opacity-50">
+                    <Calendar size={13} /> {campaignSaving ? 'Programando...' : 'Programar campaña'}
+                  </button>
+                </form>
+
+                {campaignsList.length > 0 && (
+                  <div className="mt-5 space-y-2">
+                    <h4 className="text-[10px] uppercase font-black tracking-widest text-slate-400">Programadas</h4>
+                    {campaignsList.map((c) => (
+                      <div key={c.id} className="border border-slate-100 dark:border-slate-800 rounded-xl px-4 py-3 flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-xs font-black !text-slate-900">{c.title}</p>
+                          <p className="text-[11px] text-slate-500 mt-0.5 truncate">{c.message}</p>
+                          <p className="text-[8px] uppercase tracking-widest text-slate-400 font-bold mt-1.5">
+                            {c.send_date}{c.yearly ? ' · cada año' : ''} · {c.target} · {c.channel}
+                          </p>
+                        </div>
+                        <button type="button" onClick={() => handleDeleteCampaign(c.id)}
+                          className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 border-none bg-transparent cursor-pointer shrink-0">
+                          <Trash2 size={14} className="text-red-400" />
+                        </button>
                       </div>
                     ))}
                   </div>
