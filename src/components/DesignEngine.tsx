@@ -47,6 +47,12 @@ export interface ComboConfig {
   expirationDays?: number;
 }
 
+export interface AutoNotifConfig {
+  birthday: { enabled: boolean; message: string; giftPoints: number };
+  comboExpiring: { enabled: boolean; message: string; daysBefore: number };
+  inactive: { enabled: boolean; message: string; daysInactive: number; giftPoints: number };
+}
+
 export interface DesignConfig {
   fontSans: string;
   fontHeadings: string;
@@ -75,6 +81,9 @@ export interface DesignConfig {
 
   // Custom combos prepago added by user
   combos?: ComboConfig[];
+
+  // Configuración de avisos automáticos (Grupo 2)
+  autoNotif?: AutoNotifConfig;
   
   // Custom client button colors (active/inactive styling)
   navButtonColors?: Record<string, string>; // e.g. { '/': '#ef4444', '/rewards': '#10b981', '/help': '#3b82f6', '/branches': '#f59e0b' }
@@ -282,6 +291,24 @@ export const DEFAULT_DESIGN: DesignConfig = {
       isActive: true
     }
   ],
+  autoNotif: {
+    birthday: {
+      enabled: true,
+      message: '¡Feliz cumple, {nombre}! Que tengas un día genial. Te esperamos en CRAFT para celebrarlo con vos.',
+      giftPoints: 0
+    },
+    comboExpiring: {
+      enabled: true,
+      message: '¡Atención {nombre}! A tu combo "{combo}" le quedan {dias} días para que lo uses. No pierdas tus consumos, te esperamos en CRAFT.',
+      daysBefore: 7
+    },
+    inactive: {
+      enabled: true,
+      message: 'Hace tiempo que no te vemos, {nombre}. Volvé a CRAFT y seguí sumando puntos. ¡Te esperamos!',
+      daysInactive: 60,
+      giftPoints: 0
+    }
+  },
   navButtonColors: {
     '/': '#ef4444',
     '/rewards': '#ef4444',

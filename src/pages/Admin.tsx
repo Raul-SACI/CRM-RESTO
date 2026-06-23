@@ -24,13 +24,22 @@ import {
 export function Admin() {
   const { isSimulatingClient, setIsSimulatingClient, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'clients' | 'prizes' | 'combos' | 'staff' | 'history' | 'settings' | 'design' | 'feedback' | 'notifications'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'clients' | 'prizes' | 'combos' | 'staff' | 'history' | 'settings' | 'design' | 'feedback' | 'notifications' | 'autonotif'>('dashboard');
 
   // Notificaciones (avisos)
   const [notifForm, setNotifForm] = useState({ title: '', message: '', target: 'all', clientId: '', alsoEmail: false });
   const [notifSending, setNotifSending] = useState(false);
   const [notifClientSearch, setNotifClientSearch] = useState('');
   const [sentNotifications, setSentNotifications] = useState<any[]>([]);
+
+  // Config de avisos automáticos (Grupo 2) — se edita y guarda en designConfig
+  const defaultAutoNotif = {
+    birthday: { enabled: true, message: '¡Feliz cumple, {nombre}! Que tengas un día genial. Te esperamos en CRAFT.', giftPoints: 0 },
+    comboExpiring: { enabled: true, message: '¡Atención {nombre}! A tu combo "{combo}" le quedan {dias} días para usarlo. ¡Te esperamos en CRAFT!', daysBefore: 7 },
+    inactive: { enabled: true, message: 'Hace tiempo que no te vemos, {nombre}. ¡Volvé a CRAFT y seguí sumando puntos!', daysInactive: 60, giftPoints: 0 }
+  };
+  const [autoNotifForm, setAutoNotifForm] = useState<any>(defaultAutoNotif);
+  const [autoNotifSaving, setAutoNotifSaving] = useState(false);
   
   // Custom permissions module states
   const [staffSubTab, setStaffSubTab] = useState<'usuarios' | 'roles' | 'permisos'>('usuarios');
@@ -369,6 +378,16 @@ export function Admin() {
     } else if (activeTab === 'notifications') {
       fetchSentNotifications();
       void fetchData(); // para tener la lista de clientes disponible
+    } else if (activeTab === 'autonotif') {
+      // Cargar la config guardada (o defaults) en el formulario
+      const saved = (designConfig as any)?.autoNotif;
+      if (saved) {
+        setAutoNotifForm({
+          birthday: { ...defaultAutoNotif.birthday, ...(saved.birthday || {}) },
+          comboExpiring: { ...defaultAutoNotif.comboExpiring, ...(saved.comboExpiring || {}) },
+          inactive: { ...defaultAutoNotif.inactive, ...(saved.inactive || {}) }
+        });
+      }
     } else if (activeTab === 'design' || activeTab === 'combos') {
       setLoading(false);
     } else if (activeTab === 'dashboard') {
@@ -831,6 +850,18 @@ export function Admin() {
     }
   };
 
+  const handleSaveAutoNotif = async () => {
+    setAutoNotifSaving(true);
+    try {
+      await saveDesignConfig({ ...designConfig, autoNotif: autoNotifForm } as any);
+      alert('¡Configuración de avisos automáticos guardada!');
+    } catch (err: any) {
+      alert('Error al guardar: ' + (err?.message || err));
+    } finally {
+      setAutoNotifSaving(false);
+    }
+  };
+
   const handleSubmitPrize = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPrize.image_url) {
@@ -1080,7 +1111,7 @@ export function Admin() {
           "flex flex-row lg:flex-col p-1 lg:p-0 bg-slate-100 dark:bg-slate-950 lg:bg-transparent rounded-2xl border border-slate-200 dark:border-slate-800 lg:border-none overflow-x-auto lg:overflow-x-visible scrollbar-hide lg:w-full",
           isSidebarExpanded ? "lg:space-y-1.5" : "lg:space-y-3 lg:items-center"
         )}>
-          {['dashboard', 'clients', 'prizes', 'combos', 'staff', 'history', 'notifications', 'settings', 'design', 'feedback'].map((tab) => {
+          {['dashboard', 'clients', 'prizes', 'combos', 'staff', 'history', 'notifications', 'autonotif', 'settings', 'design', 'feedback'].map((tab) => {
             const labels: Record<string, string> = {
               dashboard: 'Dashboard',
               clients: 'Clientes',
@@ -1089,6 +1120,7 @@ export function Admin() {
               staff: 'Staff',
               history: 'Movimientos',
               notifications: 'Notificaciones',
+              autonotif: 'Avisos Automáticos',
               settings: 'Ajustes',
               design: 'Diseño',
               feedback: 'Opiniones'
@@ -1101,6 +1133,7 @@ export function Admin() {
               staff: <UserPlus size={14} />,
               history: <History size={14} />,
               notifications: <Bell size={14} />,
+              autonotif: <Calendar size={14} />,
               settings: <Settings size={14} />,
               design: <Palette size={14} />,
               feedback: <MessageSquare size={14} />
@@ -4170,6 +4203,89 @@ export function Admin() {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {activeTab === 'autonotif' && (
+            <div className="space-y-6">
+              <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none">
+                <div className="flex items-center gap-2 mb-1">
+                  <Calendar size={18} className="text-love" />
+                  <h3 className="text-sm font-black uppercase tracking-wider !text-slate-900">Avisos Automáticos</h3>
+                </div>
+                <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-2">Se envían solos cada día (campanita + email)</p>
+                <p className="text-[10px] text-slate-400 mb-5">Podés usar <span className="font-black">{'{nombre}'}</span>, <span className="font-black">{'{combo}'}</span>, <span className="font-black">{'{dias}'}</span> y <span className="font-black">{'{puntos}'}</span> en los textos; se reemplazan solos.</p>
+
+                {/* CUMPLEAÑOS */}
+                <div className="border border-slate-100 dark:border-slate-800 rounded-2xl p-4 mb-4">
+                  <label className="flex items-center justify-between mb-3 cursor-pointer">
+                    <span className="text-xs font-black uppercase tracking-wider !text-slate-900">🎂 Cumpleaños</span>
+                    <input type="checkbox" className="w-4 h-4 accent-love cursor-pointer"
+                      checked={autoNotifForm.birthday.enabled}
+                      onChange={(e) => setAutoNotifForm({ ...autoNotifForm, birthday: { ...autoNotifForm.birthday, enabled: e.target.checked } })} />
+                  </label>
+                  <textarea rows={2} className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs outline-none focus:border-love text-ink dark:text-white resize-none mb-2"
+                    value={autoNotifForm.birthday.message}
+                    onChange={(e) => setAutoNotifForm({ ...autoNotifForm, birthday: { ...autoNotifForm.birthday, message: e.target.value } })} />
+                  <div className="flex items-center gap-2">
+                    <label className="text-[9px] uppercase font-black text-slate-400 tracking-widest">Puntos de regalo:</label>
+                    <input type="number" min="0" className="w-24 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-love text-ink dark:text-white font-bold"
+                      value={autoNotifForm.birthday.giftPoints}
+                      onChange={(e) => setAutoNotifForm({ ...autoNotifForm, birthday: { ...autoNotifForm.birthday, giftPoints: parseInt(e.target.value) || 0 } })} />
+                  </div>
+                </div>
+
+                {/* COMBO POR VENCER */}
+                <div className="border border-slate-100 dark:border-slate-800 rounded-2xl p-4 mb-4">
+                  <label className="flex items-center justify-between mb-3 cursor-pointer">
+                    <span className="text-xs font-black uppercase tracking-wider !text-slate-900">⏳ Combo por vencer</span>
+                    <input type="checkbox" className="w-4 h-4 accent-love cursor-pointer"
+                      checked={autoNotifForm.comboExpiring.enabled}
+                      onChange={(e) => setAutoNotifForm({ ...autoNotifForm, comboExpiring: { ...autoNotifForm.comboExpiring, enabled: e.target.checked } })} />
+                  </label>
+                  <textarea rows={2} className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs outline-none focus:border-love text-ink dark:text-white resize-none mb-2"
+                    value={autoNotifForm.comboExpiring.message}
+                    onChange={(e) => setAutoNotifForm({ ...autoNotifForm, comboExpiring: { ...autoNotifForm.comboExpiring, message: e.target.value } })} />
+                  <div className="flex items-center gap-2">
+                    <label className="text-[9px] uppercase font-black text-slate-400 tracking-widest">Avisar cuántos días antes:</label>
+                    <input type="number" min="1" className="w-24 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-love text-ink dark:text-white font-bold"
+                      value={autoNotifForm.comboExpiring.daysBefore}
+                      onChange={(e) => setAutoNotifForm({ ...autoNotifForm, comboExpiring: { ...autoNotifForm.comboExpiring, daysBefore: parseInt(e.target.value) || 1 } })} />
+                  </div>
+                </div>
+
+                {/* INACTIVIDAD */}
+                <div className="border border-slate-100 dark:border-slate-800 rounded-2xl p-4 mb-5">
+                  <label className="flex items-center justify-between mb-3 cursor-pointer">
+                    <span className="text-xs font-black uppercase tracking-wider !text-slate-900">💔 Inactividad</span>
+                    <input type="checkbox" className="w-4 h-4 accent-love cursor-pointer"
+                      checked={autoNotifForm.inactive.enabled}
+                      onChange={(e) => setAutoNotifForm({ ...autoNotifForm, inactive: { ...autoNotifForm.inactive, enabled: e.target.checked } })} />
+                  </label>
+                  <textarea rows={2} className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 text-xs outline-none focus:border-love text-ink dark:text-white resize-none mb-2"
+                    value={autoNotifForm.inactive.message}
+                    onChange={(e) => setAutoNotifForm({ ...autoNotifForm, inactive: { ...autoNotifForm.inactive, message: e.target.value } })} />
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                    <div className="flex items-center gap-2">
+                      <label className="text-[9px] uppercase font-black text-slate-400 tracking-widest">Días sin actividad:</label>
+                      <input type="number" min="1" className="w-20 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-love text-ink dark:text-white font-bold"
+                        value={autoNotifForm.inactive.daysInactive}
+                        onChange={(e) => setAutoNotifForm({ ...autoNotifForm, inactive: { ...autoNotifForm.inactive, daysInactive: parseInt(e.target.value) || 1 } })} />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <label className="text-[9px] uppercase font-black text-slate-400 tracking-widest">Puntos para volver:</label>
+                      <input type="number" min="0" className="w-20 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-love text-ink dark:text-white font-bold"
+                        value={autoNotifForm.inactive.giftPoints}
+                        onChange={(e) => setAutoNotifForm({ ...autoNotifForm, inactive: { ...autoNotifForm.inactive, giftPoints: parseInt(e.target.value) || 0 } })} />
+                    </div>
+                  </div>
+                </div>
+
+                <button type="button" onClick={handleSaveAutoNotif} disabled={autoNotifSaving}
+                  className="w-full py-3 bg-love text-white rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer border-none shadow-lg shadow-love/15 disabled:opacity-50">
+                  {autoNotifSaving ? 'Guardando...' : 'Guardar configuración'}
+                </button>
+              </div>
             </div>
           )}
 
