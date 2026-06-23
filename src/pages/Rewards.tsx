@@ -28,13 +28,8 @@ export function Rewards() {
   useEffect(() => {
     const fetchPrizes = async () => {
       // Siempre mostramos lo que viene de la base. El cache solo se usa como
-      // respaldo si la base falla (ver catch).
-
-      // Timeout de seguridad de 6s
-      const timeout = setTimeout(() => {
-        setLoading(false);
-      }, 6000);
-
+      // respaldo si la base falla (ver catch). Mantenemos 'loading' hasta que
+      // la base responda, para no mostrar 'no hay premios' antes de tiempo.
       try {
         const { data, error } = await supabase
           .from('catalogo_premios')
@@ -58,7 +53,6 @@ export function Rewards() {
           try { setPrizes(JSON.parse(cached)); } catch (e) {}
         }
       } finally {
-        clearTimeout(timeout);
         setLoading(false);
       }
     };
@@ -182,13 +176,44 @@ export function Rewards() {
   if (!profile || loading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center min-h-[60vh]">
-        <motion.div 
-          animate={{ rotate: 360 }}
-          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-          className="w-10 h-10 border-2 border-love border-t-transparent rounded-full mb-6"
-        />
+        <div className="relative w-24 h-24 mb-6 flex items-end justify-center">
+          {/* Brillo/sparkle que sale de la caja */}
+          <motion.div
+            className="absolute top-0 left-1/2 -translate-x-1/2 text-love text-lg"
+            animate={{ opacity: [0, 1, 0], y: [6, -6, 6], scale: [0.8, 1.1, 0.8] }}
+            transition={{ duration: 1.8, repeat: Infinity, ease: "easeInOut" }}
+          >
+            ✦
+          </motion.div>
+
+          {/* Tapa de la caja (rebota) */}
+          <motion.div
+            className="absolute left-1/2 -translate-x-1/2 z-10"
+            style={{ top: "18px" }}
+            animate={{ y: [0, -8, 0] }}
+            transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
+          >
+            <div className="w-16 h-5 bg-love rounded-md border-[3px] border-ink relative">
+              {/* Moño / nudo */}
+              <div className="absolute left-1/2 -top-2 -translate-x-1/2 w-3 h-3 rounded-full bg-love border-[2px] border-ink" />
+            </div>
+          </motion.div>
+
+          {/* Cuerpo de la caja */}
+          <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-14 h-12 bg-white border-[3px] border-ink rounded-b-md overflow-hidden">
+            {/* Cinta vertical */}
+            <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-2.5 bg-love/80" />
+            {/* Relleno animado (se "carga") */}
+            <motion.div
+              className="absolute bottom-0 left-0 right-0 bg-love/15"
+              initial={{ height: "0%" }}
+              animate={{ height: ["10%", "100%", "10%"] }}
+              transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+            />
+          </div>
+        </div>
         <h2 className="text-xl font-bold mb-2 uppercase tracking-tighter !text-slate-900">
-          Sincronizando Premios
+          Cargando Premios
         </h2>
         <p className="text-slate-400 text-[10px] uppercase tracking-widest">Espera un momento...</p>
       </div>
