@@ -322,19 +322,23 @@ export function MyAccount() {
               const desc = tx.description || '';
               const isCanje = desc.startsWith('CANJE');
               const isCompra = desc.startsWith('COMPRA_COMBO');
-              const tipo = isCanje ? 'CANJE' : isCompra ? 'COMPRA' : 'CARGA';
+              const isUso = desc.startsWith('CONSUMO_COMBO');
+              const tipo = isCanje ? 'CANJE' : isCompra ? 'COMPRA' : isUso ? 'USO' : 'CARGA';
 
               // Colores por tipo
               const tipoClass = isCanje
                 ? "bg-love/10 text-love"
                 : isCompra
                   ? "bg-amber-500/10 text-amber-600"
-                  : "bg-emerald-500/10 text-emerald-500";
+                  : isUso
+                    ? "bg-slate-500/10 text-slate-500"
+                    : "bg-emerald-500/10 text-emerald-500";
 
               // Texto principal legible segun tipo
               let titulo = desc;
               if (isCanje) titulo = desc.replace('CANJE:', '').trim() || 'Canje de premio';
               else if (isCompra) titulo = desc.replace('COMPRA_COMBO:', '').split('|')[1]?.trim() || 'Compra de combo';
+              else if (isUso) titulo = desc.replace('CONSUMO_COMBO:', '').split('|')[1]?.trim() || 'Uso de pase';
               else titulo = desc || 'Carga de puntos';
 
               // Monto de puntos: canje resta, carga/compra suman lo que tengan

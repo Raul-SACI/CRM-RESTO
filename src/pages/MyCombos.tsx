@@ -24,6 +24,40 @@ export function MyCombos() {
   const [activeQRCodeCombo, setActiveQRCodeCombo] = useState<any | null>(null);
   const [comboRedeeming, setComboRedeeming] = useState<string | null>(null);
 
+  // Generación de código de uso (para que el cajero lo confirme)
+  const [generatingCode, setGeneratingCode] = useState<string | null>(null);
+  const [activeUseCode, setActiveUseCode] = useState<{ code: string; combo: any } | null>(null);
+
+  const generateUseCode = async (combo: any) => {
+    if (!profile) return;
+    setGeneratingCode(combo.id);
+    try {
+      // Código de 6 caracteres alfanuméricos (sin caracteres confusos)
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let rnd = '';
+      for (let i = 0; i < 6; i++) rnd += chars[Math.floor(Math.random() * chars.length)];
+      const code = `USO-${rnd}`;
+
+      const { error } = await supabase.from('combo_use_requests').insert({
+        code,
+        client_id: profile.id,
+        client_name: profile.full_name || 'Cliente',
+        combo_id: combo.id,
+        combo_title: combo.title,
+        status: 'pending'
+      });
+      if (error) throw error;
+
+      setActiveUseCode({ code, combo });
+    } catch (err: any) {
+      alert('No se pudo generar el código. Intentá de nuevo.');
+      console.error(err);
+    } finally {
+      setGeneratingCode(null);
+    }
+  };
+
+
   const fetchClientData = async () => {
     if (!profile) return;
     setLoading(true);
@@ -428,58 +462,12 @@ export function MyCombos() {
 
                   <div className="flex gap-2">
                     <button
-                      onClick={() => setActiveQRCodeCombo(combo)}
-                      disabled={combo.remaining <= 0}
+                      onClick={() => generateUseCode(combo)}
+                      disabled={combo.remaining <= 0 || generatingCode === combo.id}
                       className="flex-1 py-2.5 bg-ink hover:bg-slate-950 text-white dark:bg-love rounded-xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer border-none disabled:opacity-20 flex items-center justify-center gap-1.5 shadow-md shadow-slate-950/20"
                     >
-                      📱 Usar Pase (QR)
+                      {generatingCode === combo.id ? 'Generando...' : '🎫 Usar Pase'}
                     </button>
-                    {combo.remaining > 0 && (
-                      <button
-                        onClick={async () => {
-                          if (confirm(`¿Quieres canjear/descontar un consumo de tu "${combo.title}" de forma directa para probar?`)) {
-                            setComboRedeeming(combo.id);
-                            try {
-                              const newConsumeTx = {
-                                id: 'tx_local_' + Date.now(),
-                                client_id: profile.id,
-                                waiter_id: profile.id,
-                                amount: 0,
-                                points_earned: 0,
-                                branch: 'AUTOCANJE SMART',
-                                created_at: new Date().toISOString(),
-                                description: `CONSUMO_COMBO: ${combo.id}_1|${combo.title}`
-                              };
-
-                              const existingStr = localStorage.getItem(`local_txs_${profile.id}`);
-                              const existing = existingStr ? JSON.parse(existingStr) : [];
-                              existing.push(newConsumeTx);
-                              localStorage.setItem(`local_txs_${profile.id}`, JSON.stringify(existing));
-
-                              await supabase.from('transactions').insert({
-                                client_id: profile.id,
-                                waiter_id: profile.id,
-                                amount: 0,
-                                points_earned: 0,
-                                branch: 'AUTOCANJE SMART',
-                                description: `CONSUMO_COMBO: ${combo.id}_1|${combo.title}`
-                              });
-
-                              fetchClientData();
-                              alert(`Consumo registrado correctamente. ¡Te quedan ${combo.remaining - 1} almuerzos!`);
-                            } catch (err: any) {
-                              console.error(err);
-                            } finally {
-                              setComboRedeeming(null);
-                            }
-                          }
-                        }}
-                        disabled={comboRedeeming === combo.id}
-                        className="py-2.5 px-3 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-white rounded-xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer border-none"
-                      >
-                        {comboRedeeming === combo.id ? 'Canjeando...' : 'Descontar 1 (Demo)'}
-                      </button>
-                    )}
                   </div>
                 </div>
               );
@@ -541,12 +529,12 @@ export function MyCombos() {
         )}
       </div>
 
-      {/* QR Code Combo Usage Modal */}
+      {/* Modal: código de uso para mostrar al cajero */}
       <AnimatePresence>
-        {activeQRCodeCombo && (
+        {activeUseCode && (
           <div 
             className="fixed inset-0 bg-ink/80 backdrop-blur-sm z-[150] flex items-center justify-center p-6"
-            onClick={() => setActiveQRCodeCombo(null)}
+            onClick={() => setActiveUseCode(null)}
           >
             <motion.div 
               initial={{ scale: 0.9, y: 15 }}
@@ -556,7 +544,7 @@ export function MyCombos() {
               onClick={e => e.stopPropagation()}
             >
               <button 
-                onClick={() => setActiveQRCodeCombo(null)}
+                onClick={() => setActiveUseCode(null)}
                 className="absolute top-5 right-5 text-slate-400 hover:text-ink dark:hover:text-white transition-colors bg-slate-100 dark:bg-slate-800 p-2 rounded-full cursor-pointer border-none"
               >
                 <X size={14} />
@@ -566,24 +554,15 @@ export function MyCombos() {
                 <Ticket size={24} />
               </div>
               
-              <h4 className="text-sm font-black uppercase text-ink dark:text-white mt-1 leading-snug">{activeQRCodeCombo.title}</h4>
-              <p className="text-[10px] text-slate-400 font-semibold uppercase mt-0.5">{activeQRCodeCombo.remaining} consumos libres</p>
+              <h4 className="text-sm font-black uppercase text-ink dark:text-white mt-1 leading-snug">{activeUseCode.combo.title}</h4>
+              <p className="text-[10px] text-slate-400 font-semibold uppercase mt-0.5">Mostrale este código al cajero</p>
               
-              <div className="qr-container p-4 bg-white rounded-2xl my-5 border-2 border-slate-50 shadow-inner flex items-center justify-center">
-                <QRCode 
-                  value={`COMBO_USE:${activeQRCodeCombo.id}|client_id:${profile.id}`} 
-                  size={140}
-                  style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-                  viewBox={`0 0 256 256`}
-                />
+              <div className="my-6 px-6 py-5 bg-slate-50 dark:bg-slate-950 rounded-2xl border-2 border-dashed border-love/40 w-full">
+                <p className="text-3xl font-black tracking-[0.15em] text-love font-mono select-all">{activeUseCode.code}</p>
               </div>
 
-              <span className="text-[8px] bg-slate-100 dark:bg-slate-800/80 text-slate-500 dark:text-slate-400 px-3 py-1.5 rounded-full font-black uppercase tracking-widest mb-4">
-                ID Pase: {activeQRCodeCombo.id.toUpperCase()}
-              </span>
-
-              <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold leading-relaxed max-w-[190px]">
-                Presenta este QR al personal para registrar tu consumo al instante.
+              <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold leading-relaxed max-w-[200px]">
+                El cajero va a confirmar tu consumo desde su pantalla. El código vale para <span className="font-black">un solo uso</span>.
               </p>
             </motion.div>
           </div>

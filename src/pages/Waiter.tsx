@@ -4,7 +4,7 @@ import { supabase } from '@/src/lib/supabase';
 import { notifyClient, checkLevelUp } from '@/src/lib/notify';
 import { useAuth } from '@/src/App';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, Receipt, PlusCircle, CheckCircle2, AlertCircle, QrCode, X } from 'lucide-react';
+import { Search, Receipt, PlusCircle, CheckCircle2, AlertCircle, QrCode, X, RefreshCw, Ticket } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import { Profile, SystemSettings } from '@/src/types';
 import { Html5QrcodeScanner } from 'html5-qrcode';
@@ -43,10 +43,15 @@ export function Waiter() {
   const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
   // Vista del cajero: 'carga' (cargar puntos) o 'movimientos' (lista con buscador)
-  const [cashierView, setCashierView] = useState<'carga' | 'movimientos'>('carga');
+  const [cashierView, setCashierView] = useState<'carga' | 'movimientos' | 'usos'>('carga');
   const [allMovements, setAllMovements] = useState<any[]>([]);
   const [movSearch, setMovSearch] = useState('');
   const [movLoading, setMovLoading] = useState(false);
+
+  // Registro de usos: códigos pendientes que generan los clientes
+  const [useRequests, setUseRequests] = useState<any[]>([]);
+  const [usosLoading, setUsosLoading] = useState(false);
+  const [confirmingUse, setConfirmingUse] = useState<string | null>(null);
 
   // Sucursales reales (del panel), solo las activas. active undefined = activa.
   const activeBranches = (designConfig.branches || []).filter(b => b.active !== false);
@@ -462,6 +467,66 @@ export function Waiter() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cashierView]);
 
+  // Trae los códigos de uso pendientes (los que generan los clientes)
+  const fetchUseRequests = async () => {
+    setUsosLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('combo_use_requests')
+        .select('*')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      setUseRequests(data || []);
+    } catch (e) {
+      console.warn('Error cargando códigos de uso:', e);
+    } finally {
+      setUsosLoading(false);
+    }
+  };
+
+  // Auto-refresco de la lista de usos mientras el cajero está en esa pestaña
+  useEffect(() => {
+    if (cashierView !== 'usos') return;
+    fetchUseRequests();
+    const t = setInterval(fetchUseRequests, 15000); // refresca cada 15s
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cashierView]);
+
+  // Confirma un código: descuenta 1 uso (registra CONSUMO_COMBO) y marca usado
+  const confirmUse = async (req: any) => {
+    setConfirmingUse(req.id);
+    try {
+      // 1) Registrar el consumo (esto descuenta 1 uso del pase)
+      const { error: txError } = await supabase.from('transactions').insert({
+        client_id: req.client_id,
+        waiter_id: waiterProfile?.id || req.client_id,
+        amount: 0,
+        points_earned: 0,
+        branch: selectedBranch || 'CAJA',
+        description: `CONSUMO_COMBO: ${req.combo_id}_1|${req.combo_title}`
+      });
+      if (txError) throw txError;
+
+      // 2) Marcar el código como usado
+      const { error: updError } = await supabase
+        .from('combo_use_requests')
+        .update({ status: 'used', used_at: new Date().toISOString(), branch: selectedBranch || 'CAJA' })
+        .eq('id', req.id)
+        .eq('status', 'pending'); // solo si seguía pendiente (evita doble uso)
+      if (updError) throw updError;
+
+      // 3) Sacarlo de la lista
+      setUseRequests(prev => prev.filter(r => r.id !== req.id));
+    } catch (e: any) {
+      alert('No se pudo confirmar el uso. Refrescá e intentá de nuevo.');
+      console.error(e);
+    } finally {
+      setConfirmingUse(null);
+    }
+  };
+
   const filteredMovements = allMovements.filter((m) => {
     const q = movSearch.toLowerCase().trim();
     if (!q) return true;
@@ -528,6 +593,18 @@ export function Waiter() {
           )}
         >
           Movimientos
+        </button>
+        <button
+          onClick={() => setCashierView('usos')}
+          className={cn(
+            "flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer border-none relative",
+            cashierView === 'usos' ? "bg-love text-white shadow-md shadow-love/25" : "bg-transparent text-slate-400 hover:text-ink"
+          )}
+        >
+          Registro de Usos
+          {useRequests.length > 0 && cashierView !== 'usos' && (
+            <span className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-500 text-white text-[9px] rounded-full flex items-center justify-center font-black">{useRequests.length}</span>
+          )}
         </button>
       </div>
 
@@ -900,6 +977,53 @@ export function Waiter() {
               {filteredMovements.length > 100 && (
                 <p className="text-center py-3 text-[9px] uppercase tracking-widest text-slate-400 font-bold">Mostrando primeros 100 resultados</p>
               )}
+            </div>
+          )}
+        </div>
+      )}
+      {/* Vista de Registro de Usos */}
+      {cashierView === 'usos' && (
+        <div className="space-y-4">
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-widest text-ink">Códigos pendientes</p>
+              <p className="text-[9px] text-slate-400 font-bold mt-0.5">El cliente te muestra el código. Confirmá para descontar 1 uso.</p>
+            </div>
+            <button onClick={fetchUseRequests} className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 border-none cursor-pointer" title="Actualizar">
+              <RefreshCw size={16} className={usosLoading ? 'animate-spin' : ''} />
+            </button>
+          </div>
+
+          {usosLoading && useRequests.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="w-8 h-8 border-2 border-love border-t-transparent rounded-full animate-spin mx-auto" />
+              <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mt-4">Cargando...</p>
+            </div>
+          ) : useRequests.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-12 text-center">
+              <Ticket size={28} className="text-slate-200 mx-auto mb-3" />
+              <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">No hay códigos pendientes</p>
+              <p className="text-[9px] text-slate-300 mt-1">Aparecerán acá cuando un cliente genere uno</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {useRequests.map((req) => (
+                <div key={req.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-lg font-black text-love font-mono tracking-wider">{req.code}</p>
+                    <p className="text-xs font-black text-ink truncate">{req.client_name}</p>
+                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest truncate">{req.combo_title}</p>
+                  </div>
+                  <button
+                    onClick={() => confirmUse(req)}
+                    disabled={confirmingUse === req.id}
+                    className="shrink-0 px-4 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer border-none flex items-center gap-2 disabled:opacity-50"
+                  >
+                    <CheckCircle2 size={15} />
+                    {confirmingUse === req.id ? 'Confirmando...' : 'Confirmar'}
+                  </button>
+                </div>
+              ))}
             </div>
           )}
         </div>
