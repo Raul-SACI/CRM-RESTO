@@ -1156,7 +1156,7 @@ export function Admin() {
             window.location.hash = '#/waiter';
           }}
           className={cn(
-            "flex items-center justify-center bg-slate-100 hover:bg-slate-200 dark:!bg-[#141414] dark:hover:!bg-[#222] text-ink dark:text-white transition-all shadow-sm active:scale-95 cursor-pointer mt-2",
+            "flex items-center justify-center bg-slate-950 hover:bg-slate-800 dark:!bg-[#141414] dark:hover:!bg-[#222] text-white transition-all shadow-sm active:scale-95 cursor-pointer mt-2",
             isSidebarExpanded
               ? "w-full gap-2 px-4 py-3 text-[10px] font-black uppercase tracking-widest rounded-2xl"
               : "w-11 h-11 p-0 rounded-xl lg:mx-auto"
