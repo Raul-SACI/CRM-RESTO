@@ -83,6 +83,16 @@
   .dark .bg-paper {
     @apply !bg-dark-paper;
   }
+
+  /* Menú lateral del admin: claro en light, rojo en dark */
+  .admin-sidebar {
+    background-color: #f8fafc;
+    border-color: #e2e8f0;
+  }
+  .dark .admin-sidebar {
+    background-color: #7f1d1d !important;
+    border-color: #991b1b !important;
+  }
 }
 
 @layer utilities {
