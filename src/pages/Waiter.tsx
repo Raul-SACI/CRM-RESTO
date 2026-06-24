@@ -30,6 +30,12 @@ export function Waiter() {
   const [showScanner, setShowScanner] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
+  // Vista del cajero: 'carga' (cargar puntos) o 'movimientos' (lista con buscador)
+  const [cashierView, setCashierView] = useState<'carga' | 'movimientos'>('carga');
+  const [allMovements, setAllMovements] = useState<any[]>([]);
+  const [movSearch, setMovSearch] = useState('');
+  const [movLoading, setMovLoading] = useState(false);
+
   // Sucursales reales (del panel), solo las activas. active undefined = activa.
   const activeBranches = (designConfig.branches || []).filter(b => b.active !== false);
 
@@ -407,6 +413,62 @@ export function Waiter() {
     }
   };
 
+  // Carga los movimientos (transacciones) junto con datos del cliente,
+  // para que el cajero pueda buscarlos por nombre, DNI o email.
+  const fetchAllMovements = async () => {
+    setMovLoading(true);
+    try {
+      const { data: txs, error } = await supabase
+        .from('transactions')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(500);
+      if (error) throw error;
+
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name, dni, email');
+      const profById: Record<string, any> = {};
+      (profiles || []).forEach((p: any) => { profById[p.id] = p; });
+
+      const enriched = (txs || []).map((tx: any) => ({
+        ...tx,
+        _client: profById[tx.client_id] || null
+      }));
+      setAllMovements(enriched);
+    } catch (e) {
+      console.warn('Error cargando movimientos:', e);
+    } finally {
+      setMovLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (cashierView === 'movimientos' && allMovements.length === 0) {
+      fetchAllMovements();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cashierView]);
+
+  const filteredMovements = allMovements.filter((m) => {
+    const q = movSearch.toLowerCase().trim();
+    if (!q) return true;
+    const c = m._client;
+    if (!c) return false;
+    return (c.full_name || '').toLowerCase().includes(q) ||
+      (c.dni || '').toLowerCase().includes(q) ||
+      (c.email || '').toLowerCase().includes(q);
+  });
+
+  const movType = (desc: string, pts: number) => {
+    const d = (desc || '').toUpperCase();
+    if (d.startsWith('CANJE:')) return { label: 'Canje', color: 'text-red-500' };
+    if (d.startsWith('COMPRA_COMBO:')) return { label: 'Compra', color: 'text-amber-600' };
+    if (d.startsWith('CONSUMO_COMBO:')) return { label: 'Uso de Pase', color: 'text-slate-500' };
+    if (pts > 0) return { label: 'Carga', color: 'text-emerald-600' };
+    return { label: 'Movimiento', color: 'text-slate-500' };
+  };
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 10 }}
@@ -415,12 +477,13 @@ export function Waiter() {
     >
       <div className="flex items-center justify-between mb-4 bg-white p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 md:w-10 md:h-10 bg-love rounded-lg flex items-center justify-center font-bold text-lg md:text-xl uppercase shadow-lg shadow-love/30 text-white">M</div>
+          <div className="w-8 h-8 md:w-10 md:h-10 bg-love rounded-lg flex items-center justify-center font-bold text-lg md:text-xl uppercase shadow-lg shadow-love/30 text-white">C</div>
           <div>
-            <h2 className="text-base md:text-lg font-black tracking-tighter uppercase leading-none text-ink">Carga <span className="text-love">Mozo</span></h2>
-            <p className="text-[9px] md:text-[10px] uppercase tracking-widest text-slate-400 mt-1 font-bold">Suma puntos a clientes</p>
+            <h2 className="text-base md:text-lg font-black tracking-tighter uppercase leading-none text-ink">Caja <span className="text-love">CRAFT</span></h2>
+            <p className="text-[9px] md:text-[10px] uppercase tracking-widest text-slate-400 mt-1 font-bold">{cashierView === 'carga' ? 'Suma puntos a clientes' : 'Historial de movimientos'}</p>
           </div>
         </div>
+        {cashierView === 'carga' && (
         <button 
           onClick={() => setShowScanner(!showScanner)}
           className={cn(
@@ -430,6 +493,29 @@ export function Waiter() {
         >
           {showScanner ? <X size={16} /> : <QrCode size={16} />}
           <span className="hidden xs:inline">{showScanner ? 'Cerrar' : 'Escanear'}</span>
+        </button>
+        )}
+      </div>
+
+      {/* Pestañas: Cargar puntos / Movimientos */}
+      <div className="flex gap-2 bg-white p-1.5 rounded-2xl border border-slate-100 shadow-sm">
+        <button
+          onClick={() => setCashierView('carga')}
+          className={cn(
+            "flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer border-none",
+            cashierView === 'carga' ? "bg-love text-white shadow-md shadow-love/25" : "bg-transparent text-slate-400 hover:text-ink"
+          )}
+        >
+          Cargar Puntos
+        </button>
+        <button
+          onClick={() => setCashierView('movimientos')}
+          className={cn(
+            "flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer border-none",
+            cashierView === 'movimientos' ? "bg-love text-white shadow-md shadow-love/25" : "bg-transparent text-slate-400 hover:text-ink"
+          )}
+        >
+          Movimientos
         </button>
       </div>
 
@@ -447,6 +533,7 @@ export function Waiter() {
         )}
       </AnimatePresence>
 
+      {cashierView === 'carga' && (<>
       {status && (
         <motion.div 
           initial={{ y: -10, opacity: 0 }}
@@ -730,6 +817,65 @@ export function Waiter() {
           </div>
         </div>
       </div>
+      </>)}
+
+      {/* Vista de Movimientos con buscador */}
+      {cashierView === 'movimientos' && (
+        <div className="space-y-4">
+          <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4">
+            <div className="relative">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Buscar por nombre, DNI o email..."
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-3 text-xs outline-none focus:border-love text-ink font-bold"
+                value={movSearch}
+                onChange={(e) => setMovSearch(e.target.value)}
+              />
+            </div>
+          </div>
+
+          {movLoading ? (
+            <div className="text-center py-12">
+              <div className="w-8 h-8 border-2 border-love border-t-transparent rounded-full animate-spin mx-auto" />
+              <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mt-4">Cargando movimientos...</p>
+            </div>
+          ) : filteredMovements.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-12 text-center">
+              <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">
+                {movSearch ? 'No se encontraron movimientos para esa búsqueda' : 'No hay movimientos'}
+              </p>
+            </div>
+          ) : (
+            <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+              {filteredMovements.slice(0, 100).map((m) => {
+                const t = movType(m.description, m.points_earned || 0);
+                const d = new Date(m.created_at);
+                return (
+                  <div key={m.id} className="px-4 py-3 border-b border-slate-50 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-xs font-black text-ink truncate">{m._client?.full_name || 'Cliente'}</p>
+                      <p className="text-[9px] text-slate-400 font-bold">
+                        DNI {m._client?.dni || 's/d'} · {d.toLocaleDateString('es-AR')} {d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                      {m.branch && <p className="text-[8px] uppercase tracking-widest text-slate-300 font-bold mt-0.5">{m.branch}</p>}
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span className={cn("text-[8px] uppercase font-black tracking-widest", t.color)}>{t.label}</span>
+                      <p className={cn("text-sm font-black font-mono", (m.points_earned || 0) < 0 ? "text-red-500" : "text-emerald-600")}>
+                        {(m.points_earned || 0) > 0 ? '+' : ''}{(m.points_earned || 0).toLocaleString('es-AR')} pts
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+              {filteredMovements.length > 100 && (
+                <p className="text-center py-3 text-[9px] uppercase tracking-widest text-slate-400 font-bold">Mostrando primeros 100 resultados</p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
     </motion.div>
   );
 }
