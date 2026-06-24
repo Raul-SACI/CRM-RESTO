@@ -1137,7 +1137,7 @@ export function Admin() {
             window.location.hash = '#/';
           }}
           className={cn(
-            "flex items-center justify-center bg-slate-950 hover:bg-slate-900 dark:bg-black/25 dark:hover:bg-black/40 text-white transition-all shadow-lg shadow-slate-950/15 active:scale-95 cursor-pointer",
+            "flex items-center justify-center bg-slate-950 hover:bg-slate-900 dark:!bg-[#141414] dark:hover:!bg-[#222] text-white transition-all shadow-lg active:scale-95 cursor-pointer",
             isSidebarExpanded 
               ? "w-full gap-2 px-4 py-3 text-[10px] font-black uppercase tracking-widest rounded-2xl" 
               : "w-11 h-11 p-0 rounded-xl lg:mx-auto"
@@ -1156,7 +1156,7 @@ export function Admin() {
             window.location.hash = '#/waiter';
           }}
           className={cn(
-            "flex items-center justify-center bg-slate-100 hover:bg-slate-200 dark:bg-black/25 dark:hover:bg-black/40 text-ink dark:text-white transition-all shadow-sm active:scale-95 cursor-pointer mt-2",
+            "flex items-center justify-center bg-slate-100 hover:bg-slate-200 dark:!bg-[#141414] dark:hover:!bg-[#222] text-ink dark:text-white transition-all shadow-sm active:scale-95 cursor-pointer mt-2",
             isSidebarExpanded
               ? "w-full gap-2 px-4 py-3 text-[10px] font-black uppercase tracking-widest rounded-2xl"
               : "w-11 h-11 p-0 rounded-xl lg:mx-auto"
@@ -1168,7 +1168,7 @@ export function Admin() {
         </button>
 
         <div className={cn(
-          "flex flex-row lg:flex-col p-1 lg:p-0 bg-slate-100 dark:bg-slate-950 lg:bg-transparent rounded-2xl border border-slate-200 dark:border-slate-800 lg:border-none overflow-x-auto lg:overflow-x-visible scrollbar-hide lg:w-full",
+          "flex flex-row lg:flex-col p-1 lg:p-0 bg-slate-100 dark:bg-black/20 lg:!bg-transparent rounded-2xl border border-slate-200 dark:border-white/10 lg:border-none overflow-x-auto lg:overflow-x-visible scrollbar-hide lg:w-full",
           isSidebarExpanded ? "lg:space-y-1" : "lg:space-y-3 lg:items-center"
         )}>
           {(() => {
@@ -1234,7 +1234,7 @@ export function Admin() {
                     {isSidebarExpanded && (
                       <p className={cn(
                         "hidden lg:block text-[8px] uppercase tracking-[0.2em] font-black text-slate-300 dark:text-white/40 px-4 mb-2",
-                        gi > 0 ? "mt-5" : "mt-1"
+                        gi > 0 ? "mt-5" : "mt-4"
                       )}>
                         {g.title}
                       </p>
