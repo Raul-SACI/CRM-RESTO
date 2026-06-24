@@ -1296,7 +1296,7 @@ export function Admin() {
           const h = heads[activeTab] || { t: '', s: '' };
           return (
             <div className="border-b border-slate-200 dark:border-slate-800 pb-4 mb-2">
-              <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tighter italic text-ink dark:text-white leading-none">{h.t}</h1>
+              <h1 className="admin-section-title text-2xl md:text-3xl font-black uppercase tracking-tighter italic text-ink dark:text-white leading-none">{h.t}</h1>
               <p className="text-[10px] uppercase tracking-[0.18em] text-slate-400 font-bold font-mono mt-1.5">{h.s}</p>
             </div>
           );

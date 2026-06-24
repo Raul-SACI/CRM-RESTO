@@ -95,15 +95,21 @@
   html:not(.dark) .admin-sidebar p {
     color: #1e293b;
   }
-  html:not(.dark) .admin-sidebar .text-love {
+  /* Iconos del menú (SVG) legibles en modo claro */
+  html:not(.dark) .admin-sidebar svg {
+    color: #475569;
+  }
+  html:not(.dark) .admin-sidebar .text-love,
+  html:not(.dark) .admin-sidebar .text-love svg {
     color: #ef4444;
   }
-  /* El botón activo (fondo rojo) mantiene su texto blanco */
+  /* El botón activo (fondo rojo) mantiene su contenido blanco */
   html:not(.dark) .admin-sidebar .bg-love,
-  html:not(.dark) .admin-sidebar .bg-love span {
+  html:not(.dark) .admin-sidebar .bg-love span,
+  html:not(.dark) .admin-sidebar .bg-love svg {
     color: #ffffff;
   }
-  /* Los botones Vista Cliente / Vista Cajero (fondo oscuro) texto blanco */
+  /* Los botones Vista Cliente / Vista Cajero (fondo oscuro) contenido blanco */
   html:not(.dark) .admin-sidebar .bg-slate-950,
   html:not(.dark) .admin-sidebar .bg-slate-950 span {
     color: #ffffff;
@@ -122,6 +128,10 @@
   .dark .admin-menu-items {
     background-color: transparent !important;
     border-color: transparent !important;
+  }
+  /* Título de sección legible en modo claro */
+  html:not(.dark) .admin-section-title {
+    color: #0f172a;
   }
 }
 
