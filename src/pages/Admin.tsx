@@ -1168,7 +1168,7 @@ export function Admin() {
         </button>
 
         <div className={cn(
-          "flex flex-row lg:flex-col p-1 lg:p-0 bg-slate-100 dark:bg-black/20 lg:!bg-transparent rounded-2xl border border-slate-200 dark:border-white/10 lg:border-none overflow-x-auto lg:overflow-x-visible scrollbar-hide lg:w-full",
+          "admin-menu-items flex flex-row lg:flex-col p-1 lg:p-0 bg-slate-100 lg:bg-transparent rounded-2xl border border-slate-200 lg:border-none overflow-x-auto lg:overflow-x-visible scrollbar-hide lg:w-full",
           isSidebarExpanded ? "lg:space-y-1" : "lg:space-y-3 lg:items-center"
         )}>
           {(() => {

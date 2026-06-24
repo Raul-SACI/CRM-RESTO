@@ -93,6 +93,17 @@
     background-color: #7f1d1d !important;
     border-color: #991b1b !important;
   }
+  /* Cualquier fondo interno del menú que tienda a azul, a negro neutro */
+  .dark .admin-sidebar .bg-slate-950,
+  .dark .admin-sidebar .bg-slate-900,
+  .dark .admin-sidebar .bg-slate-800 {
+    background-color: #141414 !important;
+  }
+  /* El contenedor de items del menú nunca tiene fondo en dark (se ve el rojo) */
+  .dark .admin-menu-items {
+    background-color: transparent !important;
+    border-color: transparent !important;
+  }
 }
 
 @layer utilities {
