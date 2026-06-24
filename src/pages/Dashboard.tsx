@@ -6,7 +6,7 @@ import {
   CreditCard, Award, TrendingUp, History, Users, 
   Gift, Calendar, ChevronRight, BarChart3, PieChart,
   Flag, Sparkles, Car, Trophy, ArrowLeft, ArrowRight, Star,
-  Pencil, Check, Ticket, MapPin, Clock, Phone, Loader2
+  Pencil, Check, Ticket, MapPin, Clock, Phone, Loader2, X
 } from 'lucide-react';
 import { supabase } from '@/src/lib/supabase';
 import { notifyClient, checkLevelUp } from '@/src/lib/notify';
@@ -300,6 +300,36 @@ export function Dashboard() {
   const [isCreatingPreference, setIsCreatingPreference] = useState(false);
   const [activeQRCodeCombo, setActiveQRCodeCombo] = useState<any | null>(null);
   const [comboRedeeming, setComboRedeeming] = useState<string | null>(null);
+
+  // Generación de código de uso (cliente genera, cajero confirma)
+  const [generatingCode, setGeneratingCode] = useState<string | null>(null);
+  const [activeUseCode, setActiveUseCode] = useState<{ code: string; combo: any } | null>(null);
+
+  const generateUseCode = async (combo: any) => {
+    if (!profile) return;
+    setGeneratingCode(combo.id);
+    try {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let rnd = '';
+      for (let i = 0; i < 6; i++) rnd += chars[Math.floor(Math.random() * chars.length)];
+      const code = `USO-${rnd}`;
+      const { error } = await supabase.from('combo_use_requests').insert({
+        code,
+        client_id: profile.id,
+        client_name: profile.full_name || 'Cliente',
+        combo_id: combo.id,
+        combo_title: combo.title,
+        status: 'pending'
+      });
+      if (error) throw error;
+      setActiveUseCode({ code, combo });
+    } catch (err: any) {
+      alert('No se pudo generar el código. Intentá de nuevo.');
+      console.error('generateUseCode error:', err);
+    } finally {
+      setGeneratingCode(null);
+    }
+  };
 
   // Admin Stats
   const [adminStats, setAdminStats] = useState<{
@@ -1018,7 +1048,9 @@ export function Dashboard() {
     );
   }
 
-  const isMobileView = (profile?.role === 'client' || isSimulatingClient) && (window.innerWidth < 640 || (isSimulatingClient && simDevice === 'phone'));
+  // La vista del cliente usa SIEMPRE el mismo diseño (el del celular),
+  // tanto en celular como en PC. En PC se muestra como columna centrada.
+  const isMobileView = (profile?.role === 'client' || isSimulatingClient);
 
   if (isMobileView && profile) {
     const nextTierPoints = clientTier.id.includes('black') 
@@ -1040,7 +1072,7 @@ export function Dashboard() {
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="flex flex-col gap-6 max-w-sm mx-auto pb-24 text-left"
+        className="flex flex-col gap-6 max-w-sm sm:max-w-md mx-auto pb-24 text-left"
       >
         {/* Header greeting */}
         <div className="flex justify-between items-center px-1">
@@ -2408,7 +2440,7 @@ export function Dashboard() {
                       Mis Combos & Pases Activos
                     </h3>
                   </div>
-                  <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest leading-none">Presenta el QR al mozo para descontar consumos</p>
+                  <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest leading-none">Generá tu código y mostráselo al cajero</p>
 
                   <div className="space-y-4">
                     {activeCombos.map((combo) => {
@@ -2444,62 +2476,12 @@ export function Dashboard() {
 
                           <div className="flex gap-2">
                             <button
-                              onClick={() => setActiveQRCodeCombo(combo)}
-                              disabled={combo.remaining <= 0}
+                              onClick={() => generateUseCode(combo)}
+                              disabled={combo.remaining <= 0 || generatingCode === combo.id}
                               className="flex-1 py-2.5 bg-ink hover:bg-slate-950 text-white dark:bg-love rounded-xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer border-none disabled:opacity-20 flex items-center justify-center gap-1.5"
                             >
-                              📱 Usar Pase (QR)
+                              {generatingCode === combo.id ? 'Generando...' : '🎫 Usar Pase'}
                             </button>
-                            {combo.remaining > 0 && (
-                              <button
-                                onClick={async () => {
-                                  if (confirm(`¿Quieres canjear/descontar un consumo de tu "${combo.title}" de forma directa para probar?`)) {
-                                    setComboRedeeming(combo.id);
-                                    try {
-                                      // Insert consumption transaction
-                                      const newConsumeTx = {
-                                        id: 'tx_local_' + Date.now(),
-                                        client_id: profile.id,
-                                        waiter_id: profile.id,
-                                        amount: 0,
-                                        points_earned: 0, // consumptions do not earn points
-                                        branch: 'AUTOCANJE SMART',
-                                        created_at: new Date().toISOString(),
-                                        description: `CONSUMO_COMBO: ${combo.id}_1|${combo.title}`
-                                      };
-
-                                      // Save to local transactions cache so it displays instantly
-                                      const existingStr = localStorage.getItem(`local_txs_${profile.id}`);
-                                      const existing = existingStr ? JSON.parse(existingStr) : [];
-                                      existing.push(newConsumeTx);
-                                      localStorage.setItem(`local_txs_${profile.id}`, JSON.stringify(existing));
-
-                                      // Try to push to Supabase as well
-                                      await supabase.from('transactions').insert({
-                                        client_id: profile.id,
-                                        waiter_id: profile.id,
-                                        amount: 0,
-                                        points_earned: 0,
-                                        branch: 'AUTOCANJE SMART',
-                                        description: `CONSUMO_COMBO: ${combo.id}_1|${combo.title}`
-                                      });
-
-                                      // Force reload client stats dynamically
-                                      fetchClientData();
-                                      alert(`Consumo registrado correctamente. ¡Te quedan ${combo.remaining - 1} almuerzos!`);
-                                    } catch (err: any) {
-                                      console.error(err);
-                                    } finally {
-                                      setComboRedeeming(null);
-                                    }
-                                  }
-                                }}
-                                disabled={comboRedeeming === combo.id}
-                                className="py-2.5 px-3 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-650 dark:text-white rounded-xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer border-none"
-                              >
-                                {comboRedeeming === combo.id ? 'Canjeando...' : 'Descontar 1 (Demo)'}
-                              </button>
-                            )}
                           </div>
                         </div>
                       );
@@ -3189,108 +3171,46 @@ export function Dashboard() {
         )}
       </AnimatePresence>
 
-      {/* Modal QR de Combo/Pase Activo */}
+      {/* Modal: código de uso para mostrar al cajero */}
       <AnimatePresence>
-        {activeQRCodeCombo && (
-          <motion.div 
+        {activeUseCode && (
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-ink/75 backdrop-blur-sm z-[150] flex items-center justify-center p-6"
-            onClick={() => setActiveQRCodeCombo(null)}
+            className="fixed inset-0 bg-ink/80 backdrop-blur-sm z-[150] flex items-center justify-center p-6"
+            onClick={() => setActiveUseCode(null)}
           >
-            <motion.div 
-              initial={{ scale: 0.95, y: 20 }}
+            <motion.div
+              initial={{ scale: 0.9, y: 15 }}
               animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.95, y: 20 }}
-              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-8 rounded-[2.5rem] w-full max-w-sm shadow-2xl text-center relative space-y-6"
+              exit={{ scale: 0.9, y: 15 }}
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-8 rounded-[2.5rem] w-full max-w-xs shadow-2xl relative flex flex-col items-center justify-center text-center"
               onClick={e => e.stopPropagation()}
             >
-              <div className="space-y-1">
-                <span className="text-[9px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-black uppercase tracking-widest px-2.5 py-1 rounded-full">
-                  🎫 Pase Activo
-                </span>
-                <h4 className="text-base font-black uppercase text-ink dark:text-white mt-1 leading-snug">{activeQRCodeCombo.title}</h4>
-                <p className="text-xs text-slate-400 font-semibold">{activeQRCodeCombo.remaining} consumos disponibles de {activeQRCodeCombo.totalPurchased}</p>
+              <button
+                onClick={() => setActiveUseCode(null)}
+                className="absolute top-5 right-5 text-slate-400 hover:text-ink dark:hover:text-white transition-colors bg-slate-100 dark:bg-slate-800 p-2 rounded-full cursor-pointer border-none"
+              >
+                <X size={14} />
+              </button>
+              <div className="w-12 h-12 bg-emerald-500/10 text-emerald-500 rounded-2xl flex items-center justify-center mb-4">
+                <Ticket size={24} />
               </div>
-
-              {/* QR Container */}
-              <div className="qr-container p-6 bg-slate-50 dark:bg-slate-950 rounded-[2rem] border border-slate-100 dark:border-slate-850 shadow-inner flex flex-col items-center justify-center mx-auto w-48 h-48">
-                <QRCode 
-                  value={`COMBO_USE:${activeQRCodeCombo.id}|client_id:${profile.id}`} 
-                  size={144}
-                  style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-                  viewBox={`0 0 256 256`}
-                />
+              <h4 className="text-sm font-black uppercase text-ink dark:text-white mt-1 leading-snug">{activeUseCode.combo.title}</h4>
+              <p className="text-[10px] text-slate-400 font-semibold uppercase mt-0.5">Mostrale este código al cajero</p>
+              <div className="my-6 px-6 py-5 bg-slate-50 dark:bg-slate-950 rounded-2xl border-2 border-dashed border-love/40 w-full">
+                <p className="text-3xl font-black tracking-[0.15em] text-love font-mono select-all">{activeUseCode.code}</p>
               </div>
-
-              <div className="space-y-2">
-                <p className="text-[10px] text-slate-405 font-bold uppercase leading-relaxed px-4">
-                  Muestra este código QR al mozo para registrar el consumo en la sucursal.
-                </p>
-                <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-3 text-[10px] font-semibold text-amber-600 dark:text-amber-400 leading-normal text-left">
-                  <strong>💡 Probar como Mozo (Demo):</strong> Si estás testeando, puedes usar el botón de abajo para simular que un mozo escanea y canjea tu pase en tiempo real.
-                </div>
-              </div>
-
-              <div className="flex gap-2">
-                <button 
-                  type="button" 
-                  onClick={() => setActiveQRCodeCombo(null)}
-                  className="flex-1 bg-slate-100 dark:bg-slate-800 text-slate-650 dark:text-slate-400 py-3 rounded-xl font-bold text-xs uppercase tracking-widest cursor-pointer border-none hover:bg-slate-200"
-                >
-                  Cerrar
-                </button>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    setActiveQRCodeCombo(null);
-                    setComboRedeeming(activeQRCodeCombo.id);
-                    try {
-                      const newConsumeTx = {
-                        id: 'tx_local_' + Date.now(),
-                        client_id: profile.id,
-                        waiter_id: profile.id,
-                        amount: 0,
-                        points_earned: 0,
-                        branch: 'AUTOCANJE SMART',
-                        created_at: new Date().toISOString(),
-                        description: `CONSUMO_COMBO: ${activeQRCodeCombo.id}_1|${activeQRCodeCombo.title}`
-                      };
-
-                      const existingStr = localStorage.getItem(`local_txs_${profile.id}`);
-                      const existing = existingStr ? JSON.parse(existingStr) : [];
-                      existing.push(newConsumeTx);
-                      localStorage.setItem(`local_txs_${profile.id}`, JSON.stringify(existing));
-
-                      await supabase.from('transactions').insert({
-                        client_id: profile.id,
-                        waiter_id: profile.id,
-                        amount: 0,
-                        points_earned: 0,
-                        branch: 'AUTOCANJE SMART',
-                        description: `CONSUMO_COMBO: ${activeQRCodeCombo.id}_1|${activeQRCodeCombo.title}`
-                      });
-
-                      fetchClientData();
-                      alert(`¡Canje procesado correctamente! Se descontó 1 uso de tu "${activeQRCodeCombo.title}".`);
-                    } catch (err) {
-                      console.error(err);
-                    } finally {
-                      setComboRedeeming(null);
-                    }
-                  }}
-                  className="flex-1 bg-emerald-500 text-white font-black py-3 rounded-xl text-xs uppercase tracking-widest cursor-pointer border-none shadow-md shadow-emerald-500/10"
-                >
-                  Confirmar Uso
-                </button>
-              </div>
+              <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold leading-relaxed max-w-[200px]">
+                El cajero va a confirmar tu consumo desde su pantalla. El código vale para <span className="font-black">un solo uso</span>.
+              </p>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Modal Pasarela de Pago (Prueba de Sandbox integrada con Mercado Pago / Tarjeta) */}
+      {/* Modal Pasarela de Pago (Mercado Pago / Tarjeta) */}
       <AnimatePresence>
         {isCheckoutModalOpen && selectedComboForPurchase && (
           <motion.div 
