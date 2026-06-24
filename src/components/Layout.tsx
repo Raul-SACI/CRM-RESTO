@@ -31,21 +31,21 @@ export function Layout({ children }: LayoutProps) {
   const [isVisualDesignMode, setIsVisualDesignMode] = useState(false);
   const [activePickerRoute, setActivePickerRoute] = useState<string | null>(null);
 
-  const defaultOrder = ['/', '/rewards', '/my-combos', '/my-account', '/help', '/branches'];
+  const defaultOrder = ['/', '/rewards', '/my-combos', '/my-account', '/help'];
   const buttonOrder = designConfig?.navButtonOrder || defaultOrder;
   
-  // Resolve unified routing order matching our standard routes
-  const resolvedOrder = [...new Set([...buttonOrder, ...defaultOrder])].filter(
-    route => defaultOrder.includes(route)
-  );
+  // Orden fijo deseado para la barra del cliente (sin Sucursales)
+  const resolvedOrder = defaultOrder.filter(route => {
+    const allowed = [...new Set([...buttonOrder, ...defaultOrder])];
+    return allowed.includes(route);
+  });
 
   const routesMap: Record<string, { label: string; to: string }> = {
     '/': { label: 'Inicio', to: '/' },
     '/rewards': { label: 'Premios', to: '/rewards' },
     '/my-combos': { label: 'Mis Combos', to: '/my-combos' },
     '/my-account': { label: 'Mi Cuenta', to: '/my-account' },
-    '/help': { label: 'Ayuda', to: '/help' },
-    '/branches': { label: 'Sucursales', to: '/branches' }
+    '/help': { label: 'Ayuda', to: '/help' }
   };
 
   const handleMoveButton = async (route: string, direction: 'left' | 'right') => {

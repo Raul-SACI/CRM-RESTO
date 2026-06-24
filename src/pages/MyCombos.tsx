@@ -396,7 +396,7 @@ export function MyCombos() {
   const activeCombosForSale = avCombos.filter((c: any) => c.isActive);
 
   return (
-    <div className="space-y-6 max-w-lg mx-auto pb-10">
+    <div className="space-y-6 max-w-lg sm:max-w-2xl lg:max-w-4xl mx-auto pb-10">
       {/* Title */}
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 bg-love rounded-2xl flex items-center justify-center text-white shadow-lg shadow-love/35">
