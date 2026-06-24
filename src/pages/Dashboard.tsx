@@ -1072,7 +1072,7 @@ export function Dashboard() {
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="flex flex-col gap-6 max-w-sm sm:max-w-md mx-auto pb-24 text-left"
+        className="flex flex-col gap-6 max-w-sm sm:max-w-2xl lg:max-w-4xl mx-auto pb-24 text-left"
       >
         {/* Header greeting */}
         <div className="flex justify-between items-center px-1">

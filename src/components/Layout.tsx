@@ -31,7 +31,7 @@ export function Layout({ children }: LayoutProps) {
   const [isVisualDesignMode, setIsVisualDesignMode] = useState(false);
   const [activePickerRoute, setActivePickerRoute] = useState<string | null>(null);
 
-  const defaultOrder = ['/', '/rewards', '/help', '/branches'];
+  const defaultOrder = ['/', '/rewards', '/my-combos', '/my-account', '/help', '/branches'];
   const buttonOrder = designConfig?.navButtonOrder || defaultOrder;
   
   // Resolve unified routing order matching our standard routes
@@ -42,6 +42,8 @@ export function Layout({ children }: LayoutProps) {
   const routesMap: Record<string, { label: string; to: string }> = {
     '/': { label: 'Inicio', to: '/' },
     '/rewards': { label: 'Premios', to: '/rewards' },
+    '/my-combos': { label: 'Mis Combos', to: '/my-combos' },
+    '/my-account': { label: 'Mi Cuenta', to: '/my-account' },
     '/help': { label: 'Ayuda', to: '/help' },
     '/branches': { label: 'Sucursales', to: '/branches' }
   };
@@ -308,6 +310,16 @@ export function Layout({ children }: LayoutProps) {
               <NavLink to="/admin" className={({ isActive }) => `px-3 md:px-4 py-1.5 md:py-2 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-tighter transition-all shrink-0 ${isActive ? 'bg-love text-white shadow-lg shadow-love/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400'}`}>
                 Admin
               </NavLink>
+            )}
+
+            {/* Salir (clientes) — mismos accesos que la barra del celular */}
+            {realProfile?.role !== 'waiter' && !hasPermission(realProfile?.role, 'ver_admin') && (
+              <button
+                onClick={handleLogout}
+                className="px-3 md:px-4 py-1.5 md:py-2 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-tighter transition-all shrink-0 bg-slate-100 text-slate-600 hover:bg-love hover:text-white dark:bg-slate-800 dark:text-slate-400 border-none cursor-pointer"
+              >
+                Salir
+              </button>
             )}
           </div>
 
