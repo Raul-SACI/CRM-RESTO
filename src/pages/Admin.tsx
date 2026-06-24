@@ -1075,7 +1075,7 @@ export function Admin() {
   const updateUserRole = async (userId: string, newRole: string) => {
     const roleNames: Record<string, string> = {
       'admin': 'Administrador',
-      'waiter': 'Staff/Mozo',
+      'waiter': 'Cajero',
       'client': 'Cliente'
     };
     
@@ -1161,10 +1161,10 @@ export function Admin() {
               ? "w-full gap-2 px-4 py-3 text-[10px] font-black uppercase tracking-widest rounded-2xl"
               : "w-11 h-11 p-0 rounded-xl lg:mx-auto"
           )}
-          title="Ver la pantalla de carga de puntos tal como la usa el mozo"
+          title="Ver la pantalla de caja tal como la usa el cajero"
         >
           <UserPlus size={13} className="text-love" />
-          {isSidebarExpanded && <span>Vista Mozo</span>}
+          {isSidebarExpanded && <span>Vista Cajero</span>}
         </button>
 
         <div className={cn(
@@ -2324,7 +2324,7 @@ export function Admin() {
                                   onClick={() => updateUserRole(member.id, member.role === 'admin' ? 'waiter' : 'admin')} 
                                   className="text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-300 hover:bg-love hover:text-white transition-all border border-slate-200 dark:border-slate-800 shadow-sm cursor-pointer"
                                 >
-                                  {member.role === 'admin' ? 'Hacer Mozo' : 'Hacer Admin'}
+                                  {member.role === 'admin' ? 'Hacer Cajero' : 'Hacer Admin'}
                                 </button>
                                 <button 
                                   onClick={() => updateUserRole(member.id, 'client')} 
