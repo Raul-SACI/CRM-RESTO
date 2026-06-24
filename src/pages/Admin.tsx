@@ -4354,7 +4354,7 @@ export function Admin() {
               <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-100 dark:border-slate-800 shadow-sm dark:shadow-none">
                 <div className="flex items-center gap-2 mb-1">
                   <Calendar size={18} className="text-love" />
-                  <h3 className="text-sm font-black uppercase tracking-wider !text-slate-900">Avisos Automáticos</h3>
+                  <h3 className="text-sm font-black uppercase tracking-wider !text-slate-900 dark:!text-white">Avisos Automáticos</h3>
                 </div>
                 <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-2">Se envían solos cada día (campanita + email)</p>
                 <p className="text-[10px] text-slate-400 mb-5">Podés usar <span className="font-black">{'{nombre}'}</span>, <span className="font-black">{'{combo}'}</span>, <span className="font-black">{'{dias}'}</span> y <span className="font-black">{'{puntos}'}</span> en los textos; se reemplazan solos.</p>
@@ -4362,7 +4362,7 @@ export function Admin() {
                 {/* CUMPLEAÑOS */}
                 <div className="border border-slate-100 dark:border-slate-800 rounded-2xl p-4 mb-4">
                   <label className="flex items-center justify-between mb-3 cursor-pointer">
-                    <span className="text-xs font-black uppercase tracking-wider !text-slate-900">🎂 Cumpleaños</span>
+                    <span className="text-xs font-black uppercase tracking-wider !text-slate-900 dark:!text-white">🎂 Cumpleaños</span>
                     <input type="checkbox" className="w-4 h-4 accent-love cursor-pointer"
                       checked={autoNotifForm.birthday.enabled}
                       onChange={(e) => setAutoNotifForm({ ...autoNotifForm, birthday: { ...autoNotifForm.birthday, enabled: e.target.checked } })} />
@@ -4381,7 +4381,7 @@ export function Admin() {
                 {/* COMBO POR VENCER */}
                 <div className="border border-slate-100 dark:border-slate-800 rounded-2xl p-4 mb-4">
                   <label className="flex items-center justify-between mb-3 cursor-pointer">
-                    <span className="text-xs font-black uppercase tracking-wider !text-slate-900">⏳ Combo por vencer</span>
+                    <span className="text-xs font-black uppercase tracking-wider !text-slate-900 dark:!text-white">⏳ Combo por vencer</span>
                     <input type="checkbox" className="w-4 h-4 accent-love cursor-pointer"
                       checked={autoNotifForm.comboExpiring.enabled}
                       onChange={(e) => setAutoNotifForm({ ...autoNotifForm, comboExpiring: { ...autoNotifForm.comboExpiring, enabled: e.target.checked } })} />
@@ -4400,7 +4400,7 @@ export function Admin() {
                 {/* INACTIVIDAD */}
                 <div className="border border-slate-100 dark:border-slate-800 rounded-2xl p-4 mb-5">
                   <label className="flex items-center justify-between mb-3 cursor-pointer">
-                    <span className="text-xs font-black uppercase tracking-wider !text-slate-900">💔 Inactividad</span>
+                    <span className="text-xs font-black uppercase tracking-wider !text-slate-900 dark:!text-white">💔 Inactividad</span>
                     <input type="checkbox" className="w-4 h-4 accent-love cursor-pointer"
                       checked={autoNotifForm.inactive.enabled}
                       onChange={(e) => setAutoNotifForm({ ...autoNotifForm, inactive: { ...autoNotifForm.inactive, enabled: e.target.checked } })} />
@@ -4427,7 +4427,7 @@ export function Admin() {
                 {/* SUBIÓ DE CATEGORÍA */}
                 <div className="border border-slate-100 dark:border-slate-800 rounded-2xl p-4 mb-5">
                   <label className="flex items-center justify-between mb-3 cursor-pointer">
-                    <span className="text-xs font-black uppercase tracking-wider !text-slate-900">⭐ Subió de categoría</span>
+                    <span className="text-xs font-black uppercase tracking-wider !text-slate-900 dark:!text-white">⭐ Subió de categoría</span>
                     <input type="checkbox" className="w-4 h-4 accent-love cursor-pointer"
                       checked={autoNotifForm.levelUp?.enabled ?? true}
                       onChange={(e) => setAutoNotifForm({ ...autoNotifForm, levelUp: { ...autoNotifForm.levelUp, enabled: e.target.checked } })} />
@@ -4457,7 +4457,7 @@ export function Admin() {
               <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-100 dark:border-slate-800 shadow-sm dark:shadow-none">
                 <div className="flex items-center gap-2 mb-1">
                   <Bell size={18} className="text-love" />
-                  <h3 className="text-sm font-black uppercase tracking-wider !text-slate-900">Enviar un aviso</h3>
+                  <h3 className="text-sm font-black uppercase tracking-wider !text-slate-900 dark:!text-white">Enviar un aviso</h3>
                 </div>
                 <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-5">Llega a la campanita del cliente dentro de la app</p>
 
@@ -4536,7 +4536,7 @@ export function Admin() {
                                 className={cn("w-full text-left px-3 py-2 text-xs border-b border-slate-50 dark:border-slate-800/50 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 border-x-0 border-t-0 bg-transparent",
                                   notifForm.clientId === c.id ? "bg-love/10" : "")}
                               >
-                                <span className="font-black !text-slate-900">{c.full_name || 'Sin nombre'}</span>
+                                <span className="font-black !text-slate-900 dark:!text-white">{c.full_name || 'Sin nombre'}</span>
                                 <span className="text-slate-400 ml-2">{c.email} · DNI {c.dni}</span>
                               </button>
                             ))}
@@ -4570,7 +4570,7 @@ export function Admin() {
 
               {/* Avisos enviados */}
               <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-100 dark:border-slate-800 shadow-sm dark:shadow-none">
-                <h3 className="text-sm font-black uppercase tracking-wider !text-slate-900 mb-4">Últimos avisos enviados</h3>
+                <h3 className="text-sm font-black uppercase tracking-wider !text-slate-900 dark:!text-white mb-4">Últimos avisos enviados</h3>
                 {sentNotifications.length === 0 ? (
                   <p className="text-center py-6 text-[10px] uppercase tracking-widest text-slate-400 font-bold">Todavía no enviaste avisos</p>
                 ) : (
@@ -4578,7 +4578,7 @@ export function Admin() {
                     {sentNotifications.map((n) => (
                       <div key={n.id} className="border border-slate-100 dark:border-slate-800 rounded-xl px-4 py-3">
                         <div className="flex items-center justify-between">
-                          <p className="text-xs font-black !text-slate-900">{n.title}</p>
+                          <p className="text-xs font-black !text-slate-900 dark:!text-white">{n.title}</p>
                           <span className={cn("text-[8px] uppercase font-black tracking-widest px-2 py-0.5 rounded-full",
                             n.client_id ? "bg-amber-500/10 text-amber-600" : "bg-love/10 text-love")}>
                             {n.client_id ? 'Cliente puntual' : 'Todos'}
@@ -4595,7 +4595,7 @@ export function Admin() {
               <div className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-100 dark:border-slate-800 shadow-sm dark:shadow-none">
                 <div className="flex items-center gap-2 mb-1">
                   <Calendar size={18} className="text-love" />
-                  <h3 className="text-sm font-black uppercase tracking-wider !text-slate-900">Campañas programadas</h3>
+                  <h3 className="text-sm font-black uppercase tracking-wider !text-slate-900 dark:!text-white">Campañas programadas</h3>
                 </div>
                 <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-5">Se envían solas en la fecha elegida (las revisa el sistema cada día)</p>
 
@@ -4665,7 +4665,7 @@ export function Admin() {
                     {campaignsList.map((c) => (
                       <div key={c.id} className="border border-slate-100 dark:border-slate-800 rounded-xl px-4 py-3 flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <p className="text-xs font-black !text-slate-900">{c.title}</p>
+                          <p className="text-xs font-black !text-slate-900 dark:!text-white">{c.title}</p>
                           <p className="text-[11px] text-slate-500 mt-0.5 truncate">{c.message}</p>
                           <p className="text-[8px] uppercase tracking-widest text-slate-400 font-bold mt-1.5">
                             {c.send_date}{c.yearly ? ' · cada año' : ''} · {c.target} · {c.channel}
