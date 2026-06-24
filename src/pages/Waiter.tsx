@@ -53,6 +53,7 @@ export function Waiter() {
   const [usosLoading, setUsosLoading] = useState(false);
   const [confirmingUse, setConfirmingUse] = useState<string | null>(null);
   const [confirmedUses, setConfirmedUses] = useState<string[]>([]);
+  const [usedToday, setUsedToday] = useState<any[]>([]);
 
   // Sucursales reales (del panel), solo las activas. active undefined = activa.
   const activeBranches = (designConfig.branches || []).filter(b => b.active !== false);
@@ -484,6 +485,18 @@ export function Waiter() {
         const fresh = (data || []).filter((r: any) => !confirmedUses.includes(r.id));
         return [...stillConfirmed, ...fresh];
       });
+
+      // Usos ya confirmados hoy (para que el cajero los vea)
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
+      const { data: usedData } = await supabase
+        .from('combo_use_requests')
+        .select('*')
+        .eq('status', 'used')
+        .gte('used_at', startOfDay.toISOString())
+        .order('used_at', { ascending: false })
+        .limit(50);
+      setUsedToday(usedData || []);
     } catch (e) {
       console.warn('Error cargando códigos de uso:', e);
     } finally {
@@ -511,6 +524,7 @@ export function Waiter() {
         amount: 0,
         points_earned: 0,
         branch: selectedBranch || 'CAJA',
+        redemption_code: req.code,
         description: `CONSUMO_COMBO: ${req.combo_id}_1|${req.combo_title}`
       });
       if (txError) throw txError;
@@ -560,7 +574,7 @@ export function Waiter() {
     <motion.div 
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="max-w-xl mx-auto space-y-6 pt-4 px-2"
+      className="max-w-xl lg:max-w-4xl mx-auto space-y-6 pt-4 px-2"
     >
       <div className="flex items-center justify-between mb-4 bg-white p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50">
         <div className="flex items-center gap-3">
@@ -1046,6 +1060,29 @@ export function Waiter() {
                 </div>
                 );
               })}
+            </div>
+          )}
+
+          {/* Usos confirmados hoy */}
+          {usedToday.length > 0 && (
+            <div className="mt-6">
+              <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-2 px-1">Confirmados hoy</p>
+              <div className="space-y-2">
+                {usedToday.map((u) => (
+                  <div key={u.id} className="bg-emerald-50 rounded-2xl border border-emerald-100 p-3 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-black text-emerald-700 font-mono tracking-wider">{u.code}</p>
+                      <p className="text-[11px] font-black text-ink truncate">{u.client_name}</p>
+                      <p className="text-[8px] text-slate-400 font-bold uppercase tracking-widest truncate">
+                        {u.combo_title} · {u.used_at ? new Date(u.used_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) : ''}
+                      </p>
+                    </div>
+                    <span className="shrink-0 text-emerald-600 flex items-center gap-1 text-[9px] font-black uppercase tracking-widest">
+                      <CheckCircle2 size={14} /> Usado
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>

@@ -2804,8 +2804,14 @@ export function Admin() {
 
                       return filtered.map(tx => {
                         const cleanDesc = (tx.description || '').split('||JSON_ITEMS')[0].trim();
-                        const isCanje = cleanDesc.toUpperCase().startsWith('CANJE:');
-                        const operacion = isCanje ? 'Canje' : (cleanDesc.toUpperCase().startsWith('CONSUMO') ? 'Consumo' : 'Otro');
+                        const descU = cleanDesc.toUpperCase();
+                        const isCanje = descU.startsWith('CANJE:');
+                        const isCompra = descU.startsWith('COMPRA_COMBO:');
+                        const isUso = descU.startsWith('CONSUMO_COMBO:');
+                        const operacion = isCanje ? 'Canje'
+                          : isCompra ? 'Compra'
+                          : isUso ? 'Uso'
+                          : ((tx.points_earned || 0) > 0 ? 'Carga' : 'Otro');
                         const premio = isCanje ? cleanDesc.split(':')[1]?.trim() || '—' : '—';
                         const date = new Date(tx.created_at);
 
@@ -2831,7 +2837,11 @@ export function Admin() {
                           <td className="px-6 py-3">
                             <span className={cn(
                               "px-2 py-0.5 rounded text-[8px] font-black uppercase",
-                              operacion === 'Canje' ? "bg-love/10 text-love" : "bg-ink/10 text-ink"
+                              operacion === 'Canje' ? "bg-love/10 text-love"
+                                : operacion === 'Compra' ? "bg-amber-500/10 text-amber-600"
+                                : operacion === 'Uso' ? "bg-slate-500/10 text-slate-500"
+                                : operacion === 'Carga' ? "bg-emerald-500/10 text-emerald-600"
+                                : "bg-ink/10 text-ink"
                             )}>
                               {operacion}
                             </span>
