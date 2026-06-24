@@ -237,7 +237,7 @@ export function Rewards() {
     <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="space-y-8 pb-12"
+      className="space-y-8 pb-12 max-w-lg sm:max-w-2xl lg:max-w-4xl mx-auto"
     >
       <div className="flex items-center gap-3 mb-8 bg-white p-6 rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50 justify-between">
         <div className="flex items-center gap-3">
