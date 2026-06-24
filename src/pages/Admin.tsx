@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase, createIsolatedClient } from '@/src/lib/supabase';
 import { Profile, Prize, Transaction, SystemSettings } from '@/src/types';
 import { motion, AnimatePresence } from 'motion/react';
-import { Users, Gift, Settings, Search, Plus, Trash2, Pencil, Calendar, Award, History, DollarSign, Upload, Image as ImageIcon, FileSpreadsheet, UserPlus, X, Palette, Home, User, Star, MessageSquare, FileText, HelpCircle, LogOut, MapPin, ChevronLeft, ChevronRight, Package, Bell, Send } from 'lucide-react';
+import { Users, Gift, Settings, Search, Plus, Trash2, Pencil, Calendar, Award, History, DollarSign, Upload, Image as ImageIcon, FileSpreadsheet, UserPlus, X, Palette, Home, User, Star, MessageSquare, FileText, HelpCircle, LogOut, MapPin, ChevronLeft, ChevronRight, Package, Bell, Send, Sun, Moon } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import * as XLSX from 'xlsx';
 import { useDesign, COLOR_PRESETS, CORNER_PRESETS, AVAILABLE_FONTS, type DesignConfig, type BannerConfig } from '@/src/components/DesignEngine';
@@ -144,13 +144,7 @@ export function Admin() {
   });
   const [newFeatureText, setNewFeatureText] = useState('');
 
-  // El panel admin siempre usa modo oscuro (paleta negro/rojo/blanco).
-  useEffect(() => {
-    if (theme !== 'dark') {
-      toggleTheme();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // El admin puede alternar entre claro (blanco+rojo) y oscuro (grafito+ambar).
 
   // Combos form editing states
   const [editingComboId, setEditingComboId] = useState<string | null>(null);
@@ -1167,6 +1161,20 @@ export function Admin() {
           {isSidebarExpanded && <span>Vista Cajero</span>}
         </button>
 
+        <button
+          onClick={toggleTheme}
+          className={cn(
+            "flex items-center justify-center bg-slate-100 hover:bg-slate-200 dark:!bg-[#283548] dark:hover:!bg-[#374151] text-slate-700 dark:text-amber-400 transition-all shadow-sm active:scale-95 cursor-pointer mt-2 border-none",
+            isSidebarExpanded
+              ? "w-full gap-2 px-4 py-3 text-[10px] font-black uppercase tracking-widest rounded-2xl"
+              : "w-11 h-11 p-0 rounded-xl lg:mx-auto"
+          )}
+          title="Cambiar entre modo claro y oscuro"
+        >
+          {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+          {isSidebarExpanded && <span>{theme === 'dark' ? 'Modo Claro' : 'Modo Oscuro'}</span>}
+        </button>
+
         <div className={cn(
           "admin-menu-items flex flex-row lg:flex-col p-1 lg:p-0 bg-slate-100 lg:bg-transparent rounded-2xl border border-slate-200 lg:border-none overflow-x-auto lg:overflow-x-visible scrollbar-hide lg:w-full",
           isSidebarExpanded ? "lg:space-y-1" : "lg:space-y-3 lg:items-center"
@@ -1216,7 +1224,7 @@ export function Admin() {
                     ? "gap-2.5 px-3 lg:px-4 py-2 lg:py-2.5 lg:w-full lg:justify-start"
                     : "justify-center p-3 lg:w-12 lg:h-12 lg:mx-auto",
                   activeTab === tab
-                    ? "bg-love text-white shadow-md shadow-love/25 dark:bg-white dark:text-[#7f1d1d]"
+                    ? "bg-love text-white shadow-md shadow-love/25 dark:bg-amber-500 dark:text-amber-950"
                     : "text-slate-500 hover:text-ink lg:hover:bg-slate-100 dark:text-white/70 dark:hover:text-white dark:hover:bg-white/10"
                 )}
                 title={labels[tab]}

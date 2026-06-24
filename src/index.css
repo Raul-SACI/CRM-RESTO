@@ -44,12 +44,12 @@
     @apply !bg-dark-card;
   }
 
-  /* Paleta admin (modo oscuro): neutralizar los slate azulados a negro */
-  .dark .bg-slate-900 { background-color: #161616 !important; }
-  .dark .bg-slate-950 { background-color: #0a0a0a !important; }
-  .dark .bg-slate-800 { background-color: #222222 !important; }
-  .dark .border-slate-800 { border-color: #2a2a2a !important; }
-  .dark .border-slate-700 { border-color: #333333 !important; }
+  /* Paleta admin (modo oscuro): GRAFITO CÁLIDO (gris + ámbar) */
+  .dark .bg-slate-900 { background-color: #1f2937 !important; }
+  .dark .bg-slate-950 { background-color: #111827 !important; }
+  .dark .bg-slate-800 { background-color: #283548 !important; }
+  .dark .border-slate-800 { border-color: #374151 !important; }
+  .dark .border-slate-700 { border-color: #475569 !important; }
 
   /* Specific override for QR code container to stay light for scanning */
   .dark .qr-container, .dark .qr-container * {
@@ -84,20 +84,20 @@
     @apply !bg-dark-paper;
   }
 
-  /* Menú lateral del admin: claro en light, rojo en dark */
+  /* Menú lateral del admin: claro en light, grafito en dark */
   .admin-sidebar {
     background-color: #f8fafc;
     border-color: #e2e8f0;
   }
   .dark .admin-sidebar {
-    background-color: #7f1d1d !important;
-    border-color: #991b1b !important;
+    background-color: #1f2937 !important;
+    border-color: #374151 !important;
   }
-  /* Cualquier fondo interno del menú que tienda a azul, a negro neutro */
+  /* Cualquier fondo interno del menú que tienda a azul, a grafito */
   .dark .admin-sidebar .bg-slate-950,
   .dark .admin-sidebar .bg-slate-900,
   .dark .admin-sidebar .bg-slate-800 {
-    background-color: #141414 !important;
+    background-color: #283548 !important;
   }
   /* El contenedor de items del menú nunca tiene fondo en dark (se ve el rojo) */
   .dark .admin-menu-items {
