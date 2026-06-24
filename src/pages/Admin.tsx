@@ -2811,8 +2811,8 @@ export function Admin() {
 
                         return (
                         <tr key={tx.id} className="border-b border-slate-100 hover:bg-slate-50">
-                          <td className="px-6 py-3">{date.toLocaleDateString('es-AR')}</td>
-                          <td className="px-6 py-3 text-slate-400">{date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</td>
+                          <td className="px-6 py-3 text-ink dark:!text-white">{date.toLocaleDateString('es-AR')}</td>
+                          <td className="px-6 py-3 text-slate-400 dark:!text-white/70">{date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</td>
                           <td className="px-6 py-3 bg-slate-50 font-black text-slate-400 uppercase">{tx.branch || '—'}</td>
                           <td className="px-6 py-3 uppercase font-black text-ink">
                             {(() => {
