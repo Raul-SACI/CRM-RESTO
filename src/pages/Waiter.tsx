@@ -15,6 +15,18 @@ import { numberToWords } from '@/src/lib/numberToWords';
 export function Waiter() {
   const { profile: waiterProfile } = useAuth();
   const { designConfig } = useDesign();
+
+  // La vista del cajero siempre va en tono claro (nunca oscuro).
+  useEffect(() => {
+    const root = window.document.documentElement;
+    root.classList.remove('dark');
+    // Por si algún efecto global lo vuelve a poner, lo vigilamos brevemente.
+    const obs = new MutationObserver(() => {
+      if (root.classList.contains('dark')) root.classList.remove('dark');
+    });
+    obs.observe(root, { attributes: true, attributeFilter: ['class'] });
+    return () => obs.disconnect();
+  }, []);
   const [searchParams] = useSearchParams();
   const [dni, setDni] = useState('');
   const [amount, setAmount] = useState('');
@@ -610,6 +622,22 @@ export function Waiter() {
                       <p className="font-black text-base uppercase tracking-tight leading-none mb-1">{client.full_name}</p>
                       <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest text-wrap">DNI: {client.dni}</p>
                       <p className="text-[10px] text-slate-400 uppercase font-black tracking-widest">Saldo: <span className="text-love italic">{client.points.toLocaleString()} PTS</span></p>
+                      {(() => {
+                        const tierName = getClientActiveTier(client, clientTransactions).name;
+                        const styles: Record<string, string> = {
+                          'CRAFT FAN': 'bg-slate-200 text-slate-600',
+                          'CRAFT GOLD': 'bg-amber-100 text-amber-700',
+                          'CRAFT BLACK': 'bg-black text-white'
+                        };
+                        return (
+                          <span className={cn(
+                            "inline-block mt-1.5 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest",
+                            styles[tierName] || 'bg-slate-200 text-slate-600'
+                          )}>
+                            {tierName}
+                          </span>
+                        );
+                      })()}
                     </div>
                     <button 
                       type="button"
