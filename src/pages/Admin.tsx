@@ -1225,7 +1225,7 @@ export function Admin() {
                     : "justify-center p-3 lg:w-12 lg:h-12 lg:mx-auto",
                   activeTab === tab
                     ? "bg-love text-white shadow-md shadow-love/25 dark:bg-amber-500 dark:text-amber-950"
-                    : "text-slate-500 hover:text-ink lg:hover:bg-slate-100 dark:text-white/70 dark:hover:text-white dark:hover:bg-white/10"
+                    : "text-slate-700 hover:text-ink lg:hover:bg-slate-100 dark:text-white/70 dark:hover:text-white dark:hover:bg-white/10"
                 )}
                 title={labels[tab]}
               >
@@ -1241,7 +1241,7 @@ export function Admin() {
                   <div key={g.title} className={cn("contents lg:block", isSidebarExpanded ? "lg:mb-2" : "")}>
                     {isSidebarExpanded && (
                       <p className={cn(
-                        "hidden lg:block text-[8px] uppercase tracking-[0.2em] font-black text-slate-300 dark:text-white/40 px-4 mb-2",
+                        "hidden lg:block text-[8px] uppercase tracking-[0.2em] font-black text-slate-400 dark:text-white/40 px-4 mb-2",
                         gi > 0 ? "mt-5" : "mt-4"
                       )}>
                         {g.title}

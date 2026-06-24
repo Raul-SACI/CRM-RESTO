@@ -89,6 +89,25 @@
     background-color: #f8fafc;
     border-color: #e2e8f0;
   }
+  /* En modo claro, garantizar que los textos del menú se vean (oscuros) */
+  html:not(.dark) .admin-sidebar h2,
+  html:not(.dark) .admin-sidebar span,
+  html:not(.dark) .admin-sidebar p {
+    color: #1e293b;
+  }
+  html:not(.dark) .admin-sidebar .text-love {
+    color: #ef4444;
+  }
+  /* El botón activo (fondo rojo) mantiene su texto blanco */
+  html:not(.dark) .admin-sidebar .bg-love,
+  html:not(.dark) .admin-sidebar .bg-love span {
+    color: #ffffff;
+  }
+  /* Los botones Vista Cliente / Vista Cajero (fondo oscuro) texto blanco */
+  html:not(.dark) .admin-sidebar .bg-slate-950,
+  html:not(.dark) .admin-sidebar .bg-slate-950 span {
+    color: #ffffff;
+  }
   .dark .admin-sidebar {
     background-color: #1f2937 !important;
     border-color: #374151 !important;
