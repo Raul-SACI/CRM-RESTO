@@ -52,6 +52,7 @@ export function Waiter() {
   const [useRequests, setUseRequests] = useState<any[]>([]);
   const [usosLoading, setUsosLoading] = useState(false);
   const [confirmingUse, setConfirmingUse] = useState<string | null>(null);
+  const [confirmedUses, setConfirmedUses] = useState<string[]>([]);
 
   // Sucursales reales (del panel), solo las activas. active undefined = activa.
   const activeBranches = (designConfig.branches || []).filter(b => b.active !== false);
@@ -477,7 +478,12 @@ export function Waiter() {
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      setUseRequests(data || []);
+      // Conservamos los que están mostrándose como "confirmados" (verde) un momento
+      setUseRequests(prev => {
+        const stillConfirmed = prev.filter(r => confirmedUses.includes(r.id));
+        const fresh = (data || []).filter((r: any) => !confirmedUses.includes(r.id));
+        return [...stillConfirmed, ...fresh];
+      });
     } catch (e) {
       console.warn('Error cargando códigos de uso:', e);
     } finally {
@@ -517,8 +523,12 @@ export function Waiter() {
         .eq('status', 'pending'); // solo si seguía pendiente (evita doble uso)
       if (updError) throw updError;
 
-      // 3) Sacarlo de la lista
-      setUseRequests(prev => prev.filter(r => r.id !== req.id));
+      // 3) Marcarlo como confirmado (queda visible un momento en verde)
+      setConfirmedUses(prev => [...prev, req.id]);
+      setTimeout(() => {
+        setUseRequests(prev => prev.filter(r => r.id !== req.id));
+        setConfirmedUses(prev => prev.filter(id => id !== req.id));
+      }, 4000);
     } catch (e: any) {
       alert('No se pudo confirmar el uso. Refrescá e intentá de nuevo.');
       console.error(e);
@@ -1007,23 +1017,35 @@ export function Waiter() {
             </div>
           ) : (
             <div className="space-y-2">
-              {useRequests.map((req) => (
-                <div key={req.id} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center justify-between gap-3">
+              {useRequests.map((req) => {
+                const isConfirmed = confirmedUses.includes(req.id);
+                return (
+                <div key={req.id} className={cn(
+                  "rounded-2xl border shadow-sm p-4 flex items-center justify-between gap-3 transition-all",
+                  isConfirmed ? "bg-emerald-50 border-emerald-200" : "bg-white border-slate-100"
+                )}>
                   <div className="min-w-0">
-                    <p className="text-lg font-black text-love font-mono tracking-wider">{req.code}</p>
+                    <p className={cn("text-lg font-black font-mono tracking-wider", isConfirmed ? "text-emerald-600" : "text-love")}>{req.code}</p>
                     <p className="text-xs font-black text-ink truncate">{req.client_name}</p>
                     <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest truncate">{req.combo_title}</p>
                   </div>
-                  <button
-                    onClick={() => confirmUse(req)}
-                    disabled={confirmingUse === req.id}
-                    className="shrink-0 px-4 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer border-none flex items-center gap-2 disabled:opacity-50"
-                  >
-                    <CheckCircle2 size={15} />
-                    {confirmingUse === req.id ? 'Confirmando...' : 'Confirmar'}
-                  </button>
+                  {isConfirmed ? (
+                    <div className="shrink-0 px-4 py-3 bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                      <CheckCircle2 size={15} /> Confirmado
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => confirmUse(req)}
+                      disabled={confirmingUse === req.id}
+                      className="shrink-0 px-4 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer border-none flex items-center gap-2 disabled:opacity-50"
+                    >
+                      <CheckCircle2 size={15} />
+                      {confirmingUse === req.id ? 'Confirmando...' : 'Confirmar'}
+                    </button>
+                  )}
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
