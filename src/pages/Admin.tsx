@@ -123,6 +123,7 @@ export function Admin() {
   const [editingFaqIndex, setEditingFaqIndex] = useState<number | null>(null);
   const [faqForm, setFaqForm] = useState({ q: '', a: '', category: 'General' });
   const [localTermsText, setLocalTermsText] = useState('');
+  const [uploadingTermsPdf, setUploadingTermsPdf] = useState(false);
   
   // Branches form editing states
   const [editingBranchId, setEditingBranchId] = useState<string | null>(null);
@@ -3183,32 +3184,65 @@ export function Admin() {
                     <h4 className="text-sm font-black uppercase tracking-wider text-ink dark:text-white mb-4 flex items-center gap-2">
                       <FileText size={18} className="text-love" /> Bases y Condiciones (Reglamento)
                     </h4>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-4">Modifica el texto entero del reglamento del Club de lealtad</p>
-                    <textarea
-                      value={localTermsText}
-                      onChange={(e) => setLocalTermsText(e.target.value)}
-                      rows={8}
-                      className="w-full bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs text-slate-650 dark:text-slate-300 font-semibold leading-relaxed focus:border-love outline-none transition-all"
-                      placeholder="Introduce el reglamento aquí..."
-                    />
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        try {
-                          const updated = {
-                            ...designConfig,
-                            terms: localTermsText
-                          };
-                          await saveDesignConfig(updated);
-                          alert("Bases y Condiciones guardadas correctamente");
-                        } catch (err: any) {
-                          alert("Error guardando bases: " + err.message);
-                        }
-                      }}
-                      className="mt-4 px-6 py-3 bg-love text-white rounded-xl text-xs uppercase font-black tracking-widest hover:scale-[1.02] transition-all cursor-pointer border-none"
-                    >
-                      Guardar Bases y Condiciones
-                    </button>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-4">Subí el PDF del reglamento. El cliente podrá abrirlo y leerlo desde la app.</p>
+
+                    {designConfig?.termsPdfUrl && (
+                      <div className="mb-4 flex items-center gap-3 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 rounded-2xl p-4">
+                        <FileText size={20} className="text-emerald-600 shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[10px] font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-400">PDF cargado</p>
+                          <a href={designConfig.termsPdfUrl} target="_blank" rel="noreferrer" className="text-[10px] text-slate-500 dark:text-slate-400 underline truncate block">Ver PDF actual</a>
+                        </div>
+                      </div>
+                    )}
+
+                    <label className={cn(
+                      "flex flex-col items-center justify-center gap-2 w-full py-8 rounded-2xl border-2 border-dashed cursor-pointer transition-all",
+                      uploadingTermsPdf ? "border-slate-300 bg-slate-50 dark:bg-slate-950" : "border-love/40 bg-love/5 hover:bg-love/10"
+                    )}>
+                      <Upload size={22} className="text-love" />
+                      <span className="text-[11px] font-black uppercase tracking-widest text-ink dark:text-white">
+                        {uploadingTermsPdf ? 'Subiendo PDF...' : (designConfig?.termsPdfUrl ? 'Reemplazar PDF' : 'Subir PDF')}
+                      </span>
+                      <span className="text-[9px] text-slate-400 font-bold">Solo archivos PDF</span>
+                      <input
+                        type="file"
+                        accept="application/pdf"
+                        disabled={uploadingTermsPdf}
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          if (file.type !== 'application/pdf') {
+                            alert('El archivo debe ser un PDF.');
+                            return;
+                          }
+                          setUploadingTermsPdf(true);
+                          try {
+                            const fileName = `terminos_${Date.now()}.pdf`;
+                            const { error: upErr } = await supabase
+                              .storage
+                              .from('documentos')
+                              .upload(fileName, file, { upsert: true, contentType: 'application/pdf' });
+                            if (upErr) throw upErr;
+
+                            const { data: pub } = supabase.storage.from('documentos').getPublicUrl(fileName);
+                            const publicUrl = pub?.publicUrl;
+                            if (!publicUrl) throw new Error('No se pudo obtener el link del PDF');
+
+                            const updated = { ...designConfig, termsPdfUrl: publicUrl };
+                            await saveDesignConfig(updated);
+                            alert('PDF subido y guardado correctamente.');
+                          } catch (err: any) {
+                            alert('Error al subir el PDF: ' + (err.message || err) + '\n\nVerificá que el bucket "documentos" exista y sea público en Supabase.');
+                            console.error('Error subiendo PDF de términos:', err);
+                          } finally {
+                            setUploadingTermsPdf(false);
+                            (e.target as HTMLInputElement).value = '';
+                          }
+                        }}
+                      />
+                    </label>
                   </div>
 
                   {/* Preguntas Frecuentes */}

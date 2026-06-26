@@ -76,6 +76,7 @@ export interface DesignConfig {
   // Custom Help/FAQ & Terms Config added by user
   faqs?: FaqItem[];
   terms?: string;
+  termsPdfUrl?: string;  // Link al PDF de bases y condiciones (subido a Supabase)
   
   // Custom branches added by user
   branches?: Branch[];

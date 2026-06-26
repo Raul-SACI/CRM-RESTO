@@ -12,6 +12,7 @@ export function Help() {
 
   const faqs = designConfig?.faqs || [];
   const termsText = designConfig?.terms || "";
+  const termsPdfUrl = designConfig?.termsPdfUrl || "";
 
   const filteredFaqs = faqs.filter(
     item => 
@@ -170,9 +171,20 @@ export function Help() {
               </div>
             </div>
             
-            <p className="text-xs md:text-sm text-slate-600 dark:text-slate-350 leading-relaxed font-semibold whitespace-pre-line">
-              {termsText}
-            </p>
+            {termsPdfUrl ? (
+              <a
+                href={termsPdfUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center justify-center gap-2 w-full py-4 bg-love text-white rounded-2xl text-xs font-black uppercase tracking-widest no-underline hover:scale-[1.01] transition-all shadow-lg shadow-love/20"
+              >
+                <FileText size={16} /> Abrir Bases y Condiciones (PDF)
+              </a>
+            ) : (
+              <p className="text-xs md:text-sm text-slate-600 dark:text-slate-350 leading-relaxed font-semibold whitespace-pre-line">
+                {termsText}
+              </p>
+            )}
 
             <div className="mt-8 pt-4 border-t border-slate-100 dark:border-slate-800/60 text-[9px] uppercase font-black text-slate-400 flex items-center justify-between">
               <span className="flex items-center gap-1">
