@@ -109,6 +109,22 @@ export function Dashboard() {
 
   const [currentSlide, setCurrentSlide] = useState(0);
 
+  // Detectar ancho de pantalla para elegir la imagen del banner por dispositivo
+  const [screenWidth, setScreenWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
+  useEffect(() => {
+    const onResize = () => setScreenWidth(window.innerWidth);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
+  // Elige la imagen del banner según el dispositivo (con respaldo a la de PC)
+  const getBannerImage = (banner: any) => {
+    if (!banner) return '';
+    if (screenWidth < 640) return banner.imageUrlMobile || banner.imageUrl;       // celular
+    if (screenWidth < 1024) return banner.imageUrlTablet || banner.imageUrl;      // tablet
+    return banner.imageUrl;                                                        // PC
+  };
+
   useEffect(() => {
     if (bannerList.length <= 1) return;
     const interval = setInterval(() => {
@@ -1078,7 +1094,7 @@ export function Dashboard() {
                 transition={{ duration: 0.4 }}
                 className="absolute inset-0 flex flex-col justify-end p-5 text-white"
                 style={{
-                  backgroundImage: `linear-gradient(to top, rgba(0,0,0,0.85) 45%, rgba(0,0,0,0.2) 100%), url(${bannerList[currentSlide]?.imageUrl})`,
+                  backgroundImage: `linear-gradient(to top, rgba(0,0,0,0.85) 45%, rgba(0,0,0,0.2) 100%), url(${getBannerImage(bannerList[currentSlide])})`,
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
                 }}
@@ -1602,7 +1618,7 @@ export function Dashboard() {
               className="absolute inset-0 w-full h-full"
             >
               <img 
-                src={bannerList[currentSlide].imageUrl} 
+                src={getBannerImage(bannerList[currentSlide])} 
                 alt={bannerList[currentSlide].title || "Promoción"}
                 referrerPolicy="no-referrer"
                 className="absolute inset-0 w-full h-full object-cover group-hover:scale-102 transition-transform duration-[4000ms] ease-out"

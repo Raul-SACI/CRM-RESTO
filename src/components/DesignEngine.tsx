@@ -5,7 +5,9 @@ export interface BannerConfig {
   id: string;
   title: string;
   subtitle: string;
-  imageUrl: string;
+  imageUrl: string;          // PC / escritorio (1200x600 aprox)
+  imageUrlTablet?: string;   // Tablet (1024x500 aprox)
+  imageUrlMobile?: string;   // Celular (800x800 aprox)
   linkUrl: string;
   bgColor: string;
   textColor: string;

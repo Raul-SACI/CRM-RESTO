@@ -192,7 +192,7 @@ export function Admin() {
     return `${r}, ${g}, ${b}`;
   };
 
-  const handleBannerFileChange = (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+  const handleBannerFileChange = (e: React.ChangeEvent<HTMLInputElement>, index: number, field: 'imageUrl' | 'imageUrlTablet' | 'imageUrlMobile' = 'imageUrl') => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -207,7 +207,7 @@ export function Admin() {
         const updated = [...localDesign.banners];
         updated[index] = {
           ...updated[index],
-          imageUrl: reader.result as string
+          [field]: reader.result as string
         };
         setLocalDesign({ ...localDesign, banners: updated });
       }
@@ -4054,7 +4054,7 @@ export function Admin() {
 
                                     <div className="space-y-3">
                                       <div className="space-y-2">
-                                        <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">Importar Archivo de Gráfica (Alta Calidad)</label>
+                                        <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">🖥️ Imagen para PC / Computadora · ideal 1200×600 px (horizontal 2:1)</label>
                                         
                                         {/* Drag & Drop high-fidelity Uploader Zone */}
                                         <div className="relative">
@@ -4122,6 +4122,69 @@ export function Admin() {
                                             </button>
                                           )}
                                         </div>
+                                      </div>
+
+                                      {/* Imagen para TABLET */}
+                                      <div className="space-y-2">
+                                        <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">📱 Imagen para Tablet · ideal 1024×500 px (horizontal)</label>
+                                        <input
+                                          type="file"
+                                          accept="image/*"
+                                          id={`banner-file-input-tablet-${activeBannerIndex}`}
+                                          onChange={(e) => handleBannerFileChange(e, activeBannerIndex, 'imageUrlTablet')}
+                                          className="hidden"
+                                        />
+                                        {localDesign.banners[activeBannerIndex].imageUrlTablet ? (
+                                          <div className="relative group rounded-2xl border-2 border-emerald-500/30 overflow-hidden bg-slate-50 dark:bg-slate-900 h-28 flex items-center justify-center">
+                                            <img src={localDesign.banners[activeBannerIndex].imageUrlTablet} className="absolute inset-0 w-full h-full object-cover" alt="Banner tablet" referrerPolicy="no-referrer" />
+                                            <label htmlFor={`banner-file-input-tablet-${activeBannerIndex}`} className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white gap-2 cursor-pointer text-[10px] font-black uppercase tracking-widest">
+                                              <Upload size={18} /> Reemplazar
+                                            </label>
+                                            <button
+                                              onClick={() => { const u = [...localDesign.banners]; u[activeBannerIndex].imageUrlTablet = ""; setLocalDesign({ ...localDesign, banners: u }); }}
+                                              className="absolute top-2 right-2 z-10 bg-white/90 text-love p-1.5 rounded-full text-[8px] font-black uppercase cursor-pointer border-none"
+                                            >
+                                              Quitar
+                                            </button>
+                                          </div>
+                                        ) : (
+                                          <label htmlFor={`banner-file-input-tablet-${activeBannerIndex}`} className="w-full h-20 rounded-2xl border-2 border-dashed border-slate-300 hover:border-love/60 dark:border-slate-700 flex items-center justify-center gap-2 cursor-pointer transition-all bg-slate-50/50 dark:bg-slate-900/50 text-slate-500">
+                                            <Upload size={16} /> <span className="text-[10px] font-bold uppercase tracking-tight">Cargar imagen de tablet (opcional)</span>
+                                          </label>
+                                        )}
+                                      </div>
+
+                                      {/* Imagen para CELULAR */}
+                                      <div className="space-y-2">
+                                        <label className="text-[9px] font-black uppercase tracking-widest text-slate-400">📲 Imagen para Celular · ideal 800×800 px (cuadrada 1:1)</label>
+                                        <input
+                                          type="file"
+                                          accept="image/*"
+                                          id={`banner-file-input-mobile-${activeBannerIndex}`}
+                                          onChange={(e) => handleBannerFileChange(e, activeBannerIndex, 'imageUrlMobile')}
+                                          className="hidden"
+                                        />
+                                        {localDesign.banners[activeBannerIndex].imageUrlMobile ? (
+                                          <div className="relative group rounded-2xl border-2 border-emerald-500/30 overflow-hidden bg-slate-50 dark:bg-slate-900 h-28 flex items-center justify-center">
+                                            <img src={localDesign.banners[activeBannerIndex].imageUrlMobile} className="absolute inset-0 w-full h-full object-cover" alt="Banner celular" referrerPolicy="no-referrer" />
+                                            <label htmlFor={`banner-file-input-mobile-${activeBannerIndex}`} className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white gap-2 cursor-pointer text-[10px] font-black uppercase tracking-widest">
+                                              <Upload size={18} /> Reemplazar
+                                            </label>
+                                            <button
+                                              onClick={() => { const u = [...localDesign.banners]; u[activeBannerIndex].imageUrlMobile = ""; setLocalDesign({ ...localDesign, banners: u }); }}
+                                              className="absolute top-2 right-2 z-10 bg-white/90 text-love p-1.5 rounded-full text-[8px] font-black uppercase cursor-pointer border-none"
+                                            >
+                                              Quitar
+                                            </button>
+                                          </div>
+                                        ) : (
+                                          <label htmlFor={`banner-file-input-mobile-${activeBannerIndex}`} className="w-full h-20 rounded-2xl border-2 border-dashed border-slate-300 hover:border-love/60 dark:border-slate-700 flex items-center justify-center gap-2 cursor-pointer transition-all bg-slate-50/50 dark:bg-slate-900/50 text-slate-500">
+                                            <Upload size={16} /> <span className="text-[10px] font-bold uppercase tracking-tight">Cargar imagen de celular (opcional)</span>
+                                          </label>
+                                        )}
+                                        <p className="text-[8px] text-slate-400 font-semibold leading-relaxed px-1">
+                                          Si no cargás imagen de tablet o celular, se usará la de PC en esas pantallas.
+                                        </p>
                                       </div>
 
                                       <div className="grid grid-cols-2 gap-4">
