@@ -5,7 +5,7 @@ import QRCode from 'react-qr-code';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   CreditCard, Award, TrendingUp, History, Users, 
-  Gift, Calendar, ChevronRight, BarChart3, PieChart,
+  Gift, Calendar, ChevronRight, ChevronLeft, BarChart3, PieChart,
   Flag, Sparkles, Car, Trophy, ArrowLeft, ArrowRight, Star,
   Pencil, Check, Ticket, MapPin, Clock, Phone, Loader2, X
 } from 'lucide-react';
@@ -27,6 +27,13 @@ export function Dashboard() {
   // Candado para que el retorno de pago de Mercado Pago se procese UNA sola vez
   // por carga de pagina, aunque el efecto se vuelva a disparar.
   const mpProcessingRef = useRef(false);
+  const ofertasScrollRef = useRef<HTMLDivElement>(null);
+
+  const scrollOfertas = (dir: 'left' | 'right') => {
+    if (ofertasScrollRef.current) {
+      ofertasScrollRef.current.scrollBy({ left: dir === 'left' ? -260 : 260, behavior: 'smooth' });
+    }
+  };
   const [settings, setSettings] = useState<SystemSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -1285,8 +1292,29 @@ export function Dashboard() {
           {activeCombosForSale.length === 0 ? (
             <p className="text-[10px] text-slate-400 px-1 font-semibold uppercase">No hay combos disponibles a la venta hoy.</p>
           ) : (
-            <div className="flex gap-4 overflow-x-auto no-scrollbar pb-1 px-0.5">
-              {activeCombosForSale.map((combo: any) => (
+            <div className="relative">
+              {activeCombosForSale.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => scrollOfertas('left')}
+                    className="absolute left-0 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-white/95 dark:bg-slate-800 shadow-lg border border-slate-100 dark:border-slate-700 flex items-center justify-center text-ink dark:text-white cursor-pointer hover:bg-love hover:text-white transition-all -ml-1"
+                    aria-label="Anterior"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => scrollOfertas('right')}
+                    className="absolute right-0 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-white/95 dark:bg-slate-800 shadow-lg border border-slate-100 dark:border-slate-700 flex items-center justify-center text-ink dark:text-white cursor-pointer hover:bg-love hover:text-white transition-all -mr-1"
+                    aria-label="Siguiente"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </>
+              )}
+              <div ref={ofertasScrollRef} className="flex gap-4 overflow-x-auto no-scrollbar pb-1 px-0.5 scroll-smooth">
+                {activeCombosForSale.map((combo: any) => (
                 <div 
                   key={combo.id} 
                   className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 p-4 shadow shadow-slate-100 dark:shadow-none shrink-0 w-[240px] text-left flex flex-col justify-between"
@@ -1356,6 +1384,7 @@ export function Dashboard() {
                   </div>
                 </div>
               ))}
+              </div>
             </div>
           )}
         </div>
