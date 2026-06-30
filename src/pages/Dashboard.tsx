@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/src/App';
 import QRCode from 'react-qr-code';
 import { motion, AnimatePresence } from 'motion/react';
@@ -20,6 +21,7 @@ import {
 
 export function Dashboard() {
   const { profile, realProfile, refreshProfile, isSimulatingClient, simDevice } = useAuth();
+  const navigate = useNavigate();
   const { designConfig, saveDesignConfig, loading: designLoading } = useDesign();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   // Candado para que el retorno de pago de Mercado Pago se procese UNA sola vez
@@ -304,6 +306,7 @@ export function Dashboard() {
   // Generación de código de uso (cliente genera, cajero confirma)
   const [generatingCode, setGeneratingCode] = useState<string | null>(null);
   const [activeUseCode, setActiveUseCode] = useState<{ code: string; combo: any } | null>(null);
+  const [comboDetail, setComboDetail] = useState<any | null>(null);
 
   const generateUseCode = async (combo: any) => {
     if (!profile) return;
@@ -681,17 +684,36 @@ export function Dashboard() {
       };
 
       const fetchPopularPrizes = async () => {
-        // Siempre desde la base; sin precarga de cache.
+        // Los más canjeados: contamos los canjes reales por premio.
         try {
-          const { data, error } = await supabase
+          const { data: prizesData, error: prizesError } = await supabase
             .from('catalogo_premios')
             .select('*')
-            .eq('is_active', true)
-            .order('points_cost', { ascending: true })
-            .limit(3);
-          
-          if (isMounted && !error && data && data.length > 0) {
-            setPopularPrizes(data);
+            .eq('is_active', true);
+
+          if (isMounted && !prizesError && prizesData && prizesData.length > 0) {
+            // Traemos los canjes (descripciones que empiezan con CANJE:)
+            const { data: canjesData } = await supabase
+              .from('transactions')
+              .select('description')
+              .like('description', 'CANJE:%')
+              .limit(1000);
+
+            // Contamos cuántas veces se canjeó cada premio (por título)
+            const counts: Record<string, number> = {};
+            (canjesData || []).forEach((t: any) => {
+              const titulo = (t.description || '').replace('CANJE:', '').trim().toLowerCase();
+              if (titulo) counts[titulo] = (counts[titulo] || 0) + 1;
+            });
+
+            // Ordenamos los premios por cantidad de canjes (desc); desempate por precio
+            const sorted = [...prizesData].sort((a: any, b: any) => {
+              const ca = counts[(a.title || '').toLowerCase()] || 0;
+              const cb = counts[(b.title || '').toLowerCase()] || 0;
+              if (cb !== ca) return cb - ca;
+              return (a.points_cost || 0) - (b.points_cost || 0);
+            });
+            setPopularPrizes(sorted);
           } else if (isMounted) {
             setPopularPrizes([]);
           }
@@ -1040,7 +1062,7 @@ export function Dashboard() {
         {/* Header greeting */}
         <div className="flex justify-between items-center px-1">
           <div>
-            <h1 className="text-3xl font-black uppercase tracking-tight leading-none !text-slate-900" style={{ fontFamily: designConfig?.fontHeadings || 'inherit' }}>Hola, {profile.full_name?.split(' ')[0]} ⚡</h1>
+            <h1 className="text-3xl font-black uppercase tracking-tight leading-none !text-slate-900" style={{ fontFamily: designConfig?.fontHeadings || 'inherit' }}>Hola, {profile.full_name?.split(' ')[0]}</h1>
           </div>
         </div>
 
@@ -1286,7 +1308,6 @@ export function Dashboard() {
                       </div>
                     )}
                     <h4 className="text-[11px] font-black uppercase tracking-tight text-ink dark:text-white line-clamp-1">{combo.title}</h4>
-                    <p className="text-[9px] text-slate-400 mt-1 line-clamp-2 leading-relaxed min-h-[22px]">{combo.description || 'Disfruta de nuestros menús premium precargados.'}</p>
                     
                     <div className="flex items-center justify-between mt-3 bg-red-50 dark:bg-red-950/20 px-3 py-2 rounded-2xl border border-red-100/50 dark:border-red-900/10">
                       <span className="text-[8px] uppercase font-black tracking-widest text-white dark:text-white bg-amber-500 dark:bg-amber-600 px-2 py-0.5 rounded-full select-none">
@@ -1316,11 +1337,11 @@ export function Dashboard() {
                     </p>
                   </div>
 
-                  <div className="mt-3">
+                  <div className="mt-3 flex gap-2">
                     <button
                       onClick={() => handlePayWithMercadoPago(combo)}
                       disabled={isCreatingPreference}
-                      className="w-full py-2.5 bg-[#009EE3] hover:bg-[#008cc8] text-white rounded-xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer border-none shadow-sm shadow-[#009ee3]/10 active:scale-[0.98] flex items-center justify-center gap-1.5"
+                      className="flex-1 py-2.5 bg-love hover:bg-love text-white rounded-xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer border-none shadow-sm active:scale-[0.98] flex items-center justify-center gap-1.5"
                     >
                       {isCreatingPreference ? (
                         <>
@@ -1328,11 +1349,14 @@ export function Dashboard() {
                           <span>Procesando...</span>
                         </>
                       ) : (
-                        <>
-                          <span className="text-xs">⚡</span>
-                          <span>Comprar con Mercado Pago</span>
-                        </>
+                        <span>Comprar</span>
                       )}
+                    </button>
+                    <button
+                      onClick={() => setComboDetail(combo)}
+                      className="py-2.5 px-4 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-ink dark:text-white rounded-xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer border-none"
+                    >
+                      Ver
                     </button>
                   </div>
                 </div>
@@ -1346,7 +1370,7 @@ export function Dashboard() {
           <div className="flex justify-between items-center px-1">
             <div className="flex items-center gap-1.5">
               <Gift size={16} className="text-love" />
-              <h4 className="text-sm font-black uppercase tracking-wider !text-slate-900" style={{ fontFamily: designConfig?.fontHeadings || 'inherit' }}>Recomendados para canje</h4>
+              <h4 className="text-sm font-black uppercase tracking-wider !text-slate-900" style={{ fontFamily: designConfig?.fontHeadings || 'inherit' }}>Los más canjeados</h4>
             </div>
             <span className="text-[8px] uppercase font-extrabold text-slate-400">Tus Premios</span>
           </div>
@@ -1355,7 +1379,7 @@ export function Dashboard() {
             {popularPrizes.slice(0, 2).map((prize) => {
               const worksCanje = profile.points >= prize.points_cost;
               return (
-                <div key={prize.id} className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 p-3.5 shadow-sm text-left flex flex-col justify-between">
+                <div key={prize.id} onClick={() => navigate('/rewards')} className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 p-3.5 shadow-sm text-left flex flex-col justify-between cursor-pointer hover:border-love/35 transition-all">
                   <div>
                     {prize.image_url && (
                       <div className="w-full h-20 rounded-2xl overflow-hidden mb-2">
@@ -3035,6 +3059,77 @@ export function Dashboard() {
                   className="flex-[2] bg-love text-white py-3 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-love/20 flex items-center justify-center gap-1.5"
                 >
                   <Check size={11} /> Guardar Cambios
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Modal: detalle de la oferta/combo */}
+      <AnimatePresence>
+        {comboDetail && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-ink/80 backdrop-blur-sm z-[150] flex items-center justify-center p-6"
+            onClick={() => setComboDetail(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 15 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 15 }}
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2rem] w-full max-w-sm shadow-2xl relative overflow-hidden max-h-[85vh] overflow-y-auto"
+              onClick={e => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setComboDetail(null)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-ink dark:hover:text-white transition-colors bg-white/80 dark:bg-slate-800 p-2 rounded-full cursor-pointer border-none z-10"
+              >
+                <X size={14} />
+              </button>
+
+              {comboDetail.imageUrl && (
+                <div className="w-full h-40 overflow-hidden">
+                  <img src={comboDetail.imageUrl} alt={comboDetail.title} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                </div>
+              )}
+
+              <div className="p-6">
+                <h3 className="text-base font-black uppercase text-ink dark:text-white tracking-tight">{comboDetail.title}</h3>
+
+                <div className="mt-3 space-y-3">
+                  <div>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Descripción</p>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">{comboDetail.description || 'Disfruta de nuestros menús premium precargados.'}</p>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <div className="flex-1 bg-slate-50 dark:bg-slate-950 rounded-2xl p-3 text-center">
+                      <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Usos</p>
+                      <p className="text-lg font-black text-love">{comboDetail.totalUses}</p>
+                    </div>
+                    <div className="flex-1 bg-slate-50 dark:bg-slate-950 rounded-2xl p-3 text-center">
+                      <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Precio</p>
+                      <p className="text-lg font-black text-love">${comboDetail.price.toLocaleString('es-AR')}</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-50 dark:bg-slate-950 rounded-2xl p-3">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Modalidad de uso</p>
+                    <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                      Comprás el pase y obtenés {comboDetail.totalUses} usos. Para usar cada uno, generás un código desde "Mis Combos" y se lo mostrás al cajero, que lo confirma. Tenés {comboDetail.expirationDays || 30} días para consumirlo desde la compra.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => { const c = comboDetail; setComboDetail(null); handlePayWithMercadoPago(c); }}
+                  disabled={isCreatingPreference}
+                  className="w-full mt-4 py-3 bg-love text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer border-none active:scale-[0.98]"
+                >
+                  Comprar
                 </button>
               </div>
             </motion.div>
