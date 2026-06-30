@@ -375,7 +375,7 @@ export function Layout({ children }: LayoutProps) {
               { label: 'Premios', to: '/rewards', icon: <Gift size={19} /> },
               { label: 'Mis combos', to: '/my-combos', icon: <Ticket size={19} /> },
               { label: 'Mi Cuenta', to: '/my-account', icon: <User size={19} /> },
-              { label: 'Ayuda', to: '/help', icon: <HelpCircle size={19} /> }
+              { label: 'Sucursales', to: '/branches', icon: <MapPin size={19} /> }
             ].map((item) => (
               <NavLink 
                 key={item.to}
