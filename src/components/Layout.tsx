@@ -31,7 +31,7 @@ export function Layout({ children }: LayoutProps) {
   const [isVisualDesignMode, setIsVisualDesignMode] = useState(false);
   const [activePickerRoute, setActivePickerRoute] = useState<string | null>(null);
 
-  const defaultOrder = ['/', '/rewards', '/my-combos', '/my-account', '/help'];
+  const defaultOrder = ['/', '/rewards', '/my-combos', '/my-account', '/branches'];
   const buttonOrder = designConfig?.navButtonOrder || defaultOrder;
   
   // Orden fijo deseado para la barra del cliente (sin Sucursales)
@@ -45,7 +45,7 @@ export function Layout({ children }: LayoutProps) {
     '/rewards': { label: 'Premios', to: '/rewards' },
     '/my-combos': { label: 'Mis Combos', to: '/my-combos' },
     '/my-account': { label: 'Mi Cuenta', to: '/my-account' },
-    '/help': { label: 'Ayuda', to: '/help' }
+    '/branches': { label: 'Sucursales', to: '/branches' }
   };
 
   const handleMoveButton = async (route: string, direction: 'left' | 'right') => {

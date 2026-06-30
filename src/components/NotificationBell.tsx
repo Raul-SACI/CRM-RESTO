@@ -11,6 +11,7 @@ interface NotificationBellProps {
 export function NotificationBell({ clientId }: NotificationBellProps) {
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [showAllNotifs, setShowAllNotifs] = useState(false);
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
 
@@ -130,21 +131,31 @@ export function NotificationBell({ clientId }: NotificationBellProps) {
                 ) : notifications.length === 0 ? (
                   <p className="text-center py-8 text-[10px] uppercase tracking-widest text-slate-400 font-bold">No tenés avisos por ahora</p>
                 ) : (
-                  notifications.map(n => (
-                    <div
-                      key={n.id}
-                      className={`px-4 py-3 border-b border-slate-50 dark:border-slate-800/50 ${!readIds.has(n.id) ? 'bg-love/5' : ''}`}
-                    >
-                      <div className="flex items-start gap-2">
-                        {!readIds.has(n.id) && <span className="w-2 h-2 rounded-full bg-love mt-1.5 shrink-0" />}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-black !text-slate-900 leading-tight">{n.title}</p>
-                          <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">{n.message}</p>
-                          <p className="text-[8px] uppercase tracking-widest text-slate-400 font-bold mt-1.5">{formatDate(n.created_at)}</p>
+                  <>
+                    {(showAllNotifs ? notifications : notifications.slice(0, 5)).map(n => (
+                      <div
+                        key={n.id}
+                        className={`px-4 py-3 border-b border-slate-50 dark:border-slate-800/50 ${!readIds.has(n.id) ? 'bg-love/5' : ''}`}
+                      >
+                        <div className="flex items-start gap-2">
+                          {!readIds.has(n.id) && <span className="w-2 h-2 rounded-full bg-love mt-1.5 shrink-0" />}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-black !text-slate-900 leading-tight">{n.title}</p>
+                            <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">{n.message}</p>
+                            <p className="text-[8px] uppercase tracking-widest text-slate-400 font-bold mt-1.5">{formatDate(n.created_at)}</p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))
+                    ))}
+                    {!showAllNotifs && notifications.length > 5 && (
+                      <button
+                        onClick={() => setShowAllNotifs(true)}
+                        className="w-full py-3 text-center text-[10px] font-black uppercase tracking-widest text-love hover:bg-love/5 transition-all border-none bg-transparent cursor-pointer"
+                      >
+                        Ver más ({notifications.length - 5})
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             </motion.div>

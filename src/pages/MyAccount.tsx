@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/src/App';
 import { supabase } from '@/src/lib/supabase';
 import { motion, AnimatePresence } from 'motion/react';
-import { User, Key, History, Check, Loader2, Sparkles, RefreshCw, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { User, Key, History, Check, Loader2, Sparkles, RefreshCw, Eye, EyeOff, AlertCircle, HelpCircle, ChevronRight } from 'lucide-react';
 import { Transaction } from '@/src/types';
 import { cn } from '@/src/lib/utils';
 
 export function MyAccount() {
   const { profile, refreshProfile } = useAuth();
+  const navigate = useNavigate();
   
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -377,6 +379,21 @@ export function MyAccount() {
           </div>
         )}
       </div>
+
+      {/* Acceso a Ayuda */}
+      <button
+        onClick={() => navigate('/help')}
+        className="w-full bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm p-4 flex items-center gap-3 text-left hover:border-love/35 transition-all cursor-pointer"
+      >
+        <div className="w-10 h-10 rounded-xl bg-love/10 text-love flex items-center justify-center shrink-0">
+          <HelpCircle size={18} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[11px] font-black uppercase !text-slate-900 dark:!text-white tracking-tight">Ayuda y Soporte</p>
+          <p className="text-[9px] text-slate-400 font-bold uppercase">Preguntas frecuentes y bases y condiciones</p>
+        </div>
+        <ChevronRight size={18} className="text-slate-300 shrink-0" />
+      </button>
     </div>
   );
 }
