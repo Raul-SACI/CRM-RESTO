@@ -1223,7 +1223,7 @@ export function Dashboard() {
           </div>
 
           {/* Road Track section adapted perfectly for mobile screen */}
-          <div className="relative py-5 px-3 bg-[#525252] rounded-2xl border border-slate-500 mt-1 overflow-visible">
+          <div className="relative py-5 px-3 mt-1 overflow-visible">
             
             {/* ROAD TRACK: barra del camino en rojo de marca (más angosta) */}
             <div className="relative h-6 bg-love/25 rounded-full border-t border-b border-dashed border-love/40 flex items-center shadow-inner">
