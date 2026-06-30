@@ -1060,6 +1060,79 @@ export function Dashboard() {
   // tanto en celular como en PC. En PC se muestra como columna centrada.
   const isMobileView = (profile?.role === 'client' || isSimulatingClient);
 
+  // Modal de detalle de oferta/combo (reutilizable en ambas vistas)
+  const comboDetailModal = (
+    <AnimatePresence>
+      {comboDetail && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-ink/80 backdrop-blur-sm z-[150] flex items-center justify-center p-6"
+          onClick={() => setComboDetail(null)}
+        >
+          <motion.div
+            initial={{ scale: 0.9, y: 15 }}
+            animate={{ scale: 1, y: 0 }}
+            exit={{ scale: 0.9, y: 15 }}
+            className="bg-white border border-slate-200 rounded-[2rem] w-full max-w-sm shadow-2xl relative overflow-hidden max-h-[85vh] overflow-y-auto"
+            onClick={e => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setComboDetail(null)}
+              className="absolute top-4 right-4 text-slate-400 hover:text-ink transition-colors bg-white/80 p-2 rounded-full cursor-pointer border-none z-10"
+            >
+              <X size={14} />
+            </button>
+
+            {comboDetail?.imageUrl && (
+              <div className="w-full h-40 overflow-hidden">
+                <img src={comboDetail.imageUrl} alt={comboDetail.title} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+              </div>
+            )}
+
+            <div className="p-6">
+              <h3 className="text-base font-black uppercase !text-slate-900 tracking-tight">{comboDetail?.title}</h3>
+
+              <div className="mt-3 space-y-3">
+                <div>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Descripción</p>
+                  <p className="text-xs text-slate-600 leading-relaxed">{comboDetail?.description || 'Disfruta de nuestros menús premium precargados.'}</p>
+                </div>
+
+                <div className="flex gap-3">
+                  <div className="flex-1 bg-slate-50 rounded-2xl p-3 text-center">
+                    <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Usos</p>
+                    <p className="text-lg font-black text-love">{comboDetail?.totalUses}</p>
+                  </div>
+                  <div className="flex-1 bg-slate-50 rounded-2xl p-3 text-center">
+                    <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Precio</p>
+                    <p className="text-lg font-black text-love">${comboDetail?.price?.toLocaleString('es-AR')}</p>
+                  </div>
+                </div>
+
+                <div className="bg-slate-50 rounded-2xl p-3">
+                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Modalidad de uso</p>
+                  <p className="text-[11px] text-slate-600 leading-relaxed">
+                    Comprás el pase y obtenés {comboDetail?.totalUses} usos. Para usar cada uno, generás un código desde "Mis Combos" y se lo mostrás al cajero, que lo confirma. Tenés {comboDetail?.expirationDays || 30} días para consumirlo desde la compra.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => { const c = comboDetail; setComboDetail(null); handlePayWithMercadoPago(c); }}
+                disabled={isCreatingPreference}
+                className="w-full mt-4 py-3 bg-love text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer border-none active:scale-[0.98]"
+              >
+                Comprar
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+
   if (isMobileView && profile) {
     const nextTierPoints = clientTier.id.includes('black') 
       ? null 
@@ -1598,6 +1671,9 @@ export function Dashboard() {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Modal de detalle de combo (reutilizable) */}
+        {comboDetailModal}
       </motion.div>
     );
   }
@@ -3090,76 +3166,8 @@ export function Dashboard() {
         )}
       </AnimatePresence>
 
-      {/* Modal: detalle de la oferta/combo */}
-      <AnimatePresence>
-        {comboDetail && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-ink/80 backdrop-blur-sm z-[150] flex items-center justify-center p-6"
-            onClick={() => setComboDetail(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, y: 15 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.9, y: 15 }}
-              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2rem] w-full max-w-sm shadow-2xl relative overflow-hidden max-h-[85vh] overflow-y-auto"
-              onClick={e => e.stopPropagation()}
-            >
-              <button
-                onClick={() => setComboDetail(null)}
-                className="absolute top-4 right-4 text-slate-400 hover:text-ink dark:hover:text-white transition-colors bg-white/80 dark:bg-slate-800 p-2 rounded-full cursor-pointer border-none z-10"
-              >
-                <X size={14} />
-              </button>
-
-              {comboDetail.imageUrl && (
-                <div className="w-full h-40 overflow-hidden">
-                  <img src={comboDetail.imageUrl} alt={comboDetail.title} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                </div>
-              )}
-
-              <div className="p-6">
-                <h3 className="text-base font-black uppercase text-ink dark:text-white tracking-tight">{comboDetail.title}</h3>
-
-                <div className="mt-3 space-y-3">
-                  <div>
-                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Descripción</p>
-                    <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">{comboDetail.description || 'Disfruta de nuestros menús premium precargados.'}</p>
-                  </div>
-
-                  <div className="flex gap-3">
-                    <div className="flex-1 bg-slate-50 dark:bg-slate-950 rounded-2xl p-3 text-center">
-                      <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Usos</p>
-                      <p className="text-lg font-black text-love">{comboDetail.totalUses}</p>
-                    </div>
-                    <div className="flex-1 bg-slate-50 dark:bg-slate-950 rounded-2xl p-3 text-center">
-                      <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Precio</p>
-                      <p className="text-lg font-black text-love">${comboDetail.price.toLocaleString('es-AR')}</p>
-                    </div>
-                  </div>
-
-                  <div className="bg-slate-50 dark:bg-slate-950 rounded-2xl p-3">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Modalidad de uso</p>
-                    <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
-                      Comprás el pase y obtenés {comboDetail.totalUses} usos. Para usar cada uno, generás un código desde "Mis Combos" y se lo mostrás al cajero, que lo confirma. Tenés {comboDetail.expirationDays || 30} días para consumirlo desde la compra.
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => { const c = comboDetail; setComboDetail(null); handlePayWithMercadoPago(c); }}
-                  disabled={isCreatingPreference}
-                  className="w-full mt-4 py-3 bg-love text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer border-none active:scale-[0.98]"
-                >
-                  Comprar
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Modal de detalle de combo (reutilizable) */}
+      {comboDetailModal}
 
       {/* Modal: código de uso para mostrar al cajero */}
       <AnimatePresence>
