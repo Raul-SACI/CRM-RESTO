@@ -1105,15 +1105,15 @@ export function Dashboard() {
           </div>
 
           {/* Road Track section adapted perfectly for mobile screen */}
-          <div className="relative py-10 px-2 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-sky-950/20 mt-1 overflow-hidden">
+          <div className="relative py-10 px-2 bg-[#0a0a0a] rounded-2xl border border-slate-800 mt-1 overflow-hidden">
             
-            {/* ROAD TRACK: Asphalt road strip */}
-            <div className="relative h-10 bg-slate-700 dark:bg-slate-800 rounded-xl border-t border-b border-dashed border-slate-500 dark:border-slate-600 flex items-center shadow-inner">
+            {/* ROAD TRACK: barra del camino en rojo de marca */}
+            <div className="relative h-10 bg-love/25 rounded-xl border-t border-b border-dashed border-love/40 flex items-center shadow-inner">
               <div className="absolute left-0 right-0 h-0.5 border-t border-dashed border-white/20" />
 
               {/* Active level progress trail */}
               <div 
-                className="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-yellow-500/25 via-love/20 to-love/35 rounded-l-lg transition-all duration-1000 ease-out" 
+                className="absolute top-0 bottom-0 left-0 bg-love rounded-l-lg transition-all duration-1000 ease-out" 
                 style={{ width: `${getCarPercentage(categoryPoints)}%` }} 
               />
 
@@ -1146,18 +1146,12 @@ export function Dashboard() {
 
               {/* COFFEE CUP VEHICLE: Moves smoothly according to score */}
               <div 
-                className="absolute transition-all duration-[1200ms] cubic-bezier(0.16, 1, 0.3, 1) -translate-x-1/2 z-30"
+                className="absolute top-1/2 -translate-y-1/2 transition-all duration-[1200ms] cubic-bezier(0.16, 1, 0.3, 1) -translate-x-1/2 z-30"
                 style={{ left: `${getCarPercentage(categoryPoints)}%` }}
               >
                 <div className="flex flex-col items-center">
-                  {/* Little cup speech text */}
-                  <div className="bg-slate-900 border border-love text-white text-[7px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded shadow mb-1.5 relative whitespace-nowrap">
-                    <span>☕ {clientTier.name}</span>
-                    <div className="absolute bottom-[2.5px] left-1/2 -translate-x-1/2 w-1 h-1 bg-slate-900 border-r border-b border-love rotate-45" />
-                  </div>
-
                   {/* Takeaway coffee cup layout */}
-                  <div className="relative flex flex-col items-center filter drop-shadow-[0_2px_4px_rgba(230,57,70,0.35)]">
+                  <div className="relative flex flex-col items-center filter drop-shadow-[0_2px_4px_rgba(217,0,21,0.45)]">
                     <div className="w-5.5 h-1 bg-slate-900 rounded-t-sm z-10" />
                     <div className="w-6.5 h-0.5 bg-slate-800 rounded-sm z-10 -mt-0.5" />
                     <div className="w-4.5 h-7 bg-white rounded-b-sm border border-slate-200 relative overflow-hidden flex items-center justify-center -mt-0.5" style={{ clipPath: 'polygon(3% 0%, 97% 0%, 82% 100%, 18% 100%)' }}>
@@ -1197,9 +1191,6 @@ export function Dashboard() {
                     </p>
                     <p className="text-[7px] text-[#A06C00] font-black uppercase mt-0.5 tracking-tight leading-none">
                       {m.target}
-                    </p>
-                    <p className="text-[6px] font-semibold text-slate-400 uppercase tracking-tighter mt-0.5 leading-none font-sans">
-                      {m.benefit}
                     </p>
                   </div>
                 );
