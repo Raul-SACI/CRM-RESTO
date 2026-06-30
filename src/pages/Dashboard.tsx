@@ -1129,42 +1129,15 @@ export function Dashboard() {
           {/* Road Track section adapted perfectly for mobile screen */}
           <div className="relative py-10 px-2 bg-[#0a0a0a] rounded-2xl border border-slate-800 mt-1 overflow-hidden">
             
-            {/* ROAD TRACK: barra del camino en rojo de marca */}
-            <div className="relative h-10 bg-love/25 rounded-xl border-t border-b border-dashed border-love/40 flex items-center shadow-inner">
+            {/* ROAD TRACK: barra del camino en rojo de marca (más angosta) */}
+            <div className="relative h-6 bg-love/25 rounded-full border-t border-b border-dashed border-love/40 flex items-center shadow-inner">
               <div className="absolute left-0 right-0 h-0.5 border-t border-dashed border-white/20" />
 
               {/* Active level progress trail */}
               <div 
-                className="absolute top-0 bottom-0 left-0 bg-love rounded-l-lg transition-all duration-1000 ease-out" 
+                className="absolute top-0 bottom-0 left-0 bg-love rounded-l-full transition-all duration-1000 ease-out" 
                 style={{ width: `${getCarPercentage(categoryPoints)}%` }} 
               />
-
-              {/* Milestones inside road track */}
-              <div className="absolute inset-0 px-4 flex items-center justify-between pointer-events-none z-10">
-                {[
-                  { pts: 0, icon: <Gift size={10} className="text-white" />, pos: 15 },
-                  { pts: activeTiers[1]?.minPoints || 500, icon: <Sparkles size={10} className="text-yellow-400" />, pos: 55 },
-                  { pts: activeTiers[2]?.minPoints || 1000, icon: <Star size={10} className="text-purple-300 fill-purple-300" />, pos: 90 }
-                ].map((m, idx) => {
-                  const reached = categoryPoints >= m.pts;
-                  return (
-                    <div 
-                      key={idx}
-                      className="absolute -translate-x-1/2 flex flex-col items-center gap-1"
-                      style={{ left: `${m.pos}%` }}
-                    >
-                      <div className={cn(
-                        "w-5.5 h-5.5 rounded-full flex items-center justify-center border transition-all duration-700",
-                        reached 
-                          ? "bg-love border-white scale-110 text-white ring-2 ring-love/20" 
-                          : "bg-slate-800 border-slate-600 text-slate-400"
-                      )}>
-                        {m.icon}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
 
               {/* COFFEE CUP VEHICLE: Moves smoothly according to score */}
               <div 
@@ -1172,12 +1145,12 @@ export function Dashboard() {
                 style={{ left: `${getCarPercentage(categoryPoints)}%` }}
               >
                 <div className="flex flex-col items-center">
-                  {/* Takeaway coffee cup layout */}
-                  <div className="relative flex flex-col items-center filter drop-shadow-[0_2px_4px_rgba(217,0,21,0.45)]">
-                    <div className="w-5.5 h-1 bg-slate-900 rounded-t-sm z-10" />
-                    <div className="w-6.5 h-0.5 bg-slate-800 rounded-sm z-10 -mt-0.5" />
-                    <div className="w-4.5 h-7 bg-white rounded-b-sm border border-slate-200 relative overflow-hidden flex items-center justify-center -mt-0.5" style={{ clipPath: 'polygon(3% 0%, 97% 0%, 82% 100%, 18% 100%)' }}>
-                      <div className="text-[5px] font-black tracking-wider text-love select-none flex flex-col items-center justify-center leading-[1] mt-0.5 font-sans">
+                  {/* Takeaway coffee cup layout (más grande) */}
+                  <div className="relative flex flex-col items-center filter drop-shadow-[0_3px_6px_rgba(217,0,21,0.5)]">
+                    <div className="w-8 h-1.5 bg-slate-900 rounded-t-sm z-10" />
+                    <div className="w-9 h-1 bg-slate-800 rounded-sm z-10 -mt-0.5" />
+                    <div className="w-7 h-11 bg-white rounded-b-sm border border-slate-200 relative overflow-hidden flex items-center justify-center -mt-0.5" style={{ clipPath: 'polygon(3% 0%, 97% 0%, 82% 100%, 18% 100%)' }}>
+                      <div className="text-[7px] font-black tracking-wider text-love select-none flex flex-col items-center justify-center leading-[1.1] mt-0.5 font-sans">
                         <span>C</span>
                         <span>R</span>
                         <span>A</span>
@@ -1192,26 +1165,32 @@ export function Dashboard() {
             </div>
 
             {/* LABELS BELOW ROAD */}
-            <div className="relative mt-2.5 h-11">
+            <div className="relative mt-3 h-14">
               {[
-                { pts: 0, label: activeTiers[0]?.name || 'CRAFT FAN', target: '0 PTS', pos: 15, benefit: 'Nivel Inicial' },
-                { pts: activeTiers[1]?.minPoints || 500, label: activeTiers[1]?.name || 'CRAFT GOLD', target: `${(activeTiers[1]?.minPoints || 500).toLocaleString()} PTS`, pos: 55, benefit: `Bonus x${activeTiers[1]?.multiplier || 1.5}` },
-                { pts: activeTiers[2]?.minPoints || 1000, label: activeTiers[2]?.name || 'CRAFT BLACK', target: `${(activeTiers[2]?.minPoints || 1000).toLocaleString()} PTS`, pos: 90, benefit: `Bonus x${activeTiers[2]?.multiplier || 2.0}` }
+                { pts: 0, label: activeTiers[0]?.name || 'CRAFT FAN', target: '0 PTS', pos: 15, icon: <Gift size={11} /> },
+                { pts: activeTiers[1]?.minPoints || 500, label: activeTiers[1]?.name || 'CRAFT GOLD', target: `${(activeTiers[1]?.minPoints || 500).toLocaleString()} PTS`, pos: 55, icon: <Sparkles size={11} /> },
+                { pts: activeTiers[2]?.minPoints || 1000, label: activeTiers[2]?.name || 'CRAFT BLACK', target: `${(activeTiers[2]?.minPoints || 1000).toLocaleString()} PTS`, pos: 90, icon: <Star size={11} /> }
               ].map((m, idx) => {
                 const reached = categoryPoints >= m.pts;
                 return (
                   <div 
                     key={idx}
-                    className="absolute -translate-x-1/2 text-center"
+                    className="absolute -translate-x-1/2 text-center flex flex-col items-center gap-1"
                     style={{ left: `${m.pos}%` }}
                   >
+                    <div className={cn(
+                      "w-6 h-6 rounded-full flex items-center justify-center border transition-all duration-700",
+                      reached ? "bg-love border-white text-white" : "bg-slate-800 border-slate-600 text-slate-400"
+                    )}>
+                      {m.icon}
+                    </div>
                     <p className={cn(
-                      "text-[8px] font-black uppercase truncate max-w-[65px] leading-none",
+                      "text-[8px] font-black uppercase truncate max-w-[70px] leading-none",
                       reached ? "text-love" : "text-slate-400"
                     )}>
                       {m.label}
                     </p>
-                    <p className="text-[7px] text-[#A06C00] font-black uppercase mt-0.5 tracking-tight leading-none">
+                    <p className="text-[7px] text-[#A06C00] font-black uppercase tracking-tight leading-none">
                       {m.target}
                     </p>
                   </div>
@@ -1307,7 +1286,7 @@ export function Dashboard() {
                         />
                       </div>
                     )}
-                    <h4 className="text-[11px] font-black uppercase tracking-tight text-ink dark:text-white line-clamp-1">{combo.title}</h4>
+                    <h4 className="text-[11px] font-black uppercase tracking-tight !text-slate-900 dark:!text-white line-clamp-1">{combo.title}</h4>
                     
                     <div className="flex items-center justify-between mt-3 bg-red-50 dark:bg-red-950/20 px-3 py-2 rounded-2xl border border-red-100/50 dark:border-red-900/10">
                       <span className="text-[8px] uppercase font-black tracking-widest text-white dark:text-white bg-amber-500 dark:bg-amber-600 px-2 py-0.5 rounded-full select-none">
