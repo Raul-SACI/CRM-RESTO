@@ -29,6 +29,10 @@ export function MyAccount() {
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileSuccess, setProfileSuccess] = useState(false);
 
+  // Filtros de movimientos (deben ir con el resto de hooks, antes de cualquier return)
+  const [filterType, setFilterType] = useState<'TODOS' | 'CARGA' | 'CANJE' | 'COMPRA' | 'USO'>('TODOS');
+  const [filterDate, setFilterDate] = useState<string>('');
+
   useEffect(() => {
     if (profile) {
       setFullName(profile.full_name || '');
@@ -155,10 +159,6 @@ export function MyAccount() {
   }
 
   const combinedTxs = getCombinedTransactions();
-
-  // Filtros de movimientos
-  const [filterType, setFilterType] = useState<'TODOS' | 'CARGA' | 'CANJE' | 'COMPRA' | 'USO'>('TODOS');
-  const [filterDate, setFilterDate] = useState<string>('');
 
   const getTxTipo = (desc: string) => {
     if (desc.startsWith('CANJE')) return 'CANJE';
