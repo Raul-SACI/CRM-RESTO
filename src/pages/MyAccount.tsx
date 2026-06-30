@@ -156,6 +156,29 @@ export function MyAccount() {
 
   const combinedTxs = getCombinedTransactions();
 
+  // Filtros de movimientos
+  const [filterType, setFilterType] = useState<'TODOS' | 'CARGA' | 'CANJE' | 'COMPRA' | 'USO'>('TODOS');
+  const [filterDate, setFilterDate] = useState<string>('');
+
+  const getTxTipo = (desc: string) => {
+    if (desc.startsWith('CANJE')) return 'CANJE';
+    if (desc.startsWith('COMPRA_COMBO')) return 'COMPRA';
+    if (desc.startsWith('CONSUMO_COMBO')) return 'USO';
+    return 'CARGA';
+  };
+
+  const filteredTxs = combinedTxs.filter((tx) => {
+    const desc = tx.description || '';
+    if (filterType !== 'TODOS' && getTxTipo(desc) !== filterType) return false;
+    if (filterDate) {
+      // Comparar por fecha local (YYYY-MM-DD)
+      const d = new Date(tx.created_at);
+      const localDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      if (localDate !== filterDate) return false;
+    }
+    return true;
+  });
+
   return (
     <div className="space-y-6 max-w-lg sm:max-w-2xl lg:max-w-4xl mx-auto pb-10">
       {/* Title */}
@@ -308,19 +331,62 @@ export function MyAccount() {
           </button>
         </div>
 
+        {/* Filtros rápidos */}
+        <div className="space-y-2">
+          <div className="flex flex-wrap gap-1.5">
+            {(['TODOS', 'CARGA', 'CANJE', 'COMPRA', 'USO'] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => setFilterType(t)}
+                className={cn(
+                  "px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer border-none",
+                  filterType === t ? "bg-love text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200"
+                )}
+              >
+                {t === 'TODOS' ? 'Todos' : t === 'CARGA' ? 'Cargas' : t === 'CANJE' ? 'Canjes' : t === 'COMPRA' ? 'Compras' : 'Usos'}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              value={filterDate}
+              onChange={(e) => setFilterDate(e.target.value)}
+              className="flex-1 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-[11px] font-bold text-slate-600 outline-none focus:border-love/40"
+            />
+            {(filterType !== 'TODOS' || filterDate) && (
+              <button
+                onClick={() => { setFilterType('TODOS'); setFilterDate(''); }}
+                className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 text-[9px] font-black uppercase tracking-widest cursor-pointer border-none transition-all"
+              >
+                Limpiar
+              </button>
+            )}
+          </div>
+        </div>
+
         {loading ? (
           <div className="py-10 flex items-center justify-center text-slate-400">
             <Loader2 size={24} className="animate-spin" />
           </div>
-        ) : combinedTxs.length === 0 ? (
+        ) : filteredTxs.length === 0 ? (
           <div className="text-center py-10 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl">
             <History size={32} className="mx-auto text-slate-300 dark:text-slate-700 mb-2" />
-            <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">Aún no registras movimientos</p>
-            <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Cualquier punto que cargues o premio que canjees aparecerá listado aquí.</p>
+            {combinedTxs.length === 0 ? (
+              <>
+                <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">Aún no registras movimientos</p>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Cualquier punto que cargues o premio que canjees aparecerá listado aquí.</p>
+              </>
+            ) : (
+              <>
+                <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">Sin resultados para este filtro</p>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">Probá con otro tipo de movimiento u otra fecha.</p>
+              </>
+            )}
           </div>
         ) : (
           <div className="space-y-3 max-h-[350px] overflow-y-auto no-scrollbar pr-1">
-            {combinedTxs.map((tx) => {
+            {filteredTxs.map((tx) => {
               const desc = tx.description || '';
               const isCanje = desc.startsWith('CANJE');
               const isCompra = desc.startsWith('COMPRA_COMBO');
