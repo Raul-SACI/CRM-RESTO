@@ -88,7 +88,7 @@ export interface DesignConfig {
   autoNotif?: AutoNotifConfig;
   
   // Custom client button colors (active/inactive styling)
-  navButtonColors?: Record<string, string>; // e.g. { '/': '#ef4444', '/rewards': '#10b981', '/help': '#3b82f6', '/branches': '#f59e0b' }
+  navButtonColors?: Record<string, string>; // e.g. { '/': '#D90015', '/rewards': '#10b981', '/help': '#3b82f6', '/branches': '#f59e0b' }
   // Custom client button positions/order
   navButtonOrder?: string[]; // e.g. ['/', '/rewards', '/help', '/branches']
   
@@ -122,7 +122,7 @@ export interface DesignConfig {
 export const DEFAULT_DESIGN: DesignConfig = {
   fontSans: 'Inter',
   fontHeadings: 'Space Grotesk',
-  primaryColor: '#ef4444',
+  primaryColor: '#D90015',
   primaryColorHover: '#dc2626',
   primaryColorRgb: '239, 68, 68',
   radiusLg: '24px',
@@ -317,10 +317,10 @@ export const DEFAULT_DESIGN: DesignConfig = {
     }
   },
   navButtonColors: {
-    '/': '#ef4444',
-    '/rewards': '#ef4444',
-    '/help': '#ef4444',
-    '/branches': '#ef4444'
+    '/': '#D90015',
+    '/rewards': '#D90015',
+    '/help': '#D90015',
+    '/branches': '#D90015'
   },
   navButtonOrder: ['/', '/rewards', '/help', '/branches']
 };
@@ -329,7 +329,7 @@ export const DEFAULT_DESIGN: DesignConfig = {
 export const COLOR_PRESETS = [
   {
     name: 'Love Red (Estándar)',
-    primary: '#ef4444',
+    primary: '#D90015',
     hover: '#dc2626',
     rgb: '239, 68, 68'
   },

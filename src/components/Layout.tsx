@@ -210,7 +210,7 @@ export function Layout({ children }: LayoutProps) {
               const data = routesMap[route];
               if (!data) return null;
 
-              const customColor = designConfig?.navButtonColors?.[route] || designConfig?.primaryColor || '#ef4444';
+              const customColor = designConfig?.navButtonColors?.[route] || designConfig?.primaryColor || '#D90015';
               const isActiveColor = customColor;
 
               return (
@@ -269,7 +269,7 @@ export function Layout({ children }: LayoutProps) {
                             <button onClick={() => setActivePickerRoute(null)} className="text-amber-400 hover:text-amber-305 font-bold p-0.5 text-[8px] bg-transparent border-none cursor-pointer">OK</button>
                           </div>
                           <div className="grid grid-cols-5 gap-1">
-                            {['#ef4444', '#10b981', '#3b82f6', '#f59e0b', '#8b5cf6'].map(presetColor => (
+                            {['#D90015', '#10b981', '#3b82f6', '#f59e0b', '#8b5cf6'].map(presetColor => (
                               <button
                                 key={presetColor}
                                 onClick={() => handleSetButtonColor(route, presetColor)}

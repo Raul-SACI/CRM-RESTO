@@ -433,7 +433,7 @@ export function Rewards() {
         ) : displayPrizes.length === 0 ? (
           <div className="col-span-full text-center py-16 bg-white dark:bg-slate-900 border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-[2rem] p-10">
             <Gift size={40} className="mx-auto text-slate-300 dark:text-slate-700 mb-3" />
-            <p className="text-[11px] font-black uppercase tracking-widest text-[#ef4444]">Catálogo de canjes vacío</p>
+            <p className="text-[11px] font-black uppercase tracking-widest text-[#D90015]">Catálogo de canjes vacío</p>
             <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 uppercase font-bold tracking-wider">Actualmente no hay premios activos disponibles.</p>
           </div>
         ) : (

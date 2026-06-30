@@ -35,7 +35,7 @@ export function Dashboard() {
 
   // Visual points card styling setup
   const [isEditingPointsCard, setIsEditingPointsCard] = useState(false);
-  const [cardBgForm, setCardBgForm] = useState('#ef4444');
+  const [cardBgForm, setCardBgForm] = useState('#D90015');
   const [cardTextForm, setCardTextForm] = useState('#ffffff');
   const [buttonBgForm, setButtonBgForm] = useState('rgba(255,255,255,0.1)');
   const [buttonTextForm, setButtonTextForm] = useState('#ffffff');
@@ -893,7 +893,7 @@ export function Dashboard() {
             <div className="absolute inset-x-2 bottom-0 top-2 rounded-b-3xl rounded-t-lg border-[3px] border-ink overflow-hidden bg-white">
               {/* Café que sube */}
               <motion.div
-                className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#b91c1c] to-[#ef4444]"
+                className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#b91c1c] to-[#D90015]"
                 initial={{ height: "0%" }}
                 animate={{ height: ["8%", "85%", "8%"] }}
                 transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}
@@ -1004,7 +1004,7 @@ export function Dashboard() {
                   />
                   <Bar dataKey="count" radius={[8, 8, 0, 0]}>
                     {adminStats.ageData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#ef4444' : '#0f172a'} />
+                      <Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#D90015' : '#0f172a'} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -1704,7 +1704,7 @@ export function Dashboard() {
                   subtitle: b.subtitle || '',
                   imageUrl: b.imageUrl || '',
                   linkUrl: b.linkUrl || '',
-                  bgColor: b.bgColor || '#ef4444',
+                  bgColor: b.bgColor || '#D90015',
                   textColor: b.textColor || '#ffffff',
                   buttonText: b.buttonText || '',
                 });
@@ -1945,7 +1945,7 @@ export function Dashboard() {
           <button
             onClick={(e) => {
               e.stopPropagation();
-              setCardBgForm(designConfig?.pointsCardBg || '#ef4444');
+              setCardBgForm(designConfig?.pointsCardBg || '#D90015');
               setCardTextForm(designConfig?.pointsCardText || '#ffffff');
               setButtonBgForm(designConfig?.profileButtonBg || 'rgba(255,255,255,0.1)');
               setButtonTextForm(designConfig?.profileButtonText || '#ffffff');
@@ -2100,7 +2100,7 @@ export function Dashboard() {
                         onChange={e => setCardBgForm(e.target.value)} 
                       />
                       <input 
-                        placeholder="#ef4444" 
+                        placeholder="#D90015" 
                         className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-sm outline-none focus:border-love text-ink dark:text-white font-mono" 
                         value={cardBgForm} 
                         onChange={e => setCardBgForm(e.target.value)} 
@@ -2108,7 +2108,7 @@ export function Dashboard() {
                     </div>
                     {/* Presets */}
                     <div className="flex flex-wrap gap-1.5 pt-1.5">
-                      {['#ef4444', '#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#0f172a', '#7c2d12', '#1e293b'].map(c => (
+                      {['#D90015', '#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#0f172a', '#7c2d12', '#1e293b'].map(c => (
                         <button
                           key={c}
                           type="button"
@@ -2169,7 +2169,7 @@ export function Dashboard() {
                       />
                     </div>
                     <div className="flex flex-wrap gap-1.5 pt-1.5">
-                      {['rgba(255,255,255,0.15)', 'rgba(255,255,255,0.25)', '#0f172a', '#ef4444', '#10b981', '#3b82f6', 'transparent'].map(c => (
+                      {['rgba(255,255,255,0.15)', 'rgba(255,255,255,0.25)', '#0f172a', '#D90015', '#10b981', '#3b82f6', 'transparent'].map(c => (
                         <button
                           key={c}
                           type="button"
@@ -2200,7 +2200,7 @@ export function Dashboard() {
                       />
                     </div>
                     <div className="flex gap-1.5 pt-1.5">
-                      {['#ffffff', '#0f172a', '#ef4444', '#10b981', '#f59e0b'].map(c => (
+                      {['#ffffff', '#0f172a', '#D90015', '#10b981', '#f59e0b'].map(c => (
                         <button
                           key={c}
                           type="button"
@@ -2331,14 +2331,14 @@ export function Dashboard() {
                         onChange={e => setEditingBannerData({...editingBannerData, bgColor: e.target.value})} 
                       />
                       <input 
-                        placeholder="#ef4444" 
+                        placeholder="#D90015" 
                         className="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-xs outline-none focus:border-love text-ink dark:text-white font-mono" 
                         value={editingBannerData.bgColor} 
                         onChange={e => setEditingBannerData({...editingBannerData, bgColor: e.target.value})} 
                       />
                     </div>
                     <div className="flex flex-wrap gap-1">
-                      {['#ef4444', '#10b981', '#3b82f6', '#f59e0b', '#0f172a', '#7c2d12', '#1e293b'].map(c => (
+                      {['#D90015', '#10b981', '#3b82f6', '#f59e0b', '#0f172a', '#7c2d12', '#1e293b'].map(c => (
                         <button
                           key={c}
                           type="button"
@@ -2368,7 +2368,7 @@ export function Dashboard() {
                       />
                     </div>
                     <div className="flex gap-1">
-                      {['#ffffff', '#0f172a', '#fed7aa', '#f8fafc', '#ef4444'].map(c => (
+                      {['#ffffff', '#0f172a', '#fed7aa', '#f8fafc', '#D90015'].map(c => (
                         <button
                           key={c}
                           type="button"

@@ -2,7 +2,7 @@
 
 @theme {
   --color-ash: #27272a;
-  --color-love: #ef4444;
+  --color-love: #D90015;
   --color-bar-black: #18181b;
   --color-ivory: #ffffff;
   --color-paper: #f8fafc;
@@ -101,7 +101,7 @@
   }
   html:not(.dark) .admin-sidebar .text-love,
   html:not(.dark) .admin-sidebar .text-love svg {
-    color: #ef4444;
+    color: #D90015;
   }
   /* El botón activo (fondo rojo) mantiene su contenido blanco */
   html:not(.dark) .admin-sidebar .bg-love,
