@@ -224,7 +224,7 @@ export function Layout({ children }: LayoutProps) {
                     })}
                     className={({ isActive }) => cn(
                       "px-3 md:px-4 py-1.5 md:py-2 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-tighter transition-all shrink-0",
-                      isActive ? "" : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400 hover:scale-[1.02]"
+                      isActive ? "" : "bg-ink text-white hover:bg-black hover:scale-[1.02]"
                     )}
                   >
                     {data.label}
