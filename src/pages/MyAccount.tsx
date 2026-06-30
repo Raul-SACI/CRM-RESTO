@@ -347,13 +347,16 @@ export function MyAccount() {
               </button>
             ))}
           </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="date"
-              value={filterDate}
-              onChange={(e) => setFilterDate(e.target.value)}
-              className="flex-1 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-[11px] font-bold text-slate-600 outline-none focus:border-love/40"
-            />
+          <div className="flex items-end gap-2">
+            <div className="flex-1 space-y-1">
+              <label className="text-[8px] font-black uppercase tracking-widest text-slate-400 px-1">Elegí fecha</label>
+              <input
+                type="date"
+                value={filterDate}
+                onChange={(e) => setFilterDate(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-[11px] font-bold text-slate-600 outline-none focus:border-love/40"
+              />
+            </div>
             {(filterType !== 'TODOS' || filterDate) && (
               <button
                 onClick={() => { setFilterType('TODOS'); setFilterDate(''); }}
@@ -414,9 +417,12 @@ export function MyAccount() {
               const montoTexto = puntos >= 0 ? `+${puntos}` : `${puntos}`;
               const montoClass = puntos >= 0 ? "text-emerald-500" : "text-love";
 
+              // Código generado (uso de pase / canje), si existe
+              const codigo = (tx as any).redemption_code || '';
+
               return (
-                <div key={tx.id} className="p-3 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3 text-left">
-                  <div className="space-y-0.5">
+                <div key={tx.id} className="p-3 !bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between gap-3 text-left">
+                  <div className="space-y-0.5 min-w-0">
                     <span className={cn(
                       "text-[8px] px-2 py-0.5 rounded-full font-black uppercase tracking-widest",
                       tipoClass
@@ -426,7 +432,12 @@ export function MyAccount() {
                     <h5 className="text-[10px] font-black uppercase !text-slate-900 tracking-tight leading-normal mt-1 max-w-[200px] truncate">
                       {titulo}
                     </h5>
-                    <p className="text-[8px] text-slate-400 font-extrabold uppercase tracking-widest">
+                    {codigo && (
+                      <p className="text-[8px] font-black uppercase tracking-widest text-love mt-0.5">
+                        Código: {codigo}
+                      </p>
+                    )}
+                    <p className="text-[8px] text-slate-500 font-extrabold uppercase tracking-widest">
                       {new Date(tx.created_at).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}  • {tx.branch || 'Sucursal principal'}
                     </p>
                   </div>
@@ -455,8 +466,7 @@ export function MyAccount() {
           <HelpCircle size={18} />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[11px] font-black uppercase !text-slate-900 dark:!text-white tracking-tight">Ayuda y Soporte</p>
-          <p className="text-[9px] text-slate-400 font-bold uppercase">Preguntas frecuentes y bases y condiciones</p>
+          <p className="text-[11px] font-black uppercase !text-slate-900 tracking-tight">Ayuda</p>
         </div>
         <ChevronRight size={18} className="text-slate-300 shrink-0" />
       </button>
