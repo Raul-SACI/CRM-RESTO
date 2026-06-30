@@ -1127,7 +1127,7 @@ export function Dashboard() {
           </div>
 
           {/* Road Track section adapted perfectly for mobile screen */}
-          <div className="relative py-10 px-2 bg-[#0a0a0a] rounded-2xl border border-slate-800 mt-1 overflow-hidden">
+          <div className="relative py-10 px-2 bg-[#1f1f1f] rounded-2xl border border-slate-700 mt-1 overflow-hidden">
             
             {/* ROAD TRACK: barra del camino en rojo de marca (más angosta) */}
             <div className="relative h-6 bg-love/25 rounded-full border-t border-b border-dashed border-love/40 flex items-center shadow-inner">
@@ -1145,12 +1145,12 @@ export function Dashboard() {
                 style={{ left: `${getCarPercentage(categoryPoints)}%` }}
               >
                 <div className="flex flex-col items-center">
-                  {/* Takeaway coffee cup layout (más grande) */}
+                  {/* Takeaway coffee cup layout */}
                   <div className="relative flex flex-col items-center filter drop-shadow-[0_3px_6px_rgba(217,0,21,0.5)]">
-                    <div className="w-8 h-1.5 bg-slate-900 rounded-t-sm z-10" />
-                    <div className="w-9 h-1 bg-slate-800 rounded-sm z-10 -mt-0.5" />
-                    <div className="w-7 h-11 bg-white rounded-b-sm border border-slate-200 relative overflow-hidden flex items-center justify-center -mt-0.5" style={{ clipPath: 'polygon(3% 0%, 97% 0%, 82% 100%, 18% 100%)' }}>
-                      <div className="text-[7px] font-black tracking-wider text-love select-none flex flex-col items-center justify-center leading-[1.1] mt-0.5 font-sans">
+                    <div className="w-6.5 h-1.5 bg-slate-900 rounded-t-sm z-10" />
+                    <div className="w-7.5 h-1 bg-slate-800 rounded-sm z-10 -mt-0.5" />
+                    <div className="w-5.5 h-9 bg-white rounded-b-sm border border-slate-200 relative overflow-hidden flex items-center justify-center -mt-0.5" style={{ clipPath: 'polygon(3% 0%, 97% 0%, 82% 100%, 18% 100%)' }}>
+                      <div className="text-[6px] font-black tracking-wider text-love select-none flex flex-col items-center justify-center leading-[1.1] mt-0.5 font-sans">
                         <span>C</span>
                         <span>R</span>
                         <span>A</span>
@@ -1286,7 +1286,7 @@ export function Dashboard() {
                         />
                       </div>
                     )}
-                    <h4 className="text-[11px] font-black uppercase tracking-tight !text-slate-900 dark:!text-white line-clamp-1">{combo.title}</h4>
+                    <h4 className="text-[11px] font-black uppercase tracking-tight !text-slate-900 line-clamp-1">{combo.title}</h4>
                     
                     <div className="flex items-center justify-between mt-3 bg-red-50 dark:bg-red-950/20 px-3 py-2 rounded-2xl border border-red-100/50 dark:border-red-900/10">
                       <span className="text-[8px] uppercase font-black tracking-widest text-white dark:text-white bg-amber-500 dark:bg-amber-600 px-2 py-0.5 rounded-full select-none">
@@ -1333,7 +1333,7 @@ export function Dashboard() {
                     </button>
                     <button
                       onClick={() => setComboDetail(combo)}
-                      className="py-2.5 px-4 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-ink dark:text-white rounded-xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer border-none"
+                      className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-ink rounded-xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer border-none flex items-center justify-center"
                     >
                       Ver
                     </button>
