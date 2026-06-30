@@ -353,17 +353,6 @@ export function Dashboard() {
     
     if (!error && data) {
       setTransactions(data);
-      try {
-        localStorage.setItem(`tx_cache_${profile.id}`, JSON.stringify(data));
-      } catch (e) {
-        console.warn("[LocalStorage] No se pudo guardar tx_cache por límite de cuota:", e);
-      }
-    } else if (error) {
-      // Respaldo: si la base no responde, usamos el ultimo cache conocido.
-      const cached = localStorage.getItem(`tx_cache_${profile.id}`);
-      if (cached) {
-        try { setTransactions(JSON.parse(cached)); } catch (e) {}
-      }
     }
   };
 
@@ -432,12 +421,6 @@ export function Dashboard() {
         created_at: new Date().toISOString(),
         description: `COMPRA_COMBO: ${selectedComboForPurchase.id}_${fakeUses}|${selectedComboForPurchase.title}`
       };
-
-      // Cache locally
-      const existingStr = localStorage.getItem(`local_txs_${profile.id}`);
-      const existing = existingStr ? JSON.parse(existingStr) : [];
-      existing.push(newPurchaseTx);
-      localStorage.setItem(`local_txs_${profile.id}`, JSON.stringify(existing));
 
       // Push to Supabase
       await supabase.from('transactions').insert({
@@ -547,12 +530,6 @@ export function Dashboard() {
               return;
             }
 
-            // Guardar en el cache local de transacciones
-            const existingStr = localStorage.getItem(`local_txs_${profile.id}`);
-            const existing = existingStr ? JSON.parse(existingStr) : [];
-            existing.push(newPurchaseTx);
-            localStorage.setItem(`local_txs_${profile.id}`, JSON.stringify(existing));
-
             // Insertar en base de datos Supabase
             await supabase.from('transactions').insert({
               client_id: profile.id,
@@ -630,16 +607,7 @@ export function Dashboard() {
           const oneWeekAgo = new Date();
           oneWeekAgo.setDate(today.getDate() - 7);
 
-          // 1. Cargar desde caché primero
-          const cached = localStorage.getItem('admin_stats_cache');
-          if (cached && isMounted) {
-            try {
-              setAdminStats(JSON.parse(cached));
-              setLoading(false);
-            } catch (e) {}
-          }
-
-          // 2. Fetch fresco en paralelo
+          // Leer siempre fresco del servidor (sin caché local)
           const results = await Promise.allSettled([
             supabase.from('profiles').select('*', { count: 'exact', head: true }).limit(1),
             supabase.from('profiles').select('*').order('points', { ascending: false }).limit(20),
@@ -694,11 +662,6 @@ export function Dashboard() {
 
           if (isMounted) {
             setAdminStats(freshStats);
-            try {
-              localStorage.setItem('admin_stats_cache', JSON.stringify(freshStats));
-            } catch (e) {
-              console.warn("[LocalStorage] No se pudo guardar admin_stats_cache por límite de cuota:", e);
-            }
           }
         } catch (err) {
           console.error("Admin stats error:", err);

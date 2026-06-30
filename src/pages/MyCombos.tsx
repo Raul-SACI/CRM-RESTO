@@ -241,12 +241,6 @@ export function MyCombos() {
         description: `COMPRA_COMBO: ${selectedComboForPurchase.id}_${fakeUses}|${selectedComboForPurchase.title}`
       };
 
-      // Cache locally
-      const existingStr = localStorage.getItem(`local_txs_${profile.id}`);
-      const existing = existingStr ? JSON.parse(existingStr) : [];
-      existing.push(newPurchaseTx);
-      localStorage.setItem(`local_txs_${profile.id}`, JSON.stringify(existing));
-
       // Push to Supabase
       await supabase.from('transactions').insert({
         client_id: profile.id,
@@ -320,11 +314,6 @@ export function MyCombos() {
 
         const executeLogging = async () => {
           try {
-            const existingStr = localStorage.getItem(`local_txs_${profile.id}`);
-            const existing = existingStr ? JSON.parse(existingStr) : [];
-            existing.push(newPurchaseTx);
-            localStorage.setItem(`local_txs_${profile.id}`, JSON.stringify(existing));
-
             await supabase.from('transactions').insert({
               client_id: profile.id,
               waiter_id: profile.id,

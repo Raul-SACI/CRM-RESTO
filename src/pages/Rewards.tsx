@@ -40,19 +40,9 @@ export function Rewards() {
         
         if (!error && data) {
           setPrizes(data);
-          try {
-            localStorage.setItem('rewards_cache', JSON.stringify(data));
-          } catch (e) {
-            console.warn("[LocalStorage] No se pudo guardar rewards_cache por límite de cuota:", e);
-          }
         }
       } catch (err) {
         console.error("Rewards fetch error:", err);
-        // Respaldo: si la base no responde, mostramos el ultimo cache conocido.
-        const cached = localStorage.getItem('rewards_cache');
-        if (cached) {
-          try { setPrizes(JSON.parse(cached)); } catch (e) {}
-        }
       } finally {
         setLoading(false);
       }
@@ -147,27 +137,6 @@ export function Rewards() {
       }
     } catch (err: any) {
       console.warn("Error al guardar la opinion online:", err);
-    }
-
-    // Guardar tambien localmente como respaldo (por si la base fallo).
-    try {
-      const existingStr = localStorage.getItem('local_program_feedback');
-      let existingFeedbacks: any[] = [];
-      if (existingStr) {
-        existingFeedbacks = JSON.parse(existingStr);
-      }
-      existingFeedbacks.unshift({
-        id: 'user-' + Math.random().toString(36).substring(2, 9),
-        client_id: profile.id,
-        client_name: profile.full_name || 'Cliente de Club CRAFT',
-        rating: ratingScore,
-        comment: ratingComment,
-        prize_title: lastPrize?.title || 'General',
-        created_at: new Date().toISOString()
-      });
-      localStorage.setItem('local_program_feedback', JSON.stringify(existingFeedbacks));
-    } catch (err) {
-      console.error("Local storage save error for feedback:", err);
     }
 
     setIsSubmittingRating(false);

@@ -553,33 +553,16 @@ export function Admin() {
     }
   };
 
-  const safeSetItem = (key: string, value: string) => {
-    try {
-      localStorage.setItem(key, value);
-    } catch (e: any) {
-      console.warn(`[LocalStorage] No se pudo guardar en caché el elemento "${key}" porque se superó la cuota de espacio disponible:`, e);
-    }
+  const safeSetItem = (_key: string, _value: string) => {
+    // Caché de datos del admin desactivado: siempre se lee del servidor.
   };
 
   const fetchData = async (forceRefresh = false) => {
-    // 1. Cargar desde caché primero para respuesta instantánea
+    // Siempre cargar fresco del servidor (sin caché local)
+    void forceRefresh;
     const cacheKey = `admin_cache_${activeTab}`;
-    const cached = localStorage.getItem(cacheKey);
-    if (cached && !forceRefresh) {
-      try {
-        const parsed = JSON.parse(cached);
-        if (activeTab === 'clients') setClients(parsed);
-        else if (activeTab === 'prizes') setPrizes(parsed);
-        else if (activeTab === 'staff') setStaff(parsed);
-        else if (activeTab === 'history') setAllTransactions(parsed);
-        else if (activeTab === 'feedback') setFeedbacks(parsed);
-        setLoading(false);
-      } catch (e) {
-        console.error("Cache parse error:", e);
-      }
-    } else {
-      setLoading(true);
-    }
+    void cacheKey;
+    setLoading(true);
     
     // Timeout de seguridad
     const fetchTimeout = setTimeout(() => {
@@ -689,25 +672,11 @@ export function Admin() {
         }
 
         if (remoteOk) {
-          // La base respondio: es la fuente de verdad. No mezclamos cache vieja
-          // ni sembramos comentarios de prueba.
+          // La base respondio: es la fuente de verdad.
           setFeedbacks(remoteFeedbacks);
-          safeSetItem(cacheKey, JSON.stringify(remoteFeedbacks));
         } else {
-          // La base no respondio (tabla aun no creada): mostramos lo cacheado real,
-          // sin inventar comentarios de prueba.
-          const localCached = localStorage.getItem('local_program_feedback');
-          let localFeedbacks: any[] = [];
-          if (localCached) {
-            try {
-              localFeedbacks = JSON.parse(localCached);
-            } catch (e) {
-              console.error("Local feedback parse error:", e);
-            }
-          }
-          localFeedbacks.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-          setFeedbacks(localFeedbacks);
-          safeSetItem(cacheKey, JSON.stringify(localFeedbacks));
+          // La base no respondio: mostramos vacío (no usamos caché local).
+          setFeedbacks([]);
         }
       }
     } catch (e: any) {
@@ -725,16 +694,6 @@ export function Admin() {
       await supabase.from('program_feedback').delete().eq('id', id);
     } catch (e) {
       console.warn("Could not delete from remote table", e);
-    }
-    try {
-      const existingStr = localStorage.getItem('local_program_feedback');
-      if (existingStr) {
-        const parsed = JSON.parse(existingStr);
-        const filtered = parsed.filter((f: any) => f.id !== id);
-        safeSetItem('local_program_feedback', JSON.stringify(filtered));
-      }
-    } catch (e) {
-      console.error(e);
     }
     setFeedbacks(prev => prev.filter(f => f.id !== id));
   };

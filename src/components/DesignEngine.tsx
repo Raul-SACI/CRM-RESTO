@@ -214,85 +214,8 @@ export const DEFAULT_DESIGN: DesignConfig = {
     }
   ],
   terms: "El programa de beneficios 'Club CRAFT' es operado exclusivamente por la administración de la marca CRAFT. Al registrarse en la plataforma, el usuario declara haber leído, comprendido e implicado su pleno consentimiento sobre cada cláusula de este reglamento de uso activo.\n\nLos puntos son individuales, estrictamente intransferibles y no son intercambiables por dinero físico. El usuario está obligado a corroborar su identidad mediante DNI original ante el personal de sucursal para validar cualquier carga o canje de puntos dentro del local.\n\nLos puntos acumulados no vencen siempre y cuando se asocie al menos 1 visita o consumo en el término de 12 meses. Sin embargo, los cupones redimidos de premios solo tienen validez estricta para el día natural de su fecha de emisión (vencen a las 23:59 hs). Pasado ese límite, el premio se extingue sin derecho a reintegro de puntos.\n\nCRAFT se guarda el derecho soberano de dar por finalizado el programa, alterar la tasa de equivalencia de puntos ($1000 = 1 PTS) o remover premios de la tienda informando con al menos 15 días corridos de antelación en sus canales públicos.",
-  branches: [
-    {
-      id: '1',
-      name: 'CRAFT Centro',
-      address: 'Urquiza 1024 (Esq. San Martín)',
-      city: 'Paraná',
-      province: 'Entre Ríos',
-      phone: '+54 343 4221155',
-      hoursWeekday: '07:00 a 21:00 hs',
-      hoursWeekend: '08:30 a 20:30 hs',
-      specialty: 'Café de Especialidad & Pastelería Fina Europea',
-      features: ['Wifi de Alta Velocidad', 'Pet Friendly', 'Área de Coworking Silencioso', 'Take Away'],
-      coordinates: '-31.733190, -60.529810',
-      imageUrl: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?auto=format&fit=crop&q=80&w=600',
-      googleMapsUrl: 'https://maps.google.com/?q=-31.733190,-60.529810',
-      active: true
-    },
-    {
-      id: '2',
-      name: 'CRAFT Perón',
-      address: 'Av. Francisco Ramírez 2450',
-      city: 'Paraná',
-      province: 'Entre Ríos',
-      phone: '+54 343 4351166',
-      hoursWeekday: '07:30 a 22:30 hs',
-      hoursWeekend: '08:00 a 23:30 hs',
-      specialty: 'Brunch Completo & Tragos de Autor',
-      features: ['Estacionamiento Propio', 'Pet Friendly', 'Patio al Aire Libre', 'Música en Vivo'],
-      coordinates: '-31.745120, -60.512640',
-      imageUrl: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&q=80&w=600',
-      googleMapsUrl: 'https://maps.google.com/?q=-31.745120,-60.512640',
-      active: true
-    },
-    {
-      id: '3',
-      name: 'CRAFT Costanera',
-      address: 'Av. Laurencena y Morse (Puerto)',
-      city: 'Paraná',
-      province: 'Entre Ríos',
-      phone: '+54 343 4902233',
-      hoursWeekday: '08:00 a 13:00 hs y de 16:30 a 23:00 hs',
-      hoursWeekend: '08:00 a 00:30 hs (Corrido)',
-      specialty: 'Licuados Premium & Tapas frente al Río Paraná',
-      features: ['Deck de Madera al Río', 'Pet Friendly', 'Carga de Autos Eléctricos', 'Take Away'],
-      coordinates: '-31.721450, -60.521890',
-      imageUrl: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&q=80&w=600',
-      googleMapsUrl: 'https://maps.google.com/?q=-31.721450,-60.521890',
-      active: true
-    }
-  ],
-  combos: [
-    {
-      id: 'combo-1',
-      title: 'Pase de Almuerzos',
-      description: '5 Menús de canje de mediodía a elección en cualquier sucursal. Incluye bebida y postre.',
-      price: 65000,
-      totalUses: 5,
-      imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=600&auto=format&fit=crop',
-      isActive: true
-    },
-    {
-      id: 'combo-2',
-      title: 'Pack Especialidad Espresso',
-      description: '10 cafés de especialidad o lattes a elección de nuestra carta Barista. Ahorra 30% en cada taza.',
-      price: 30000,
-      totalUses: 10,
-      imageUrl: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=80&w=600&auto=format&fit=crop',
-      isActive: true
-    },
-    {
-      id: 'combo-3',
-      title: 'Abono Brunch Premium (3)',
-      description: '3 Brunchs completos de fin de semana para dos personas. Ideal para regalar o compartir.',
-      price: 42000,
-      totalUses: 3,
-      imageUrl: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?q=80&w=600&auto=format&fit=crop',
-      isActive: true
-    }
-  ],
+  branches: [],
+  combos: [],
   autoNotif: {
     birthday: {
       enabled: true,
