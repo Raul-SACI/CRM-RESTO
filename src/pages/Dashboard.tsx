@@ -1223,7 +1223,7 @@ export function Dashboard() {
           </div>
 
           {/* Road Track section adapted perfectly for mobile screen */}
-          <div className="relative py-10 px-2 bg-[#1f1f1f] rounded-2xl border border-slate-700 mt-1 overflow-hidden">
+          <div className="relative py-5 px-3 bg-[#1f1f1f] rounded-2xl border border-slate-700 mt-1 overflow-visible">
             
             {/* ROAD TRACK: barra del camino en rojo de marca (más angosta) */}
             <div className="relative h-6 bg-love/25 rounded-full border-t border-b border-dashed border-love/40 flex items-center shadow-inner">
@@ -1260,8 +1260,10 @@ export function Dashboard() {
 
             </div>
 
-            {/* LABELS BELOW ROAD */}
-            <div className="relative mt-3 h-14">
+          </div>
+
+          {/* LABELS BELOW ROAD (fuera del fondo negro) */}
+          <div className="relative mt-3 h-14">
               {[
                 { pts: 0, label: activeTiers[0]?.name || 'CRAFT FAN', target: '0 PTS', pos: 15, icon: <Gift size={11} /> },
                 { pts: activeTiers[1]?.minPoints || 500, label: activeTiers[1]?.name || 'CRAFT GOLD', target: `${(activeTiers[1]?.minPoints || 500).toLocaleString()} PTS`, pos: 55, icon: <Sparkles size={11} /> },
@@ -1293,8 +1295,6 @@ export function Dashboard() {
                 );
               })}
             </div>
-
-          </div>
 
           {/* Text helper info */}
           <div className="text-[9px] text-slate-400 font-extrabold uppercase mt-3.5 tracking-tight">
