@@ -893,7 +893,7 @@ export function Dashboard() {
             <div className="absolute inset-x-2 bottom-0 top-2 rounded-b-3xl rounded-t-lg border-[3px] border-ink overflow-hidden bg-white">
               {/* Café que sube */}
               <motion.div
-                className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#b91c1c] to-[#D90015]"
+                className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-[#D90015] to-[#D90015]"
                 initial={{ height: "0%" }}
                 animate={{ height: ["8%", "85%", "8%"] }}
                 transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}

@@ -1264,7 +1264,7 @@ export function Admin() {
           <button
             onClick={signOut}
             className={cn(
-              "flex items-center rounded-xl text-[10px] md:text-sm font-black uppercase tracking-wider transition-all whitespace-nowrap text-rose-500 dark:text-white hover:text-white hover:bg-rose-500 dark:hover:bg-white/15",
+              "flex items-center rounded-xl text-[10px] md:text-sm font-black uppercase tracking-wider transition-all whitespace-nowrap text-love dark:text-white hover:text-white hover:bg-love dark:hover:bg-white/15",
               isSidebarExpanded
                 ? "gap-2.5 px-4 lg:px-5 py-2.5 lg:py-3.5 lg:w-full lg:justify-start"
                 : "justify-center p-3 lg:w-12 lg:h-12"
@@ -1570,7 +1570,7 @@ export function Admin() {
                     <button 
                       onClick={() => handleDeleteClients()}
                       disabled={deleting}
-                      className="flex items-center gap-2 bg-love text-white px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-red-600 transition-all shadow-lg shadow-love/20 disabled:opacity-50"
+                      className="flex items-center gap-2 bg-love text-white px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-love transition-all shadow-lg shadow-love/20 disabled:opacity-50"
                     >
                       <Trash2 size={12} />
                       {deleting ? 'Eliminando...' : 'Eliminar' }
@@ -1843,7 +1843,7 @@ export function Admin() {
                                 alert("Combo eliminado exitosamente");
                               }
                             }}
-                            className="py-2 px-3 bg-red-500/10 hover:bg-rose-500 hover:text-white text-rose-500 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer border-none"
+                            className="py-2 px-3 bg-love/10 hover:bg-love hover:text-white text-love rounded-xl text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer border-none"
                           >
                             Eliminar
                           </button>
@@ -2696,7 +2696,7 @@ export function Admin() {
                 });
                 const rows = [
                   { label: 'Carga de Puntos', value: cargas, color: 'text-emerald-600' },
-                  { label: 'Canjes', value: canjes, color: 'text-red-500' },
+                  { label: 'Canjes', value: canjes, color: 'text-love' },
                   { label: 'Compra de Productos', value: compras, color: 'text-amber-600' },
                   { label: 'Uso de Pase por Compra', value: usos, color: 'text-ink dark:text-white' }
                 ];
@@ -3280,10 +3280,10 @@ export function Admin() {
                                   alert("Pregunta eliminada de forma correcta");
                                 }
                               }}
-                              className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-550/10 rounded transition-all bg-transparent border-none cursor-pointer"
+                              className="p-1.5 text-slate-400 hover:text-love hover:bg-love/10 rounded transition-all bg-transparent border-none cursor-pointer"
                               title="Eliminar pregunta"
                             >
-                              <LogOut size={14} className="rotate-180 text-rose-500" />
+                              <LogOut size={14} className="rotate-180 text-love" />
                             </button>
                           </div>
                         </div>
@@ -3407,10 +3407,10 @@ export function Admin() {
                                       alert("Sucursal eliminada de forma exitosa");
                                     }
                                   }}
-                                  className="p-1 text-slate-400 hover:text-red-500 transition-colors bg-transparent border-none cursor-pointer"
+                                  className="p-1 text-slate-400 hover:text-love transition-colors bg-transparent border-none cursor-pointer"
                                   title="Eliminar sucursal"
                                 >
-                                  <LogOut size={12} className="rotate-180 text-rose-500" />
+                                  <LogOut size={12} className="rotate-180 text-love" />
                                 </button>
                               </div>
                             </div>
@@ -3567,7 +3567,7 @@ export function Admin() {
                                     <button
                                       type="button"
                                       onClick={() => setBranchForm(prev => ({ ...prev, imageUrl: '' }))}
-                                      className="absolute top-1.5 right-1.5 bg-rose-500 hover:bg-rose-600 text-white p-1 rounded-full shadow-md transition-all active:scale-90 border-none cursor-pointer"
+                                      className="absolute top-1.5 right-1.5 bg-love hover:bg-love text-white p-1 rounded-full shadow-md transition-all active:scale-90 border-none cursor-pointer"
                                       title="Quitar foto"
                                     >
                                       <X size={10} />
@@ -3660,7 +3660,7 @@ export function Admin() {
                                     ...branchForm,
                                     features: branchForm.features.filter((_, fIdx) => fIdx !== i)
                                   })}
-                                  className="text-[8px] text-rose-500 font-extrabold ml-1 bg-transparent border-none shrink-0 cursor-pointer"
+                                  className="text-[8px] text-love font-extrabold ml-1 bg-transparent border-none shrink-0 cursor-pointer"
                                 >
                                   ×
                                 </button>
@@ -3738,7 +3738,7 @@ export function Admin() {
                             }
                           }}
                           disabled={savingDesign}
-                          className="bg-love text-white px-5 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-love/30 hover:bg-red-600 transition-all disabled:opacity-50"
+                          className="bg-love text-white px-5 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-love/30 hover:bg-love transition-all disabled:opacity-50"
                         >
                           {savingDesign ? 'Guardando...' : 'Aplicar y Guardar'}
                         </button>
@@ -4199,7 +4199,7 @@ export function Admin() {
 
                                       {/* Collapsible reference fields */}
                                       <div className="border-t border-slate-100 pt-3 mt-3">
-                                        <p className="text-[8px] font-black text-rose-500 uppercase tracking-widest mb-2">⚙️ Campos de Referencia Interna u Opcionales (No tapan el banner)</p>
+                                        <p className="text-[8px] font-black text-love uppercase tracking-widest mb-2">⚙️ Campos de Referencia Interna u Opcionales (No tapan el banner)</p>
                                         <div className="grid grid-cols-2 gap-3">
                                           <div className="space-y-1">
                                             <label className="text-[8px] font-bold uppercase tracking-widest text-slate-400">Referencia Título</label>
@@ -4334,7 +4334,7 @@ export function Admin() {
                               {/* Interactivo overlay button and indicators */}
                               <div className="relative z-10 w-full flex justify-between items-center">
                                 {localDesign.banners[activeBannerIndex]?.buttonText ? (
-                                  <span className="text-[7.5px] bg-red-500 text-white font-black uppercase tracking-wider px-2.5 py-1.5 rounded-md shadow-md">
+                                  <span className="text-[7.5px] bg-love text-white font-black uppercase tracking-wider px-2.5 py-1.5 rounded-md shadow-md">
                                     {localDesign.banners[activeBannerIndex]?.buttonText}
                                   </span>
                                 ) : (

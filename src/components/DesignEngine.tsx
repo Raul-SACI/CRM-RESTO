@@ -123,7 +123,7 @@ export const DEFAULT_DESIGN: DesignConfig = {
   fontSans: 'Inter',
   fontHeadings: 'Space Grotesk',
   primaryColor: '#D90015',
-  primaryColorHover: '#dc2626',
+  primaryColorHover: '#D90015',
   primaryColorRgb: '239, 68, 68',
   radiusLg: '24px',
   radiusMd: '16px',
@@ -330,7 +330,7 @@ export const COLOR_PRESETS = [
   {
     name: 'Love Red (Estándar)',
     primary: '#D90015',
-    hover: '#dc2626',
+    hover: '#D90015',
     rgb: '239, 68, 68'
   },
   {

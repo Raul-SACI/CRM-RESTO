@@ -563,7 +563,7 @@ export function Waiter() {
 
   const movType = (desc: string, pts: number) => {
     const d = (desc || '').toUpperCase();
-    if (d.startsWith('CANJE:')) return { label: 'Canje', color: 'text-red-500' };
+    if (d.startsWith('CANJE:')) return { label: 'Canje', color: 'text-love' };
     if (d.startsWith('COMPRA_COMBO:')) return { label: 'Compra', color: 'text-amber-600' };
     if (d.startsWith('CONSUMO_COMBO:')) return { label: 'Uso de Pase', color: 'text-slate-500' };
     if (pts > 0) return { label: 'Carga', color: 'text-emerald-600' };
@@ -991,7 +991,7 @@ export function Waiter() {
                     </div>
                     <div className="text-right shrink-0">
                       <span className={cn("text-[8px] uppercase font-black tracking-widest", t.color)}>{t.label}</span>
-                      <p className={cn("text-sm font-black font-mono", (m.points_earned || 0) < 0 ? "text-red-500" : "text-emerald-600")}>
+                      <p className={cn("text-sm font-black font-mono", (m.points_earned || 0) < 0 ? "text-love" : "text-emerald-600")}>
                         {(m.points_earned || 0) > 0 ? '+' : ''}{(m.points_earned || 0).toLocaleString('es-AR')} pts
                       </p>
                     </div>

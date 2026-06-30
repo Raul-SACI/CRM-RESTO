@@ -266,7 +266,7 @@ export function MyAccount() {
           </div>
 
           {passError && (
-            <div className="flex items-center gap-2 text-rose-500 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900 px-3.5 py-2.5 rounded-xl text-[10px] font-bold">
+            <div className="flex items-center gap-2 text-love bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900 px-3.5 py-2.5 rounded-xl text-[10px] font-bold">
               <AlertCircle size={14} />
               <span>{passError}</span>
             </div>
