@@ -132,8 +132,28 @@ export function Auth() {
     }
   };
 
+  const handleForgotPassword = async () => {
+    if (!formData.email || !formData.email.includes('@')) {
+      setError('Escribí tu email arriba y volvé a tocar "¿Olvidaste tu contraseña?"');
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
+        redirectTo: window.location.origin + '/my-account',
+      });
+      if (error) throw error;
+      alert('Te enviamos un email a ' + formData.email + ' con un enlace para ingresar. Al abrirlo, entrarás a la app y desde "Mi Cuenta" podrás cambiar tu contraseña. Revisá tu bandeja de entrada (y la carpeta de spam).');
+    } catch (err: any) {
+      setError(err.message || 'No se pudo enviar el email de recuperación.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleGoogleLoginClick = () => {
-    setShowGoogleGuide(true);
+    executeGoogleLogin();
   };
 
   return (
@@ -233,6 +253,19 @@ export function Auth() {
               {loading ? 'Procesando...' : isLogin ? 'Ingresar a la Experiencia' : 'Crear mi Perfil'}
             </button>
           </form>
+
+          {isLogin && (
+            <div className="text-center mt-3">
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                disabled={loading}
+                className="text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-love transition-colors bg-transparent border-none cursor-pointer"
+              >
+                ¿Olvidaste tu contraseña?
+              </button>
+            </div>
+          )}
 
           <div className="relative my-6 flex items-center justify-center">
             <div className="absolute inset-0 flex items-center">
