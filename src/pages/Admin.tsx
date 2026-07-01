@@ -192,14 +192,29 @@ export function Admin() {
     return `${r}, ${g}, ${b}`;
   };
 
+  // Guardián de peso de imágenes: máximo 1 MB. Devuelve true si es válida.
+  const validarPesoImagen = (file: File): boolean => {
+    const MAX_MB = 1;
+    const maxBytes = MAX_MB * 1024 * 1024;
+    if (file.size > maxBytes) {
+      const pesoActualMB = (file.size / (1024 * 1024)).toFixed(2);
+      alert(
+        `⚠️ La imagen es muy pesada.\n\n` +
+        `Peso de tu imagen: ${pesoActualMB} MB\n` +
+        `Máximo permitido: ${MAX_MB} MB\n\n` +
+        `Por favor, usá una imagen más liviana. Podés reducir su tamaño en una web como squoosh.app o tinypng.com antes de subirla. ` +
+        `Esto mantiene la app rápida y evita errores al guardar.`
+      );
+      return false;
+    }
+    return true;
+  };
+
   const handleBannerFileChange = (e: React.ChangeEvent<HTMLInputElement>, index: number, field: 'imageUrl' | 'imageUrlTablet' | 'imageUrlMobile' = 'imageUrl') => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      alert("La imagen es muy pesada (máx 5MB)");
-      return;
-    }
+    if (!validarPesoImagen(file)) return;
 
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -219,10 +234,7 @@ export function Admin() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      alert("La imagen es muy pesada (máx 5MB)");
-      return;
-    }
+    if (!validarPesoImagen(file)) return;
 
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -238,10 +250,7 @@ export function Admin() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      alert("La imagen es muy pesada (máx 5MB)");
-      return;
-    }
+    if (!validarPesoImagen(file)) return;
 
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -366,10 +375,7 @@ export function Admin() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-      alert("La imagen es muy pesada (máx 2MB)");
-      return;
-    }
+    if (!validarPesoImagen(file)) return;
 
     setUploading(true);
     const reader = new FileReader();
