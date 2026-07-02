@@ -1247,11 +1247,11 @@ export function Dashboard() {
                     <div className="w-7.5 h-1 bg-slate-800 rounded-sm z-10 -mt-0.5" />
                     <div className="w-5.5 h-9 bg-white rounded-b-sm border border-slate-200 relative overflow-hidden flex items-center justify-center -mt-0.5" style={{ clipPath: 'polygon(3% 0%, 97% 0%, 82% 100%, 18% 100%)' }}>
                       <div className="text-[6px] font-black tracking-wider text-love select-none flex flex-col items-center justify-center leading-[1.1] mt-0.5" style={{ fontFamily: "'Oswald', sans-serif" }}>
-                        <span>C</span>
-                        <span>R</span>
-                        <span>A</span>
-                        <span>F</span>
                         <span>T</span>
+                        <span>F</span>
+                        <span>A</span>
+                        <span>R</span>
+                        <span>C</span>
                       </div>
                     </div>
                   </div>
@@ -2664,11 +2664,11 @@ export function Dashboard() {
                     <div className="w-7 h-11 bg-white rounded-b-md border border-slate-200 relative overflow-hidden flex items-center justify-center -mt-0.5" style={{ clipPath: 'polygon(3% 0%, 97% 0%, 82% 100%, 18% 100%)' }}>
                       {/* Vertical CRAFT text */}
                       <div className="text-[7.5px] font-black tracking-wider text-love select-none flex flex-col items-center justify-center leading-[1.05] mt-0.5" style={{ fontFamily: "'Oswald', sans-serif" }}>
-                        <span className="scale-y-110 font-black">C</span>
-                        <span className="scale-y-110 font-black">R</span>
-                        <span className="scale-y-110 font-black">A</span>
-                        <span className="scale-y-110 font-black">F</span>
                         <span className="scale-y-110 font-black">T</span>
+                        <span className="scale-y-110 font-black">F</span>
+                        <span className="scale-y-110 font-black">A</span>
+                        <span className="scale-y-110 font-black">R</span>
+                        <span className="scale-y-110 font-black">C</span>
                       </div>
                     </div>
                   </div>
