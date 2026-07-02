@@ -131,8 +131,8 @@ export function Admin() {
     id: '',
     name: '',
     address: '',
-    city: 'Paraná',
-    province: 'Entre Ríos',
+    city: '',
+    province: '',
     phone: '',
     hoursWeekday: '07:30 a 21:30 hs',
     hoursWeekend: '08:30 a 21:00 hs',
@@ -3419,7 +3419,7 @@ export function Admin() {
                         await saveDesignConfig(updated);
                         setEditingBranchId(null);
                         setBranchForm({
-                          id: '', name: '', address: '', city: 'Paraná', province: 'Entre Ríos',
+                          id: '', name: '', address: '', city: '', province: '',
                           phone: '', hoursWeekday: '07:30 a 21:30 hs', hoursWeekend: '08:30 a 21:00 hs',
                           specialty: '', features: [], coordinates: '', imageUrl: '', googleMapsUrl: '', active: true
                         });
@@ -3445,24 +3445,6 @@ export function Admin() {
                             />
                           </div>
                           <div className="space-y-1">
-                            <label className="text-[10px] uppercase font-black tracking-widest text-slate-400">Ciudad</label>
-                            <input
-                              type="text" required value={branchForm.city}
-                              onChange={e => setBranchForm({ ...branchForm, city: e.target.value })}
-                              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2.5 rounded-lg text-xs text-ink dark:text-white font-bold outline-none focus:border-love"
-                              placeholder="Paraná, Gualeguaychú, Concordia"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[10px] uppercase font-black tracking-widest text-slate-400">Teléfono Corporativo</label>
-                            <input
-                              type="text" value={branchForm.phone}
-                              onChange={e => setBranchForm({ ...branchForm, phone: e.target.value })}
-                              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2.5 rounded-lg text-xs text-ink dark:text-white font-bold outline-none focus:border-love"
-                              placeholder="e.g. +54 343 456789"
-                            />
-                          </div>
-                          <div className="space-y-1">
                             <label className="text-[10px] uppercase font-black tracking-widest text-slate-400">Horarios (Semana)</label>
                             <input
                               type="text" value={branchForm.hoursWeekday}
@@ -3476,24 +3458,6 @@ export function Admin() {
                               type="text" value={branchForm.hoursWeekend}
                               onChange={e => setBranchForm({ ...branchForm, hoursWeekend: e.target.value })}
                               className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2.5 rounded-lg text-xs text-ink dark:text-white font-bold outline-none focus:border-love"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[10px] uppercase font-black tracking-widest text-slate-400">Especialidad</label>
-                            <input
-                              type="text" value={branchForm.specialty}
-                              onChange={e => setBranchForm({ ...branchForm, specialty: e.target.value })}
-                              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2.5 rounded-lg text-xs text-ink dark:text-white font-bold outline-none focus:border-love"
-                              placeholder="e.g. Pastelería fina y Brunch"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-[10px] uppercase font-black tracking-widest text-slate-400">Coordenadas del Mapa (Lat, Lng)</label>
-                            <input
-                              type="text" value={branchForm.coordinates}
-                              onChange={e => setBranchForm({ ...branchForm, coordinates: e.target.value })}
-                              className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-2.5 rounded-lg text-xs text-ink dark:text-white font-bold outline-none focus:border-love"
-                              placeholder="e.g. -31.721,-60.521"
                             />
                           </div>
                           <div className="space-y-1 col-span-2">

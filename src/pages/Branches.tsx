@@ -79,10 +79,10 @@ export function Branches() {
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
                 
-                {/* City & Province tag */}
+                {/* Address tag */}
                 <div className="absolute top-4 left-4">
                   <span className="bg-black/70 text-white text-[8px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg backdrop-blur-xs flex items-center gap-1">
-                    <Compass size={10} className="text-love" /> {branch.city}{branch.province ? `, ${branch.province}` : ''}
+                    <Compass size={10} className="text-love" /> {branch.address}
                   </span>
                 </div>
               </div>
