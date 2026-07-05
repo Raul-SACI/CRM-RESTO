@@ -875,38 +875,9 @@ export function Dashboard() {
   };
 
   if (!profile || loading || designLoading) {
-    // Para clientes: esqueleto con la forma del inicio (sensación de carga rápida)
-    if (profile?.role === 'client' || isSimulatingClient) {
-      return (
-        <div className="space-y-5 max-w-md mx-auto pb-12 pt-4 px-1">
-          {/* Saludo */}
-          <div className="craft-skeleton h-8 w-40" />
-          {/* Banner */}
-          <div className="craft-skeleton h-40 w-full rounded-3xl" />
-          {/* Tarjeta de saldo */}
-          <div className="craft-skeleton h-32 w-full rounded-3xl" />
-          {/* Camino de fidelidad */}
-          <div className="craft-skeleton h-28 w-full rounded-3xl" />
-          {/* Combos */}
-          <div className="craft-skeleton h-4 w-32" />
-          <div className="flex gap-4">
-            <div className="craft-skeleton h-48 w-[240px] rounded-3xl shrink-0" />
-            <div className="craft-skeleton h-48 w-[240px] rounded-3xl shrink-0" />
-          </div>
-          {/* Premios */}
-          <div className="craft-skeleton h-4 w-40" />
-          <div className="grid grid-cols-2 gap-3">
-            <div className="craft-skeleton h-28 w-full rounded-3xl" />
-            <div className="craft-skeleton h-28 w-full rounded-3xl" />
-          </div>
-        </div>
-      );
-    }
-
-    // Para admin y otros: se mantiene la animación de la taza
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-center min-h-[60vh]">
-        <div className="relative w-24 h-28 mb-6 flex items-end justify-center">
+      <div className="flex flex-col items-center justify-center text-center min-h-[70vh]">
+        <div className="relative w-24 h-28 flex items-end justify-center">
           {/* Vapor */}
           <motion.div
             className="absolute -top-1 left-1/2 -translate-x-1/2 flex gap-1.5"
@@ -943,26 +914,6 @@ export function Dashboard() {
             {/* Plato */}
             <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-24 h-2 rounded-full bg-ink/80" />
           </div>
-        </div>
-        <h2 className="text-xl font-bold mb-2 uppercase tracking-tighter text-ink">
-          {profile?.role === 'admin' ? 'Cargando Dashboard Administrativo' : 'Cargando tus puntos'}
-        </h2>
-        <p className="text-slate-400 text-[10px] uppercase tracking-widest mb-8">Espera un momento...</p>
-        
-        <div className="flex flex-col gap-4 w-full max-w-xs">
-          <button 
-            onClick={() => window.location.reload()}
-            className="w-full bg-white hover:bg-slate-50 text-ink py-3 rounded-xl font-bold text-[10px] uppercase tracking-widest transition-all border border-slate-200 shadow-sm"
-          >
-            Reintentar Carga
-          </button>
-          
-          <button 
-            onClick={() => supabase.auth.signOut()}
-            className="w-full text-love/60 hover:text-love py-2 font-bold text-[10px] uppercase tracking-widest transition-all"
-          >
-            Cerrar Sesión
-          </button>
         </div>
       </div>
     );
