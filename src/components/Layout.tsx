@@ -167,33 +167,15 @@ export function Layout({ children }: LayoutProps) {
               (isSimulatingClient && simDevice === 'pc') ? "top-14" : "top-2 md:top-6"
             )}>
         <div className="flex items-center gap-2 md:gap-3">
-          {designConfig.logoUrl ? (
-            <img 
-              referrerPolicy="no-referrer"
-              src={designConfig.logoUrl} 
-              alt="Logo" 
-              className="w-8 h-8 md:w-10 md:h-10 object-contain rounded-lg" 
-              onError={(e) => {
-                // fallback if loading fails
-                (e.currentTarget as HTMLElement).style.display = 'none';
-              }}
-            />
-          ) : null}
-          {(!designConfig.logoUrl) && (
-            <div className="bg-love rounded-xl px-4 py-2 flex items-center justify-center font-black text-xs md:text-sm uppercase shadow-lg shadow-love/20 text-white tracking-widest whitespace-nowrap">
-              {designConfig.logoText || 'CLUB CRAFT'}
-            </div>
-          )}
-          {designConfig.logoUrl && (
-            <div className="hidden xs:block">
-              <h1 className="text-sm md:text-lg font-black tracking-tighter leading-none uppercase text-ink logo-title">
-                {designConfig.logoText || 'CLUB CRAFT'}
-              </h1>
-              <p className="text-[8px] md:text-[10px] uppercase tracking-widest text-slate-400 mt-1">
-                {designConfig.logoSubtitle || 'Management & Loyalty'}
-              </p>
-            </div>
-          )}
+          <img 
+            referrerPolicy="no-referrer"
+            src={designConfig.logoUrl || 'https://jxmhizoomsxbqhoghwth.supabase.co/storage/v1/object/public/branding%20logo/logoapaisado.png'} 
+            alt="CRAFT club" 
+            className="h-9 md:h-11 object-contain" 
+            onError={(e) => {
+              (e.currentTarget as HTMLElement).style.display = 'none';
+            }}
+          />
         </div>
         
         <nav className="flex items-center gap-1 md:gap-4 overflow-x-auto no-scrollbar">
