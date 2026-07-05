@@ -1158,7 +1158,7 @@ export function Dashboard() {
         {/* Header greeting */}
         <div className="flex justify-between items-center px-1">
           <div>
-            <h1 className="text-3xl font-black uppercase tracking-tight leading-none !text-slate-900" style={{ fontFamily: designConfig?.fontHeadings || 'inherit' }}>Hola, {profile.full_name?.split(' ')[0]}</h1>
+            <h1 className="text-3xl font-black uppercase tracking-tight leading-none !text-slate-900" style={{ fontFamily: "'Oswald', sans-serif" }}>Hola, {profile.full_name?.split(' ')[0]}</h1>
           </div>
         </div>
 
