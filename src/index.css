@@ -146,3 +146,15 @@
 }
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:ital,wght@0,700;1,700&family=Oswald:wght@600;700&display=swap');
+
+/* Skeleton shimmer para estados de carga */
+@keyframes craft-shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.craft-skeleton {
+  background: linear-gradient(90deg, #eef1f5 25%, #e2e6ec 50%, #eef1f5 75%);
+  background-size: 800px 100%;
+  animation: craft-shimmer 1.4s infinite linear;
+  border-radius: 0.75rem;
+}

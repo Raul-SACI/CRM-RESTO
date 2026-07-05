@@ -875,6 +875,35 @@ export function Dashboard() {
   };
 
   if (!profile || loading || designLoading) {
+    // Para clientes: esqueleto con la forma del inicio (sensación de carga rápida)
+    if (profile?.role === 'client' || isSimulatingClient) {
+      return (
+        <div className="space-y-5 max-w-md mx-auto pb-12 pt-4 px-1">
+          {/* Saludo */}
+          <div className="craft-skeleton h-8 w-40" />
+          {/* Banner */}
+          <div className="craft-skeleton h-40 w-full rounded-3xl" />
+          {/* Tarjeta de saldo */}
+          <div className="craft-skeleton h-32 w-full rounded-3xl" />
+          {/* Camino de fidelidad */}
+          <div className="craft-skeleton h-28 w-full rounded-3xl" />
+          {/* Combos */}
+          <div className="craft-skeleton h-4 w-32" />
+          <div className="flex gap-4">
+            <div className="craft-skeleton h-48 w-[240px] rounded-3xl shrink-0" />
+            <div className="craft-skeleton h-48 w-[240px] rounded-3xl shrink-0" />
+          </div>
+          {/* Premios */}
+          <div className="craft-skeleton h-4 w-40" />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="craft-skeleton h-28 w-full rounded-3xl" />
+            <div className="craft-skeleton h-28 w-full rounded-3xl" />
+          </div>
+        </div>
+      );
+    }
+
+    // Para admin y otros: se mantiene la animación de la taza
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center min-h-[60vh]">
         <div className="relative w-24 h-28 mb-6 flex items-end justify-center">
