@@ -171,7 +171,7 @@ export function Layout({ children }: LayoutProps) {
             referrerPolicy="no-referrer"
             src={designConfig.logoUrl || 'https://jxmhizoomsxbqhoghwth.supabase.co/storage/v1/object/public/branding%20logo/logoapaisado.png'} 
             alt="CRAFT club" 
-            className="h-9 md:h-11 object-contain" 
+            className="h-12 md:h-16 object-contain" 
             onError={(e) => {
               (e.currentTarget as HTMLElement).style.display = 'none';
             }}
