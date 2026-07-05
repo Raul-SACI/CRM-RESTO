@@ -59,9 +59,10 @@ export function MyAccount() {
     try {
       const { data, error } = await supabase
         .from('transactions')
-        .select('*')
+        .select('id, description, created_at, redemption_code, points_earned, branch')
         .eq('client_id', profile.id)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(300);
       
       if (!error && data) {
         setTransactions(data);

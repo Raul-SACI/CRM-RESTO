@@ -65,7 +65,7 @@ export function MyCombos() {
     try {
       const { data, error } = await supabase
         .from('transactions')
-        .select('*')
+        .select('id, description, invoice_number, created_at, points_earned, redemption_code')
         .eq('client_id', profile.id)
         .order('created_at', { ascending: false })
         .limit(100);

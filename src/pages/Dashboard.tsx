@@ -372,7 +372,7 @@ export function Dashboard() {
 
     const { data, error } = await supabase
       .from('transactions')
-      .select('*')
+      .select('id, client_id, points_earned, description, created_at, invoice_number, redemption_code, branch, amount')
       .eq('client_id', profile.id)
       .order('created_at', { ascending: false })
       .limit(100);
