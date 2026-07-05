@@ -157,7 +157,7 @@ export function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-[#3d3436] bg-[radial-gradient(circle_at_50%_25%,#D9001533_0%,transparent_55%)]">
+    <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-[#0a0a0a]">
       <div className="w-full max-w-sm space-y-8">
         <div className="text-center">
           <motion.img
