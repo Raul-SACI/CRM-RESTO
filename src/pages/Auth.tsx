@@ -160,15 +160,14 @@ export function Auth() {
     <div className="min-h-screen bg-paper flex flex-col items-center justify-center p-6 bg-[radial-gradient(circle_at_50%_30%,#D9001511_0%,transparent_60%)]">
       <div className="w-full max-w-sm space-y-8">
         <div className="text-center">
-          <motion.div 
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            className="w-16 h-16 bg-love rounded-2xl mx-auto flex items-center justify-center mb-6 shadow-red"
-          >
-            <div className="font-bold text-3xl text-white">C</div>
-          </motion.div>
-          <h1 className="text-4xl font-black mb-2 tracking-tighter uppercase text-ink">CLUB <span className="text-love">CRAFT</span></h1>
-          <p className="text-slate-400 text-[10px] uppercase tracking-[0.3em] font-black">Premium Experience</p>
+          <motion.img
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            referrerPolicy="no-referrer"
+            src="https://jxmhizoomsxbqhoghwth.supabase.co/storage/v1/object/public/branding%20logo/logoinicialapp.png"
+            alt="CRAFT club"
+            className="w-52 md:w-60 mx-auto object-contain mb-2"
+          />
         </div>
 
         <motion.div 
