@@ -119,8 +119,8 @@ export function Branches() {
                       <Clock size={14} className="text-love mt-0.5 shrink-0" />
                       <div>
                         <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-0.5">Horarios de Atención</p>
-                        <p className="leading-none text-slate-500 dark:text-slate-400">Lun a Vie: <span className="font-bold text-ink dark:text-white">{branch.hoursWeekday || 'Consultar'}</span></p>
-                        <p className="leading-none mt-1 text-slate-500 dark:text-slate-400">Sáb, Dom y Fer: <span className="font-bold text-ink dark:text-white">{branch.hoursWeekend || 'Consultar'}</span></p>
+                        <p className="leading-none text-slate-500">Lun a Vie: <span className="font-bold !text-slate-900">{branch.hoursWeekday || 'Consultar'}</span></p>
+                        <p className="leading-none mt-1 text-slate-500">Sáb, Dom y Fer: <span className="font-bold !text-slate-900">{branch.hoursWeekend || 'Consultar'}</span></p>
                       </div>
                     </div>
 
