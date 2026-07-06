@@ -133,7 +133,7 @@ export function Branches() {
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={e => e.stopPropagation()}
-                          className="font-bold text-ink dark:text-white hover:text-love transition-colors flex items-center gap-1"
+                          className="font-bold !text-slate-900 hover:text-love transition-colors flex items-center gap-1"
                         >
                           {branch.phone}
                         </a>
