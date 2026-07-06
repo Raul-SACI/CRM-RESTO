@@ -99,20 +99,6 @@ export function Branches() {
                         <MapPin size={11} className="text-slate-400" /> {branch.address}
                       </p>
                     </div>
-                    
-                    <span className="bg-love/10 text-love text-[9px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md shrink-0">
-                      CRAFT ORIGINAL
-                    </span>
-                  </div>
-
-                  {/* Specialty badge summary */}
-                  <div className="bg-slate-50 dark:bg-slate-950/40 border border-slate-150/10 rounded-xl p-3 mb-4 mt-2">
-                    <p className="text-[9px] font-black uppercase text-love tracking-wider mb-1 flex items-center gap-1">
-                      <Coffee size={10} /> Especialidad destacada
-                    </p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-semibold leading-relaxed">
-                      {branch.specialty}
-                    </p>
                   </div>
 
                   {/* Features Tag Grid */}
@@ -133,8 +119,8 @@ export function Branches() {
                       <Clock size={14} className="text-love mt-0.5 shrink-0" />
                       <div>
                         <p className="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-0.5">Horarios de Atención</p>
-                        <p className="leading-none text-slate-500 dark:text-slate-400">Lun a Vie: <span className="font-bold text-ink dark:text-white">{branch.hoursWeekday}</span></p>
-                        <p className="leading-none mt-1 text-slate-500 dark:text-slate-400">Sáb, Dom y Fer: <span className="font-bold text-ink dark:text-white">{branch.hoursWeekend}</span></p>
+                        <p className="leading-none text-slate-500 dark:text-slate-400">Lun a Vie: <span className="font-bold text-ink dark:text-white">{branch.hoursWeekday || 'Consultar'}</span></p>
+                        <p className="leading-none mt-1 text-slate-500 dark:text-slate-400">Sáb, Dom y Fer: <span className="font-bold text-ink dark:text-white">{branch.hoursWeekend || 'Consultar'}</span></p>
                       </div>
                     </div>
 
@@ -156,43 +142,32 @@ export function Branches() {
                   </div>
                 </div>
 
-                {/* Simulated Visual Maps & Navigation links */}
+                {/* Botones siempre visibles */}
                 <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800">
-                  <AnimatePresence>
-                    {isSelected ? (
-                      <motion.div 
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="flex gap-2 w-full pt-1"
-                        onClick={e => e.stopPropagation()}
-                      >
-                        <a 
-                          href={branch.googleMapsUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(branch.name + ' ' + branch.address)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex-1 py-3 text-[10px] uppercase tracking-wider font-extrabold rounded-xl transition-all flex items-center justify-center gap-2 border bg-love text-white border-none hover:bg-love/90 active:scale-95 shadow-md shadow-love/10"
-                        >
-                          <Navigation size={12} className="animate-pulse" />
-                          Ver Ubicación
-                        </a>
+                  <div
+                    className="flex gap-2 w-full pt-1"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <a 
+                      href={branch.googleMapsUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(branch.name + ' ' + branch.address)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 py-3 text-[10px] uppercase tracking-wider font-extrabold rounded-xl transition-all flex items-center justify-center gap-2 border bg-love text-white border-none hover:bg-love/90 active:scale-95 shadow-md shadow-love/10"
+                    >
+                      <Navigation size={12} className="animate-pulse" />
+                      Ver Ubicación
+                    </a>
 
-                        <a 
-                          href={phoneClean ? `https://wa.me/${whatsappPhone}` : '#'}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex-1 py-3 text-[10px] uppercase tracking-wider font-extrabold rounded-xl transition-all flex items-center justify-center gap-2 border bg-emerald-500 text-white border-none hover:bg-emerald-600 active:scale-95 shadow-md shadow-emerald-500/10"
-                        >
-                          <Phone size={12} />
-                          Contactar
-                        </a>
-                      </motion.div>
-                    ) : (
-                      <div className="text-center py-2 text-[10px] font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 group-hover:text-love transition-colors">
-                        👇 {branch.name ? `Haz click para ver opciones` : `Haz click para contactar`}
-                      </div>
-                    )}
-                  </AnimatePresence>
+                    <a 
+                      href={phoneClean ? `https://wa.me/${whatsappPhone}` : '#'}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 py-3 text-[10px] uppercase tracking-wider font-extrabold rounded-xl transition-all flex items-center justify-center gap-2 border bg-emerald-500 text-white border-none hover:bg-emerald-600 active:scale-95 shadow-md shadow-emerald-500/10"
+                    >
+                      <Phone size={12} />
+                      Contactar
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>
