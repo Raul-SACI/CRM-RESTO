@@ -216,18 +216,29 @@ export function Admin() {
 
     if (!validarPesoImagen(file)) return;
 
+    if (!localDesign || !localDesign.banners || !localDesign.banners[index]) {
+      alert('No se pudo cargar la imagen: seleccioná primero un banner (o creá uno con "Agregar Banner").');
+      return;
+    }
+
     const reader = new FileReader();
     reader.onloadend = () => {
-      if (localDesign) {
-        const updated = [...localDesign.banners];
+      setLocalDesign(prev => {
+        if (!prev || !prev.banners || !prev.banners[index]) return prev;
+        const updated = [...prev.banners];
         updated[index] = {
           ...updated[index],
           [field]: reader.result as string
         };
-        setLocalDesign({ ...localDesign, banners: updated });
-      }
+        return { ...prev, banners: updated };
+      });
+    };
+    reader.onerror = () => {
+      alert('Hubo un error al leer la imagen. Probá con otro archivo.');
     };
     reader.readAsDataURL(file);
+    // Permite volver a elegir el mismo archivo si hace falta
+    e.target.value = '';
   };
 
   const handleBranchFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -3952,13 +3963,13 @@ export function Admin() {
                                 const newId = `banner-${Date.now()}`;
                                 const newBanner: BannerConfig = {
                                   id: newId,
-                                  title: 'Nueva Promo Especial',
-                                  subtitle: 'Consigue promociones exclusivas con tus puntos.',
-                                  imageUrl: 'https://images.unsplash.com/photo-1543007630-9710e4a00a20?q=80&w=600&auto=format&fit=crop',
+                                  title: '',
+                                  subtitle: '',
+                                  imageUrl: '',
                                   linkUrl: '#/rewards',
-                                  bgColor: '#065f46',
-                                  textColor: '#ecfdf5',
-                                  buttonText: 'Canjear YA'
+                                  bgColor: '#111827',
+                                  textColor: '#ffffff',
+                                  buttonText: ''
                                 };
                                 const updatedBanners = [...localDesign.banners, newBanner];
                                 setLocalDesign({ ...localDesign, banners: updatedBanners });
@@ -4004,9 +4015,11 @@ export function Admin() {
                                   <button
                                     type="button"
                                     onClick={() => {
+                                      if (!confirm('¿Eliminar este banner? Acordate de tocar "APLICAR Y GUARDAR" para que el cambio quede guardado.')) return;
                                       const updatedList = localDesign.banners.filter((_, i) => i !== activeBannerIndex);
                                       setLocalDesign({ ...localDesign, banners: updatedList });
-                                      setActiveBannerIndex(0);
+                                      // Dejar el índice dentro del rango válido
+                                      setActiveBannerIndex(Math.max(0, Math.min(activeBannerIndex, updatedList.length - 1)));
                                     }}
                                     className="absolute top-4 right-4 text-slate-400 hover:text-love transition-colors"
                                     title="Eliminar Banner"

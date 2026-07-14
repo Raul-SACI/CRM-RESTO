@@ -166,28 +166,7 @@ export const DEFAULT_DESIGN: DesignConfig = {
   ],
   logoSubtitle: 'Management & Loyalty',
   customCss: '',
-  banners: [
-    {
-      id: 'banner-1',
-      title: '¡Hora de Especialidad!',
-      subtitle: 'Canjea tu café de especialidad con 100 puntos hoy mismo.',
-      imageUrl: 'https://images.unsplash.com/photo-1541167760496-1628856ab772?q=80&w=600&auto=format&fit=crop',
-      linkUrl: '#/rewards',
-      bgColor: '#7c2d12',
-      textColor: '#ffedd5',
-      buttonText: 'Ver Premios'
-    },
-    {
-      id: 'banner-2',
-      title: 'Doble de Puntos los Jueves',
-      subtitle: 'Todos los consumos de este jueves suman el doble en tu perfil.',
-      imageUrl: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=600&auto=format&fit=crop',
-      linkUrl: '#/',
-      bgColor: '#1e3a8a',
-      textColor: '#dbeafe',
-      buttonText: 'Saber Más'
-    }
-  ],
+  banners: [],
   faqs: [
     {
       q: "¿Qué es Club CRAFT?",

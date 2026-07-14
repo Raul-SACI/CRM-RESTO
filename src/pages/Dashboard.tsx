@@ -77,38 +77,7 @@ export function Dashboard() {
   } | null>(null);
 
   // Sliding banners like "Pedidos Ya (Argentina)"
-  const defaultBanners = [
-    {
-      id: 'default-1',
-      title: '¡Hora de Especialidad!',
-      subtitle: 'Canjea tu café de especialidad con 100 puntos hoy mismo.',
-      imageUrl: 'https://images.unsplash.com/photo-1541167760496-1628856ab772?q=80&w=1200&auto=format&fit=crop',
-      linkUrl: '#/rewards',
-      bgColor: '#1e293b',
-      textColor: '#f8fafc',
-      buttonText: 'Canjear Premio'
-    },
-    {
-      id: 'default-2',
-      title: 'Doble de Puntos los Jueves',
-      subtitle: 'Todos los consumos de este jueves suman el doble en tu perfil.',
-      imageUrl: 'https://images.unsplash.com/photo-1554118811-1e0d58224f24?q=80&w=1200&auto=format&fit=crop',
-      linkUrl: '#/',
-      bgColor: '#7f1d1d',
-      textColor: '#fee2e2',
-      buttonText: 'Ver Promociones'
-    },
-    {
-      id: 'default-3',
-      title: 'Hamburguesas Craft Pro',
-      subtitle: 'Nivel Black accede a 20% de descuento directo toda la semana.',
-      imageUrl: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=1200&auto=format&fit=crop',
-      linkUrl: '#/rewards',
-      bgColor: '#0f172a',
-      textColor: '#e2e8f0',
-      buttonText: 'Ver Carta'
-    }
-  ];
+  const defaultBanners: any[] = [];
 
   const bannerList = (designConfig?.banners && designConfig.banners.length > 0)
     ? designConfig.banners
