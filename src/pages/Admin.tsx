@@ -104,7 +104,7 @@ export function Admin() {
   const [dateEnd, setDateEnd] = useState<string>(() => new Date().toISOString().split('T')[0]);
 
   // Design editing module states
-  const { designConfig, saveDesignConfig } = useDesign();
+  const { designConfig, saveDesignConfig, setIsEditingDesign } = useDesign();
   // Nombres de sucursales para los filtros de reportes (todas, activas e inactivas,
   // para poder filtrar historiales de sucursales ya cerradas).
   const branchNames = (designConfig.branches || []).map(b => b.name);
@@ -275,7 +275,14 @@ export function Admin() {
 
   useEffect(() => {
     if (activeTab === 'design' && designConfig) {
-      setLocalDesign(JSON.parse(JSON.stringify(designConfig)));
+      // Avisamos que estamos editando: evita que la app recargue la config
+      // desde la base y pise los cambios sin guardar.
+      setIsEditingDesign(true);
+      // Solo copiamos la config al entrar (si aún no hay una copia local).
+      setLocalDesign(prev => prev ?? JSON.parse(JSON.stringify(designConfig)));
+    } else {
+      setIsEditingDesign(false);
+      setLocalDesign(null);
     }
   }, [activeTab, designConfig]);
 

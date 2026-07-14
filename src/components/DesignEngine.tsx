@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { supabase } from '@/src/lib/supabase';
 
 export interface BannerConfig {
@@ -311,6 +311,7 @@ interface DesignContextType {
   saveDesignConfig: (newConfig: DesignConfig) => Promise<void>;
   loading: boolean;
   refreshDesign: () => Promise<void>;
+  setIsEditingDesign: (v: boolean) => void;
 }
 
 const DesignContext = createContext<DesignContextType>({
@@ -318,7 +319,8 @@ const DesignContext = createContext<DesignContextType>({
   setDesignConfig: () => {},
   saveDesignConfig: async () => {},
   loading: true,
-  refreshDesign: async () => {}
+  refreshDesign: async () => {},
+  setIsEditingDesign: () => {}
 });
 
 export const useDesign = () => useContext(DesignContext);
@@ -326,6 +328,10 @@ export const useDesign = () => useContext(DesignContext);
 export function DesignProvider({ children }: { children: React.ReactNode }) {
   const [designConfig, setDesignConfig] = useState<DesignConfig>(DEFAULT_DESIGN);
   const [loading, setLoading] = useState(true);
+  // Cuando el admin está editando el diseño, NO recargamos desde la base
+  // (si no, pisaríamos los cambios sin guardar al volver a la ventana).
+  const isEditingDesignRef = useRef(false);
+  const setIsEditingDesign = (v: boolean) => { isEditingDesignRef.current = v; };
 
   const fetchDesign = async () => {
     try {
@@ -356,9 +362,12 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     fetchDesign();
-    // Volver a leer el diseño desde la base al re-enfocar la pestaña, para que
-    // cambios del admin (sucursales, combos, etc.) se reflejen sin recargar.
-    const onFocus = () => fetchDesign();
+    // Volver a leer el diseño al re-enfocar la pestaña, PERO no si el admin
+    // está editando (si no, se pisan los cambios sin guardar).
+    const onFocus = () => {
+      if (isEditingDesignRef.current) return;
+      fetchDesign();
+    };
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
   }, []);
@@ -552,6 +561,7 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
         saveDesignConfig,
         loading,
         refreshDesign: fetchDesign,
+        setIsEditingDesign,
       }}
     >
       {children}
