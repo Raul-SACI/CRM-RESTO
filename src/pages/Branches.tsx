@@ -68,7 +68,17 @@ export function Branches() {
         ) : branches.map((branch) => {
           const isSelected = selectedBranchId === branch.id;
           const phoneClean = branch.phone ? branch.phone.replace(/\D/g, '') : '';
-          const whatsappPhone = phoneClean.startsWith('54') ? phoneClean : '54' + phoneClean;
+          // Formato WhatsApp Argentina: 549 + código de área + número (sin 0 ni 15)
+          let whatsappPhone = phoneClean;
+          if (phoneClean) {
+            if (phoneClean.startsWith('549')) {
+              whatsappPhone = phoneClean;
+            } else if (phoneClean.startsWith('54')) {
+              whatsappPhone = '549' + phoneClean.slice(2);
+            } else {
+              whatsappPhone = '549' + phoneClean;
+            }
+          }
 
           return (
             <div 
