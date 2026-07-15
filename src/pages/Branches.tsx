@@ -21,7 +21,7 @@ interface Branch {
 }
 
 export function Branches() {
-  const { designConfig } = useDesign();
+  const { designConfig, loading } = useDesign();
   const [selectedBranchId, setSelectedBranchId] = useState<string | null>(null);
 
   const branches = (designConfig?.branches || []).filter(b => b.active !== false);
@@ -49,14 +49,23 @@ export function Branches() {
             </p>
           </div>
           <div className="bg-slate-50 dark:bg-slate-950 px-4 py-3 rounded-2xl border border-slate-200/50 dark:border-slate-800/80 font-mono text-[10px] text-slate-400 font-extrabold uppercase shrink-0">
-            📍 {branches.length} {branches.length === 1 ? 'Local' : 'Locales'}
+            📍 {loading ? '···' : `${branches.length} ${branches.length === 1 ? 'Local' : 'Locales'}`}
           </div>
         </div>
       </div>
 
       {/* Branches Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
-        {branches.map((branch) => {
+        {loading ? (
+          <>
+            <div className="craft-skeleton h-80 w-full rounded-[2rem]" />
+            <div className="craft-skeleton h-80 w-full rounded-[2rem]" />
+          </>
+        ) : branches.length === 0 ? (
+          <div className="col-span-full text-center py-16 text-slate-400 font-bold uppercase text-xs tracking-widest">
+            No hay sucursales cargadas por el momento.
+          </div>
+        ) : branches.map((branch) => {
           const isSelected = selectedBranchId === branch.id;
           const phoneClean = branch.phone ? branch.phone.replace(/\D/g, '') : '';
           const whatsappPhone = phoneClean.startsWith('54') ? phoneClean : '54' + phoneClean;
