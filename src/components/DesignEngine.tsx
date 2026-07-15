@@ -519,15 +519,37 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
     try {
       const { data: existing } = await supabase
         .from('catalogo_premios')
-        .select('id')
+        .select('id, description')
         .eq('title', '__DESIGN_SETTINGS__')
         .maybeSingle();
 
+      // PROTECCIÓN: no permitir que un guardado borre sucursales/combos si en la
+      // base ya existen y en lo que se va a guardar vienen vacíos. Esto evita
+      // que editar banners (u otra sección) pise datos por accidente.
+      let safeConfig = { ...newConfig };
+      if (existing?.description) {
+        try {
+          const current = JSON.parse(existing.description);
+          const arraysProtegidos = ['branches', 'combos'] as const;
+          arraysProtegidos.forEach((key) => {
+            const nuevo = (safeConfig as any)[key];
+            const actual = current[key];
+            if (Array.isArray(actual) && actual.length > 0 && (!Array.isArray(nuevo) || nuevo.length === 0)) {
+              // Lo que viene está vacío pero en la base hay datos: conservamos los de la base.
+              (safeConfig as any)[key] = actual;
+              console.warn(`[Diseño] Se conservaron los datos existentes de "${key}" para no borrarlos.`);
+            }
+          });
+        } catch (e) {
+          console.warn('No se pudo parsear la config existente para proteger datos:', e);
+        }
+      }
+
       const dbPayload = {
         title: '__DESIGN_SETTINGS__',
-        description: JSON.stringify(newConfig),
+        description: JSON.stringify(safeConfig),
         points_cost: 0,
-        image_url: newConfig.logoUrl || '',
+        image_url: safeConfig.logoUrl || '',
         is_active: false // Keep invisible from prizes list
       };
 
@@ -546,7 +568,7 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
         if (error) throw error;
       }
 
-      setDesignConfig(newConfig);
+      setDesignConfig(safeConfig);
     } catch (e: any) {
       console.error('Error saving design configuration:', e);
       throw e;
