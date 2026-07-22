@@ -625,8 +625,9 @@ export function Admin() {
         
         if (error) throw error;
         
-        setPrizes(data || []);
-        safeSetItem(cacheKey, JSON.stringify(data || []));
+        const soloPremios = (data || []).filter((p: any) => p.title !== '__DESIGN_SETTINGS__' && p.title !== '__DESIGN_SETTINGS_BACKUP__');
+        setPrizes(soloPremios);
+        safeSetItem(cacheKey, JSON.stringify(soloPremios));
       } else if (activeTab === 'staff') {
         const { data, error } = await supabase
           .from('profiles')
@@ -977,6 +978,23 @@ export function Admin() {
       alert("Error de conexión al eliminar");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleTogglePrizeActive = async (prize: any) => {
+    const nuevoEstado = !(prize.is_active !== false); // si estaba activo -> desactivar
+    try {
+      const { error } = await supabase
+        .from('catalogo_premios')
+        .update({ is_active: nuevoEstado })
+        .eq('id', prize.id);
+      if (error) {
+        alert('Error al cambiar el estado: ' + error.message);
+      } else {
+        await fetchData();
+      }
+    } catch (err: any) {
+      alert('Error de conexión al cambiar el estado del premio.');
     }
   };
 
@@ -1740,14 +1758,35 @@ export function Admin() {
                     <p className="text-[10px] text-slate-300 max-w-xs mx-auto font-bold uppercase tracking-tight">Si no puedes agregar, consulta con soporte técnico de Supabase.</p>
                   </div>
                 )}
-                {prizes.map(prize => (
-                  <div key={prize.id} className="bg-white p-4 rounded-2xl border border-slate-100 flex items-center gap-4 group transition-all shadow-sm">
+                {prizes.map(prize => {
+                  const activo = prize.is_active !== false;
+                  return (
+                  <div key={prize.id} className={cn(
+                    "bg-white p-4 rounded-2xl border border-slate-100 flex items-center gap-4 group transition-all shadow-sm",
+                    !activo && "opacity-60"
+                  )}>
                     <img src={prize.image_url} className="w-16 h-16 rounded-xl object-cover shrink-0" />
                     <div className="flex-1 min-w-0">
                       <h4 className="font-black text-sm uppercase tracking-tighter text-ink">{prize.title}</h4>
                       <p className="text-[10px] text-love font-black uppercase tracking-widest italic">{prize.points_cost} Puntos</p>
+                      <span className={cn(
+                        "inline-block mt-1 text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full",
+                        activo ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-500"
+                      )}>
+                        {activo ? 'Activo' : 'Inactivo'}
+                      </span>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        onClick={() => handleTogglePrizeActive(prize)}
+                        title={activo ? 'Desactivar (no aparecerá a los clientes)' : 'Activar'}
+                        className={cn(
+                          "px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all cursor-pointer border-none",
+                          activo ? "bg-emerald-500 text-white hover:bg-emerald-600" : "bg-slate-200 text-slate-600 hover:bg-slate-300"
+                        )}
+                      >
+                        {activo ? 'Activo' : 'Inactivo'}
+                      </button>
                       <button onClick={() => startEditingPrize(prize)} className="p-3 text-slate-300 hover:text-ink transition-colors">
                         <Pencil size={18} />
                       </button>
@@ -1756,7 +1795,8 @@ export function Admin() {
                       </button>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
                 
                 <div className="pt-8 mt-4 border-t border-slate-100 text-center">
                   <p className="text-[8px] font-black uppercase tracking-widest text-slate-300">
