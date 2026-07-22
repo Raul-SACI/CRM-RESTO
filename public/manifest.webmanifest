@@ -4,8 +4,8 @@
   "description": "Premium Loyalty CRM for Restaurants",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#121212",
-  "theme_color": "#D72638",
+  "background_color": "#D90015",
+  "theme_color": "#D90015",
   "icons": [
     {
       "src": "https://jxmhizoomsxbqhoghwth.supabase.co/storage/v1/object/public/branding%20logo/logoappdef.png",
