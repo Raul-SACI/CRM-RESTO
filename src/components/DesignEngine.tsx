@@ -291,6 +291,7 @@ export const CORNER_PRESETS = [
 
 // Available Google Fonts for dropdown selection
 export const AVAILABLE_FONTS = [
+  'Epilogue',
   'Inter',
   'Space Grotesk',
   'Playfair Display',
