@@ -1112,7 +1112,7 @@ export function Dashboard() {
         </div>
 
         {/* 1. sliding promo banners */}
-        <div className="relative w-full overflow-hidden rounded-[2rem] h-[160px] shadow-lg border border-slate-200/50 dark:border-slate-800 bg-slate-950">
+        <div className="relative w-full overflow-hidden rounded-[2rem] h-[240px] shadow-lg border border-slate-200/50 dark:border-slate-800 bg-slate-950">
           <div className="absolute inset-0">
             <AnimatePresence mode="wait">
               <motion.div
@@ -1121,21 +1121,13 @@ export function Dashboard() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.4 }}
-                className="absolute inset-0 flex flex-col justify-end p-5 text-white"
+                className="absolute inset-0"
                 style={{
-                  backgroundImage: `linear-gradient(to top, rgba(0,0,0,0.85) 45%, rgba(0,0,0,0.2) 100%), url(${getBannerImage(bannerList[currentSlide])})`,
+                  backgroundImage: `url(${getBannerImage(bannerList[currentSlide])})`,
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
                 }}
-              >
-                <div className="max-w-[85%] text-left">
-                  <span className="text-[7px] font-black uppercase tracking-widest bg-love/90 text-white px-2 py-0.5 rounded-full inline-block mb-1.5 animate-pulse">
-                    Novedad
-                  </span>
-                  <h3 className="text-xs font-black uppercase tracking-tight line-clamp-1">{bannerList[currentSlide]?.title}</h3>
-                  <p className="text-[9px] text-slate-300 line-clamp-1 mt-0.5">{bannerList[currentSlide]?.subtitle}</p>
-                </div>
-              </motion.div>
+              />
             </AnimatePresence>
           </div>
 
