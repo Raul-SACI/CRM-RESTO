@@ -1760,7 +1760,7 @@ export function Dashboard() {
               <Gift size={16} className="text-love animate-pulse" />
               <span className="text-[10px] uppercase font-black tracking-widest text-[#92400E] dark:text-amber-400">Recomendado para ti</span>
             </div>
-            <h3 className="text-xl font-black uppercase tracking-tight text-ink dark:text-white" style={{ fontFamily: `"${designConfig?.fontHeadings || 'Inter'}", sans-serif` }}>
+            <h3 className="text-xl font-black uppercase tracking-tight text-ink dark:text-white" style={{ fontFamily: `"${designConfig?.fontHeadings || 'Epilogue'}", sans-serif` }}>
               {designConfig?.recomTitle || "Tus Próximos Premios"}
             </h3>
             <p className="text-slate-400 text-xs mt-1 font-medium">
@@ -2368,7 +2368,7 @@ export function Dashboard() {
                 <div className="col-span-12 lg:col-span-6 bg-white dark:bg-slate-900 rounded-[2rem] p-6 md:p-8 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none space-y-6">
                   <div className="flex items-center gap-2">
                     <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <h3 className="text-sm font-black uppercase tracking-wider text-ink dark:text-white" style={{ fontFamily: `"${designConfig?.fontHeadings || 'Inter'}", sans-serif` }}>
+                    <h3 className="text-sm font-black uppercase tracking-wider text-ink dark:text-white" style={{ fontFamily: `"${designConfig?.fontHeadings || 'Epilogue'}", sans-serif` }}>
                       Mis Combos & Pases Activos
                     </h3>
                   </div>
@@ -2430,7 +2430,7 @@ export function Dashboard() {
                 )}>
                   <div className="flex items-center gap-2">
                     <div className="w-2.5 h-2.5 rounded-full bg-love animate-ping" />
-                    <h3 className="text-sm font-black uppercase tracking-wider text-ink dark:text-white" style={{ fontFamily: `"${designConfig?.fontHeadings || 'Inter'}", sans-serif` }}>
+                    <h3 className="text-sm font-black uppercase tracking-wider text-ink dark:text-white" style={{ fontFamily: `"${designConfig?.fontHeadings || 'Epilogue'}", sans-serif` }}>
                       Ofertas de Combos & Pases Prepago
                     </h3>
                   </div>
@@ -2498,7 +2498,7 @@ export function Dashboard() {
               <span className="text-[10px] uppercase font-black tracking-widest text-love mb-1 flex items-center gap-1.5">
                 <Trophy size={11} className="text-yellow-500 animate-bounce" /> {designConfig?.rutaSubtitle || "Camino de Fidelidad Craft"}
               </span>
-              <h3 className="text-lg md:text-xl font-black uppercase tracking-tight text-ink dark:text-white" style={{ fontFamily: `"${designConfig?.fontHeadings || 'Inter'}", sans-serif` }}>
+              <h3 className="text-lg md:text-xl font-black uppercase tracking-tight text-ink dark:text-white" style={{ fontFamily: `"${designConfig?.fontHeadings || 'Epilogue'}", sans-serif` }}>
                 {designConfig?.rutaTitle || "Ruta de Puntos & Beneficios"}
               </h3>
             </div>
@@ -2715,7 +2715,7 @@ export function Dashboard() {
                 Mis Movimientos
               </span>
             </div>
-            <h3 className="text-xl font-black uppercase tracking-tight text-ink dark:text-white" style={{ fontFamily: `"${designConfig?.fontHeadings || 'Inter'}", sans-serif` }}>
+            <h3 className="text-xl font-black uppercase tracking-tight text-ink dark:text-white" style={{ fontFamily: `"${designConfig?.fontHeadings || 'Epilogue'}", sans-serif` }}>
               {designConfig?.txTitle || "Cargas & Canjes Realizados"}
             </h3>
             <p className="text-slate-400 text-xs mt-1 font-medium">

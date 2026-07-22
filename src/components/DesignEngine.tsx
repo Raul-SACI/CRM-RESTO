@@ -122,8 +122,8 @@ export interface DesignConfig {
 }
 
 export const DEFAULT_DESIGN: DesignConfig = {
-  fontSans: 'Inter',
-  fontHeadings: 'Space Grotesk',
+  fontSans: 'Epilogue',
+  fontHeadings: 'Epilogue',
   primaryColor: '#D90015',
   primaryColorHover: '#D90015',
   primaryColorRgb: '239, 68, 68',

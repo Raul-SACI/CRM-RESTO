@@ -36,7 +36,7 @@ export function Help() {
               <HelpCircle size={18} className="text-love animate-pulse shrink-0" />
               <span className="text-xs uppercase font-extrabold tracking-widest text-[#92400E] dark:text-amber-400">Canal de Soporte</span>
             </div>
-            <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight !text-slate-900" style={{ fontFamily: `"${designConfig?.fontHeadings || 'Inter'}", sans-serif` }}>
+            <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight !text-slate-900" style={{ fontFamily: `"${designConfig?.fontHeadings || 'Epilogue'}", sans-serif` }}>
               Centro de Ayuda
             </h1>
             <p className="text-slate-400 dark:text-slate-500 text-xs md:text-sm mt-1.5 font-medium max-w-xl">

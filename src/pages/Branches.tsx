@@ -41,7 +41,7 @@ export function Branches() {
               <MapPin size={18} className="text-love animate-pulse shrink-0" />
               <span className="text-xs uppercase font-extrabold tracking-widest text-[#92400E] dark:text-amber-400">Nuestras Sucursales</span>
             </div>
-            <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-ink dark:text-white" style={{ fontFamily: `"${designConfig?.fontHeadings || 'Inter'}", sans-serif` }}>
+            <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tight text-ink dark:text-white" style={{ fontFamily: `"${designConfig?.fontHeadings || 'Epilogue'}", sans-serif` }}>
               Nuestras Sucursales
             </h1>
             <p className="text-slate-400 dark:text-slate-500 text-xs md:text-sm mt-1.5 font-medium max-w-xl">
