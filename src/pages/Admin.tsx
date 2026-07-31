@@ -37,7 +37,8 @@ export function Admin() {
     birthday: { enabled: true, message: '¡Feliz cumple, {nombre}! Que tengas un día genial. Te esperamos en CRAFT.', giftPoints: 0 },
     comboExpiring: { enabled: true, message: '¡Atención {nombre}! A tu combo "{combo}" le quedan {dias} días para usarlo. ¡Te esperamos en CRAFT!', daysBefore: 7 },
     inactive: { enabled: true, message: 'Hace tiempo que no te vemos, {nombre}. ¡Volvé a CRAFT y seguí sumando puntos!', daysInactive: 60, giftPoints: 0 },
-    levelUp: { enabled: true, message: '¡Felicitaciones {nombre}! Subiste a la categoría {categoria}. ¡Gracias por ser parte de CRAFT!', giftPoints: 0 }
+    levelUp: { enabled: true, message: '¡Felicitaciones {nombre}! Subiste a la categoría {categoria}. ¡Gracias por ser parte de CRAFT!', giftPoints: 0 },
+    welcome: { enabled: true, giftPoints: 70 }
   };
   const [autoNotifForm, setAutoNotifForm] = useState<any>(defaultAutoNotif);
   const [autoNotifSaving, setAutoNotifSaving] = useState(false);
@@ -420,7 +421,8 @@ export function Admin() {
           birthday: { ...defaultAutoNotif.birthday, ...(saved.birthday || {}) },
           comboExpiring: { ...defaultAutoNotif.comboExpiring, ...(saved.comboExpiring || {}) },
           inactive: { ...defaultAutoNotif.inactive, ...(saved.inactive || {}) },
-          levelUp: { ...defaultAutoNotif.levelUp, ...(saved.levelUp || {}) }
+          levelUp: { ...defaultAutoNotif.levelUp, ...(saved.levelUp || {}) },
+          welcome: { ...defaultAutoNotif.welcome, ...(saved.welcome || {}) }
         });
       }
     } else if (activeTab === 'design' || activeTab === 'combos') {
@@ -4471,6 +4473,23 @@ export function Admin() {
                 </div>
                 <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-2">Se envían solos cada día (campanita + email)</p>
                 <p className="text-[10px] text-slate-400 mb-5">Podés usar <span className="font-black">{'{nombre}'}</span>, <span className="font-black">{'{combo}'}</span>, <span className="font-black">{'{dias}'}</span> y <span className="font-black">{'{puntos}'}</span> en los textos; se reemplazan solos.</p>
+
+                {/* REGALO DE BIENVENIDA */}
+                <div className="border border-slate-100 dark:border-slate-800 rounded-2xl p-4 mb-4">
+                  <label className="flex items-center justify-between mb-3 cursor-pointer">
+                    <span className="text-xs font-black uppercase tracking-wider !text-slate-900 dark:!text-white">🎁 Regalo de bienvenida</span>
+                    <input type="checkbox" className="w-4 h-4 accent-love cursor-pointer"
+                      checked={autoNotifForm.welcome?.enabled ?? true}
+                      onChange={(e) => setAutoNotifForm({ ...autoNotifForm, welcome: { ...autoNotifForm.welcome, enabled: e.target.checked } })} />
+                  </label>
+                  <p className="text-[9px] text-slate-400 mb-2 pl-1">Se acredita automáticamente al crear la cuenta (sirve tanto para registro con Google como con email). Queda registrado en el historial del cliente como "Regalo de bienvenida".</p>
+                  <div className="flex items-center gap-2">
+                    <label className="text-[9px] uppercase font-black text-slate-400 tracking-widest">Puntos de bienvenida:</label>
+                    <input type="number" min="0" className="w-24 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-love text-ink dark:text-white font-bold"
+                      value={autoNotifForm.welcome?.giftPoints ?? 0}
+                      onChange={(e) => setAutoNotifForm({ ...autoNotifForm, welcome: { ...autoNotifForm.welcome, giftPoints: parseInt(e.target.value) || 0 } })} />
+                  </div>
+                </div>
 
                 {/* CUMPLEAÑOS */}
                 <div className="border border-slate-100 dark:border-slate-800 rounded-2xl p-4 mb-4">

@@ -54,6 +54,7 @@ export interface AutoNotifConfig {
   comboExpiring: { enabled: boolean; message: string; daysBefore: number };
   inactive: { enabled: boolean; message: string; daysInactive: number; giftPoints: number };
   levelUp?: { enabled: boolean; message: string; giftPoints: number };
+  welcome?: { enabled: boolean; giftPoints: number };
 }
 
 export interface DesignConfig {
@@ -218,6 +219,10 @@ export const DEFAULT_DESIGN: DesignConfig = {
       enabled: true,
       message: '¡Felicitaciones {nombre}! Subiste a la categoría {categoria}. ¡Gracias por ser parte de CRAFT!',
       giftPoints: 0
+    },
+    welcome: {
+      enabled: true,
+      giftPoints: 70
     }
   },
   navButtonColors: {
