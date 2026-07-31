@@ -19,6 +19,16 @@ export function NotificationBell({ clientId }: NotificationBellProps) {
     if (!clientId) return;
     setLoading(true);
     try {
+      // Fecha de registro del cliente: los avisos masivos (para todos) anteriores
+      // a su registro NO se le muestran (un recién llegado no ve avisos viejos).
+      let since: Date | null = null;
+      const { data: prof } = await supabase
+        .from('profiles')
+        .select('created_at')
+        .eq('id', clientId)
+        .single();
+      if (prof?.created_at) since = new Date(prof.created_at);
+
       // Avisos para este cliente o para todos (client_id null)
       const { data: notifs, error } = await supabase
         .from('notifications')
@@ -28,7 +38,14 @@ export function NotificationBell({ clientId }: NotificationBellProps) {
         .limit(50);
 
       if (!error && notifs) {
-        setNotifications(notifs as AppNotification[]);
+        const visibles = (notifs as any[]).filter((n) => {
+          // Avisos personales (dirigidos a este cliente): se muestran siempre
+          if (n.client_id === clientId) return true;
+          // Avisos masivos (client_id null): solo si son posteriores a su registro
+          if (!since || !n.created_at) return true;
+          return new Date(n.created_at) >= since;
+        });
+        setNotifications(visibles as AppNotification[]);
       }
 
       // Qué avisos ya leyó este cliente
