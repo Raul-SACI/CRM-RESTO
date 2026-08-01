@@ -17,6 +17,7 @@ import { Branches } from '@/src/pages/Branches';
 import { MyCombos } from '@/src/pages/MyCombos';
 import { MyAccount } from '@/src/pages/MyAccount';
 import { Layout } from '@/src/components/Layout';
+import { CompleteProfile } from '@/src/components/CompleteProfile';
 import { motion, AnimatePresence } from 'motion/react';
 import { DesignProvider } from '@/src/components/DesignEngine';
 import { hasPermission } from '@/src/lib/permissions';
@@ -62,19 +63,26 @@ const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => useContext(AuthContext);
 
 function AppRoutes() {
-  const { user, profile, realProfile, loading } = useAuth();
+  const { user, profile, realProfile, loading, refreshProfile } = useAuth();
   const location = useLocation();
 
   if (loading) {
     return (
       <div className="min-h-screen bg-bar-black flex items-center justify-center">
-        <motion.div 
+        <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
           className="w-12 h-12 border-2 border-love border-t-transparent rounded-full"
         />
       </div>
     );
+  }
+
+  // Paso obligatorio: si un CLIENTE no tiene cargado el cumpleaños (típico de
+  // quien se registró con Google), le pedimos completarlo antes de usar la app.
+  // No afecta a admin ni mozos.
+  if (user && realProfile && realProfile.role === 'client' && !realProfile.birth_date) {
+    return <CompleteProfile profile={realProfile} refreshProfile={refreshProfile} />;
   }
 
   const stateFrom = (location.state as any)?.from;
