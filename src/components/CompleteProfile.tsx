@@ -13,6 +13,7 @@ interface CompleteProfileProps {
 // con Google (Google no comparte la fecha de nacimiento). Sin esta fecha no se
 // pueden gestionar los regalos de cumpleaños.
 export function CompleteProfile({ profile, refreshProfile }: CompleteProfileProps) {
+  const [dni, setDni] = useState('');
   const [birthDate, setBirthDate] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,6 +27,17 @@ export function CompleteProfile({ profile, refreshProfile }: CompleteProfileProp
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    // DNI: dejamos solo números (sacamos puntos y espacios)
+    const cleanDni = dni.replace(/\D/g, '');
+    if (!cleanDni) {
+      setError('Por favor ingresá tu DNI.');
+      return;
+    }
+    if (cleanDni.length < 6 || cleanDni.length > 9) {
+      setError('Ingresá un DNI válido (solo números).');
+      return;
+    }
 
     if (!birthDate) {
       setError('Por favor ingresá tu fecha de nacimiento.');
@@ -49,10 +61,18 @@ export function CompleteProfile({ profile, refreshProfile }: CompleteProfileProp
       // Guardamos el string 'YYYY-MM-DD' tal cual (día local, sin toISOString)
       const { error: upErr } = await supabase
         .from('profiles')
-        .update({ birth_date: birthDate })
+        .update({ dni: cleanDni, birth_date: birthDate })
         .eq('id', profile.id);
 
-      if (upErr) throw upErr;
+      if (upErr) {
+        // DNI duplicado (violación de unicidad)
+        if ((upErr as any).code === '23505' || /duplicate|unique/i.test(upErr.message || '')) {
+          setError('Ese DNI ya está registrado en otra cuenta. Si ya tenías cuenta, escribinos.');
+          setSaving(false);
+          return;
+        }
+        throw upErr;
+      }
 
       await refreshProfile();
       // Al refrescar el perfil, la app deja de mostrar este paso y entra normal.
@@ -84,12 +104,28 @@ export function CompleteProfile({ profile, refreshProfile }: CompleteProfileProp
             {firstName ? `¡Hola, ${firstName}!` : '¡Un último paso!'}
           </h1>
           <p className="text-sm !text-slate-600 mt-2 leading-relaxed">
-            Para completar tu perfil necesitamos tu <span className="font-bold !text-slate-900">fecha de nacimiento</span>.
-            Así podemos saludarte y <span className="font-bold text-love">regalarte puntos en tu cumpleaños</span> 🎂
+            Para completar tu perfil necesitamos tu <span className="font-bold !text-slate-900">DNI</span> y tu
+            <span className="font-bold !text-slate-900"> fecha de nacimiento</span>. El DNI sirve para identificarte
+            y sumar tus puntos, y con tu cumpleaños podemos <span className="font-bold text-love">regalarte puntos en tu día</span> 🎂
           </p>
         </div>
 
         <form onSubmit={handleSave} className="space-y-4">
+          <div>
+            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1 block mb-1.5">
+              DNI / Documento
+            </label>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={dni}
+              onChange={(e) => setDni(e.target.value)}
+              placeholder="Ej: 30123456"
+              className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3.5 text-sm outline-none focus:border-love !text-slate-900 font-semibold"
+              required
+            />
+          </div>
+
           <div>
             <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1 block mb-1.5">
               Fecha de nacimiento

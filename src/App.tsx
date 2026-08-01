@@ -78,10 +78,15 @@ function AppRoutes() {
     );
   }
 
-  // Paso obligatorio: si un CLIENTE no tiene cargado el cumpleaños (típico de
-  // quien se registró con Google), le pedimos completarlo antes de usar la app.
-  // No afecta a admin ni mozos.
-  if (user && realProfile && realProfile.role === 'client' && !realProfile.birth_date) {
+  // Paso obligatorio: si un CLIENTE no tiene cargado el cumpleaños o el DNI
+  // (típico de quien se registró con Google, que arranca con un DNI provisorio
+  // "TEMP-..."), le pedimos completarlos antes de usar la app. No afecta a admin ni mozos.
+  if (
+    user &&
+    realProfile &&
+    realProfile.role === 'client' &&
+    (!realProfile.birth_date || !realProfile.dni || realProfile.dni.startsWith('TEMP-'))
+  ) {
     return <CompleteProfile profile={realProfile} refreshProfile={refreshProfile} />;
   }
 
