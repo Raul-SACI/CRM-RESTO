@@ -20,7 +20,7 @@ import { Layout } from '@/src/components/Layout';
 import { CompleteProfile } from '@/src/components/CompleteProfile';
 import { motion, AnimatePresence } from 'motion/react';
 import { DesignProvider } from '@/src/components/DesignEngine';
-import { hasPermission } from '@/src/lib/permissions';
+import { hasPermission, loadRoles } from '@/src/lib/permissions';
 
 interface ThemeContextType {
   theme: 'light' | 'dark';
@@ -362,6 +362,10 @@ export default function App() {
       const forceUnlock = setTimeout(() => {
         setLoading(false);
       }, 5000);
+
+      // Cargar los roles y sus permisos desde Supabase ANTES de decidir accesos.
+      // Si falla, quedan los roles base como respaldo (no rompe el login).
+      await loadRoles();
 
       // Check for a custom local session (from admin-created custom users) first
       const customSessionStr = localStorage.getItem('custom_user_session');

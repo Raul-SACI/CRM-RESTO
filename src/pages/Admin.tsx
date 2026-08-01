@@ -10,12 +10,16 @@ import { useAuth, useTheme } from '@/src/App';
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell, PieChart, Pie } from 'recharts';
 import { 
-  getRoles, 
-  saveRoles, 
-  getPermissions, 
-  savePermissions, 
-  getCustomUsers, 
+  getRoles,
+  saveRoles,
+  getPermissions,
+  savePermissions,
+  getCustomUsers,
   saveCustomUsers,
+  loadRoles,
+  getRolesCache,
+  saveRoleToSupabase,
+  deleteRoleFromSupabase,
   type CustomUser,
   type CustomRole,
   type CustomPermission
@@ -165,6 +169,14 @@ export function Admin() {
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
 
   // Sincronizar bases y condiciones y reglas de lealtad cuando la configuración cargue
+  // Cargar los roles desde Supabase al abrir el panel (para tenerlos frescos)
+  useEffect(() => {
+    (async () => {
+      await loadRoles();
+      setCustomRolesList(getRolesCache());
+    })();
+  }, []);
+
   useEffect(() => {
     if (designConfig?.terms) {
       setLocalTermsText(designConfig.terms);
@@ -1071,13 +1083,10 @@ export function Admin() {
     }
   };
   const updateUserRole = async (userId: string, newRole: string) => {
-    const roleNames: Record<string, string> = {
-      'admin': 'Administrador',
-      'waiter': 'Cajero',
-      'client': 'Cliente'
-    };
-    
-    if (confirm(`¿Cambiar el rol de este usuario a ${roleNames[newRole]}?`)) {
+    const roleObj = customRolesList.find(r => r.id === newRole);
+    const roleName = roleObj?.name || newRole;
+
+    if (confirm(`¿Cambiar el rol de este usuario a ${roleName}?`)) {
       setLoading(true);
       try {
         const { error } = await supabase.from('profiles').update({ role: newRole }).eq('id', userId);
@@ -1667,12 +1676,19 @@ export function Admin() {
                               >
                                 <Trash2 size={16} />
                               </button>
-                              <button 
-                                onClick={() => updateUserRole(client.id, 'waiter')}
-                                className="text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded bg-slate-100 text-slate-500 hover:bg-love hover:text-white transition-all shadow-sm"
+                              <select
+                                value=""
+                                onChange={(e) => { if (e.target.value) updateUserRole(client.id, e.target.value); }}
+                                title="Asignar un rol a este usuario"
+                                className="text-[9px] font-black uppercase tracking-widest px-2 py-1.5 rounded bg-slate-100 text-slate-500 border border-slate-200 cursor-pointer hover:bg-slate-200 transition-all"
                               >
-                                Hacer Staff
-                              </button>
+                                <option value="">Asignar rol…</option>
+                                {customRolesList
+                                  .filter(r => r.id !== 'client')
+                                  .map(r => (
+                                    <option key={r.id} value={r.id}>{r.name}</option>
+                                  ))}
+                              </select>
                             </div>
                           </td>
                         </tr>
@@ -2157,7 +2173,7 @@ export function Admin() {
               }
             };
 
-            const handleCreateRole = (e: React.FormEvent) => {
+            const handleCreateRole = async (e: React.FormEvent) => {
               e.preventDefault();
               if (!newRoleForm.id || !newRoleForm.name) {
                 alert("Por favor, ingrese ID de rol y nombre descriptivo.");
@@ -2168,34 +2184,57 @@ export function Admin() {
                 alert("Ya existe un rol con este código ID de rol.");
                 return;
               }
-              const newRoleObj: CustomRole = {
-                id: cleanId,
-                name: newRoleForm.name.toUpperCase().trim(),
-                permissions: newRoleForm.permissions
-              };
-              const updated = [...customRolesList, newRoleObj];
-              setCustomRolesList(updated);
-              saveRoles(updated);
-
-              setNewRoleForm({ id: '', name: '', permissions: [] });
-              setShowAddRoleModal(false);
+              try {
+                await saveRoleToSupabase({
+                  id: cleanId,
+                  name: newRoleForm.name.toUpperCase().trim(),
+                  permissions: newRoleForm.permissions,
+                  is_system: false
+                });
+                setCustomRolesList(getRolesCache());
+                setNewRoleForm({ id: '', name: '', permissions: [] });
+                setShowAddRoleModal(false);
+                alert('¡Rol creado y guardado en Supabase!');
+              } catch (err: any) {
+                alert('Error al crear el rol: ' + (err?.message || err));
+              }
             };
 
-            const handleUpdateRolePermissions = (roleId: string, permId: string, enabled: boolean) => {
-              const updated = customRolesList.map(r => {
-                if (r.id === roleId) {
-                  let perms = [...r.permissions];
-                  if (enabled && !perms.includes(permId)) {
-                    perms.push(permId);
-                  } else if (!enabled) {
-                    perms = perms.filter(p => p !== permId);
-                  }
-                  return { ...r, permissions: perms };
-                }
-                return r;
-              });
-              setCustomRolesList(updated);
-              saveRoles(updated);
+            const handleUpdateRolePermissions = async (roleId: string, permId: string, enabled: boolean) => {
+              const role = customRolesList.find(r => r.id === roleId);
+              if (!role) return;
+              let perms = [...role.permissions];
+              if (enabled && !perms.includes(permId)) {
+                perms.push(permId);
+              } else if (!enabled) {
+                perms = perms.filter(p => p !== permId);
+              }
+              // Actualización optimista de la interfaz
+              setCustomRolesList(prev => prev.map(r => r.id === roleId ? { ...r, permissions: perms } : r));
+              try {
+                await saveRoleToSupabase({ ...role, permissions: perms });
+                setCustomRolesList(getRolesCache());
+              } catch (err: any) {
+                alert('Error al guardar el permiso: ' + (err?.message || err));
+                setCustomRolesList(getRolesCache()); // revertir al estado real
+              }
+            };
+
+            const handleDeleteRole = async (roleId: string) => {
+              const role = customRolesList.find(r => r.id === roleId);
+              if (!role) return;
+              if (role.is_system) {
+                alert('Los roles base (Administrador, Cajero/Mozo, Cliente) no se pueden borrar.');
+                return;
+              }
+              if (!confirm(`¿Borrar el rol "${role.name}"? Los usuarios que tengan este rol quedarán sin permisos hasta que les asignes otro.`)) return;
+              try {
+                await deleteRoleFromSupabase(roleId);
+                setCustomRolesList(getRolesCache());
+                alert('Rol borrado.');
+              } catch (err: any) {
+                alert('Error al borrar el rol: ' + (err?.message || err));
+              }
             };
 
             const handleCreatePermission = (e: React.FormEvent) => {
@@ -2391,9 +2430,21 @@ export function Admin() {
                               <h4 className="font-black uppercase tracking-tight text-ink dark:text-white text-sm">{role.name}</h4>
                               <p className="text-[10px] font-mono text-slate-400">Cod ID: {role.id}</p>
                             </div>
-                            <span className="text-[9px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-500 dark:bg-emerald-950/20 px-2.5 py-1 rounded border border-emerald-100 dark:border-emerald-900/30">
-                              {role.permissions.length} Permisos Activos
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-[9px] font-black uppercase tracking-widest bg-emerald-50 text-emerald-500 dark:bg-emerald-950/20 px-2.5 py-1 rounded border border-emerald-100 dark:border-emerald-900/30">
+                                {role.permissions.length} Permisos Activos
+                              </span>
+                              {!role.is_system && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteRole(role.id)}
+                                  title="Borrar rol"
+                                  className="p-1.5 text-slate-300 hover:text-love transition-colors bg-transparent border-none cursor-pointer"
+                                >
+                                  <Trash2 size={15} />
+                                </button>
+                              )}
+                            </div>
                           </div>
 
                           <div className="space-y-2 mt-2">
