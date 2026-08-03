@@ -6,6 +6,7 @@ export interface Profile {
   birth_date: string;
   points: number;
   role: 'client' | 'waiter' | 'admin';
+  branch?: string | null;
   created_at: string;
 }
 

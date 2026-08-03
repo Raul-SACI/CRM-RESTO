@@ -58,12 +58,26 @@ export function Waiter() {
   // Sucursales reales (del panel), solo las activas. active undefined = activa.
   const activeBranches = (designConfig.branches || []).filter(b => b.active !== false);
 
-  // Cuando cargan las sucursales, preseleccionar la primera activa si no hay ninguna elegida.
+  // Sucursal asignada a este cajero (si tiene una). Si la tiene, solo puede cargar en esa.
+  const assignedBranch = (waiterProfile as any)?.branch || '';
+
+  // Sucursales que ve el cajero: si tiene una asignada, solo esa; si no, todas las activas.
+  let branchOptions = activeBranches;
+  if (assignedBranch) {
+    const match = activeBranches.filter(b => b.name === assignedBranch);
+    branchOptions = match.length > 0
+      ? match
+      : [{ id: 'assigned', name: assignedBranch, active: true } as any];
+  }
+
+  // Preseleccionar: si tiene sucursal asignada, esa; si no, la primera activa.
   useEffect(() => {
-    if (!selectedBranch && activeBranches.length > 0) {
+    if (assignedBranch) {
+      if (selectedBranch !== assignedBranch) setSelectedBranch(assignedBranch);
+    } else if (!selectedBranch && activeBranches.length > 0) {
       setSelectedBranch(activeBranches[0].name);
     }
-  }, [activeBranches, selectedBranch]);
+  }, [assignedBranch, activeBranches, selectedBranch]);
 
   useEffect(() => {
     let dniParam = searchParams.get('dni');
@@ -821,9 +835,9 @@ export function Waiter() {
                   <div className="space-y-4 pt-4 border-t-2 border-dashed border-slate-100">
                     <label className="block text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Sucursal de Carga</label>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                      {activeBranches.length === 0 ? (
+                      {branchOptions.length === 0 ? (
                         <p className="col-span-full text-[9px] text-slate-400 font-bold uppercase tracking-widest">No hay sucursales activas. Configurá una en el panel de administración.</p>
-                      ) : activeBranches.map(branch => (
+                      ) : branchOptions.map(branch => (
                         <button
                           key={branch.id}
                           type="button"

@@ -62,7 +62,8 @@ export function Admin() {
     fullName: '',
     dni: '',
     role: 'waiter',
-    birthDate: ''
+    birthDate: '',
+    branch: ''
   });
 
   const [customRolesList, setCustomRolesList] = useState<CustomRole[]>(() => getRoles());
@@ -2133,6 +2134,7 @@ export function Admin() {
                       email,
                       dni,
                       role,
+                      branch: newCustomUser.branch || null,
                       points: 0
                     }, { onConflict: 'id' });
 
@@ -2157,7 +2159,7 @@ export function Admin() {
                 setCustomUsersList(updated);
                 saveCustomUsers(updated);
 
-                setNewCustomUser({ email: '', password: '', fullName: '', dni: '', role: 'waiter', birthDate: '' });
+                setNewCustomUser({ email: '', password: '', fullName: '', dni: '', role: 'waiter', birthDate: '', branch: '' });
                 setShowAddCustomUserModal(false);
                 alert("¡Cuenta creada! El usuario ya puede iniciar sesión desde cualquier dispositivo.");
               } catch (err: any) {
@@ -2590,6 +2592,23 @@ export function Admin() {
                               <option key={r.id} value={r.id}>{r.name}</option>
                             ))}
                           </select>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-2 block">Sucursal asignada (para cajeros)</label>
+                          <select
+                            value={newCustomUser.branch}
+                            onChange={(e) => setNewCustomUser({ ...newCustomUser, branch: e.target.value })}
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-sm focus:border-love outline-none text-ink dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                          >
+                            <option value="">Todas las sucursales (sin asignar)</option>
+                            {(designConfig.branches || [])
+                              .filter(b => b.active !== false)
+                              .map(b => (
+                                <option key={b.id} value={b.name}>{b.name}</option>
+                              ))}
+                          </select>
+                          <p className="text-[8px] text-slate-400 font-bold uppercase tracking-widest pl-2 mt-1">Si elegís una, el cajero solo podrá cargar puntos en esa sucursal.</p>
                         </div>
                       </div>
 
