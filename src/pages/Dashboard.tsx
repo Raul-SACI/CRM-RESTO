@@ -875,8 +875,8 @@ export function Dashboard() {
                 animate={{ height: ["8%", "85%", "8%"] }}
                 transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}
               />
-              {/* CRAFT fijo y blanco, siempre visible por encima del café */}
-              <span className="absolute inset-0 z-10 flex items-center justify-center text-white font-black text-[10px] tracking-tight uppercase select-none drop-shadow-[0_1px_1px_rgba(0,0,0,0.4)]">CRAFT</span>
+              {/* CRAFT fijo y blanco, siempre visible por encima del café — translate="no" evita que se traduzca a "artesanía" */}
+              <span translate="no" className="notranslate absolute inset-0 z-10 flex items-center justify-center text-white font-black text-[10px] tracking-tight uppercase select-none drop-shadow-[0_1px_1px_rgba(0,0,0,0.4)]">CRAFT</span>
             </div>
             {/* Asa */}
             <div className="absolute right-[-6px] top-5 w-4 h-7 border-[3px] border-ink rounded-r-full" />
@@ -2599,8 +2599,8 @@ export function Dashboard() {
                     <div className="w-9 h-1 bg-slate-800 rounded-sm z-10 -mt-0.5" />
                     {/* Cup container */}
                     <div className="w-7 h-11 bg-white rounded-b-md border border-slate-200 relative overflow-hidden flex items-center justify-center -mt-0.5" style={{ clipPath: 'polygon(3% 0%, 97% 0%, 82% 100%, 18% 100%)' }}>
-                      {/* Vertical CRAFT text */}
-                      <span className="text-[8.5px] font-black tracking-[0.15em] text-love select-none" style={{ fontFamily: "'Oswald', sans-serif", transform: 'rotate(-90deg)', whiteSpace: 'nowrap' }}>
+                      {/* Vertical CRAFT text — translate="no" evita que el navegador lo traduzca a "artesanía" */}
+                      <span translate="no" className="notranslate text-[8.5px] font-black tracking-[0.15em] text-love select-none" style={{ fontFamily: "'Oswald', sans-serif", transform: 'rotate(-90deg)', whiteSpace: 'nowrap' }}>
                         CRAFT
                       </span>
                     </div>
