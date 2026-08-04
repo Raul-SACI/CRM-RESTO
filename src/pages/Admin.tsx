@@ -1099,15 +1099,15 @@ export function Admin() {
   const handleSaveStaffEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingStaffId) return;
-    if (!editStaffForm.full_name.trim() || !editStaffForm.dni.trim()) {
-      alert('El nombre y el DNI son obligatorios.');
-      return;
-    }
+    // DNI y nombre opcionales; si quedan vacíos usamos valores por defecto seguros.
+    const finalDni = editStaffForm.dni.trim() || ('STAFF-' + editingStaffId);
+    const finalName = editStaffForm.full_name.trim()
+      || (editStaffForm.branch ? `Cajero ${editStaffForm.branch}` : 'Cuenta de acceso');
     setLoading(true);
     try {
       const { error } = await supabase.from('profiles').update({
-        full_name: editStaffForm.full_name.trim(),
-        dni: editStaffForm.dni.trim(),
+        full_name: finalName,
+        dni: finalDni,
         role: editStaffForm.role,
         branch: editStaffForm.branch || null
       }).eq('id', editingStaffId);
@@ -2145,15 +2145,19 @@ export function Admin() {
           {activeTab === 'staff' && (() => {
             const handleAddCustomUser = async (e: React.FormEvent) => {
               e.preventDefault();
-              if (!newCustomUser.email || !newCustomUser.password || !newCustomUser.fullName || !newCustomUser.dni) {
-                alert("Por favor, rellene todos los campos requeridos.");
+              // Solo el correo y la contraseña son obligatorios. El DNI y el nombre
+              // son opcionales (útil para cuentas compartidas por sucursal).
+              if (!newCustomUser.email || !newCustomUser.password) {
+                alert("El correo y la contraseña son obligatorios.");
                 return;
               }
 
               const email = newCustomUser.email.trim();
-              const dni = newCustomUser.dni.trim();
-              const fullName = newCustomUser.fullName.trim();
+              const dniInput = newCustomUser.dni.trim();
               const role = newCustomUser.role;
+              // Si no cargan nombre, usamos uno descriptivo según la sucursal.
+              const fullName = newCustomUser.fullName.trim()
+                || (newCustomUser.branch ? `Cajero ${newCustomUser.branch}` : email.split('@')[0]);
 
               try {
                 // Creamos el usuario REAL en Supabase con un cliente aislado,
@@ -2163,7 +2167,7 @@ export function Admin() {
                 const { data: authData, error: authError } = await iso.auth.signUp({
                   email,
                   password: newCustomUser.password,
-                  options: { data: { full_name: fullName, dni } }
+                  options: { data: { full_name: fullName, dni: dniInput } }
                 });
 
                 if (authError) {
@@ -2172,6 +2176,10 @@ export function Admin() {
                 }
 
                 const userId = authData.user?.id;
+                // El DNI es obligatorio y único en la base. Si no lo cargaron,
+                // generamos un código interno único para no romper (cuenta compartida).
+                const dni = dniInput || ('STAFF-' + (userId || Date.now()));
+
                 if (userId) {
                   // Guardamos el perfil con el rol elegido (mozo/staff/etc.)
                   const { error: profileError } = await supabase
@@ -2664,11 +2672,10 @@ export function Admin() {
 
                       <div className="space-y-3 pt-2">
                         <div className="space-y-1">
-                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-2 block">Nombre Completo</label>
-                          <input 
-                            type="text" 
-                            required
-                            placeholder="Ej. Rodrigo Fernández"
+                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-2 block">Nombre (opcional)</label>
+                          <input
+                            type="text"
+                            placeholder="Ej. Cajero Perón"
                             value={newCustomUser.fullName}
                             onChange={(e) => setNewCustomUser({ ...newCustomUser, fullName: e.target.value })}
                             className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-sm focus:border-love outline-none text-ink dark:bg-slate-800 dark:border-slate-700 dark:text-white"
@@ -2676,11 +2683,10 @@ export function Admin() {
                         </div>
 
                         <div className="space-y-1">
-                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-2 block">DNI (Identificación)</label>
-                          <input 
-                            type="text" 
-                            required
-                            placeholder="Ej. 12345678"
+                          <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-2 block">DNI (opcional)</label>
+                          <input
+                            type="text"
+                            placeholder="Dejalo vacío para cuentas compartidas por sucursal"
                             value={newCustomUser.dni}
                             onChange={(e) => setNewCustomUser({ ...newCustomUser, dni: e.target.value })}
                             className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-sm focus:border-love outline-none text-ink dark:bg-slate-800 dark:border-slate-700 dark:text-white"
