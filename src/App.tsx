@@ -102,16 +102,18 @@ function AppRoutes() {
         />
         
         <Route 
-          path="/" 
+          path="/"
           element={
             user ? (
               realProfile?.role === 'waiter'
                 ? <Navigate to="/waiter" replace />
-                : <Layout><Dashboard /></Layout>
+                : (hasPermission(realProfile?.role, 'ver_reportes') && !hasPermission(realProfile?.role, 'ver_admin'))
+                  ? <Navigate to="/admin" replace />
+                  : <Layout><Dashboard /></Layout>
             ) : (
               <Navigate to="/auth" state={{ from: location }} replace />
             )
-          } 
+          }
         />
         
         <Route 
