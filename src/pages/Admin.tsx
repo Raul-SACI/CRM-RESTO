@@ -1086,6 +1086,31 @@ export function Admin() {
       setLoading(false);
     }
   };
+  const handleDeleteStaff = async (member: any) => {
+    if (member.email === 'administrador@organizacionysistemasr.com' || member.role === 'admin') {
+      alert('No se puede eliminar una cuenta de administrador desde acá, por seguridad.');
+      return;
+    }
+    if (!confirm(`¿Eliminar a "${member.full_name}" del sistema? Perderá el acceso y desaparecerá de la lista.`)) return;
+    setLoading(true);
+    try {
+      const { error } = await supabase.from('profiles').delete().eq('id', member.id);
+      if (error) throw error;
+      // Si además estaba en la lista local de "cuentas creadas por el admin", lo sacamos.
+      const updatedLocal = customUsersList.filter(u => u.id !== member.id && u.email !== member.email);
+      if (updatedLocal.length !== customUsersList.length) {
+        setCustomUsersList(updatedLocal);
+        saveCustomUsers(updatedLocal);
+      }
+      alert('Cuenta eliminada.');
+      await fetchData();
+    } catch (err: any) {
+      alert('Error al eliminar: ' + (err?.message || err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const openEditStaff = (member: any) => {
     setEditStaffForm({
       full_name: member.full_name || '',
@@ -2464,12 +2489,21 @@ export function Admin() {
                                 >
                                   {member.role === 'admin' ? 'Hacer Cajero' : 'Hacer Admin'}
                                 </button>
-                                <button 
-                                  onClick={() => updateUserRole(member.id, 'client')} 
+                                <button
+                                  onClick={() => updateUserRole(member.id, 'client')}
                                   className="text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded bg-white dark:bg-slate-900 text-slate-400 hover:text-love hover:border-love/30 transition-all border border-slate-200 dark:border-slate-800 shadow-sm cursor-pointer"
                                 >
                                   Quitar Acceso
                                 </button>
+                                {member.role !== 'admin' && member.email !== 'administrador@organizacionysistemasr.com' && (
+                                  <button
+                                    onClick={() => handleDeleteStaff(member)}
+                                    title="Eliminar cuenta"
+                                    className="text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded bg-love/5 text-love border border-love/10 hover:bg-love hover:text-white transition-all shadow-sm cursor-pointer"
+                                  >
+                                    Eliminar
+                                  </button>
+                                )}
                               </div>
                             </div>
                           ))
