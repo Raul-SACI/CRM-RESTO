@@ -367,22 +367,9 @@ export default function App() {
       // Si falla, quedan los roles base como respaldo (no rompe el login).
       await loadRoles();
 
-      // Check for a custom local session (from admin-created custom users) first
-      const customSessionStr = localStorage.getItem('custom_user_session');
-      if (customSessionStr) {
-        try {
-          const sess = JSON.parse(customSessionStr);
-          if (sess && sess.user && sess.profile) {
-            setUser(sess.user);
-            setProfile(sess.profile);
-            setLoading(false);
-            clearTimeout(forceUnlock);
-            return;
-          }
-        } catch (e) {
-          console.error("Error loading custom local session", e);
-        }
-      }
+      // Limpiamos cualquier "sesión local" vieja (mecanismo obsoleto). Ahora todos
+      // usan la sesión real de Supabase, que trae el perfil completo (rol, sucursal).
+      try { localStorage.removeItem('custom_user_session'); } catch (e) { /* noop */ }
 
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -425,19 +412,6 @@ export default function App() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (!isMounted) return;
-      
-      const customSessionStr = localStorage.getItem('custom_user_session');
-      if (customSessionStr) {
-        try {
-          const sess = JSON.parse(customSessionStr);
-          if (sess && sess.user && sess.profile) {
-            setUser(sess.user);
-            setProfile(sess.profile);
-            setLoading(false);
-            return;
-          }
-        } catch (e) {}
-      }
 
       if (session?.user) {
         setUser(session.user);
