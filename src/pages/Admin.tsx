@@ -6,6 +6,7 @@ import { Users, Gift, Settings, Search, Plus, Trash2, Pencil, Calendar, Award, H
 import { cn } from '@/src/lib/utils';
 import * as XLSX from 'xlsx';
 import { useDesign, COLOR_PRESETS, CORNER_PRESETS, AVAILABLE_FONTS, type DesignConfig, type BannerConfig } from '@/src/components/DesignEngine';
+import { BirthdayCalendar } from '@/src/components/BirthdayCalendar';
 import { useAuth, useTheme } from '@/src/App';
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell, PieChart, Pie } from 'recharts';
@@ -1438,6 +1439,9 @@ export function Admin() {
                    <p className="text-lg font-black text-ink mt-1 font-mono">{dashboardData.filteredTransactions.length}</p>
                 </div>
               </div>
+
+              {/* Calendario de cumpleaños de clientes */}
+              <BirthdayCalendar clients={clients} />
 
               {/* Filters */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
