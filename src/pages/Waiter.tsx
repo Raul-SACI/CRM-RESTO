@@ -1005,6 +1005,11 @@ export function Waiter() {
                         DNI {m._client?.dni || 's/d'} · {d.toLocaleDateString('es-AR')} {d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}
                       </p>
                       {m.branch && <p className="text-[8px] uppercase tracking-widest text-slate-300 font-bold mt-0.5">{m.branch}</p>}
+                      {m.redemption_code && (
+                        <p className="text-[10px] font-black text-love font-mono tracking-widest mt-1">
+                          CÓDIGO DE CANJE: {m.redemption_code}
+                        </p>
+                      )}
                     </div>
                     <div className="text-right shrink-0">
                       <span className={cn("text-[8px] uppercase font-black tracking-widest", t.color)}>{t.label}</span>

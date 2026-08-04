@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/src/App';
 import { useDesign } from '@/src/components/DesignEngine';
 import { supabase } from '@/src/lib/supabase';
@@ -277,9 +277,10 @@ export function MyCombos() {
     }
   };
 
-  // Process MP return
+  // Procesa la vuelta de Mercado Pago UNA sola vez (evita duplicar la compra).
+  const mpProcessedRef = useRef(false);
   useEffect(() => {
-    if (!profile) return;
+    if (!profile || mpProcessedRef.current) return;
 
     const hashPart = window.location.hash.includes('?') ? window.location.hash.split('?')[1] : '';
     const params = new URLSearchParams(hashPart || window.location.search);
@@ -289,10 +290,17 @@ export function MyCombos() {
     const comboTitle = params.get('combo_title') || 'Abono Adquirido';
     const totalUses = parseInt(params.get('totalUses') || '0') || 5;
     const price = parseFloat(params.get('price') || '0') || 0;
-    const paymentId = params.get('payment_id') || params.get('preference_id') || ('sim_' + Date.now());
+    const isSuccess = (paymentStatus === 'success' || paymentStatus === 'approved') && !!comboId;
+    if (isSuccess) {
+      // Marcamos como procesado y limpiamos la URL YA, antes de cualquier cosa async,
+      // para que un re-render no vuelva a leer los parámetros y duplique la compra.
+      mpProcessedRef.current = true;
+      const cleanHashNow = window.location.hash.split('?')[0];
+      window.history.replaceState(null, '', window.location.pathname + cleanHashNow);
 
-    if ((paymentStatus === 'success' || paymentStatus === 'approved') && comboId) {
-      const processedKey = `processed_mp_tx_${paymentId}_${comboId}`;
+      // Identificador ESTABLE del pago (sin la hora actual) para no duplicar entre visitas.
+      const paymentId = params.get('payment_id') || params.get('preference_id') || `${comboId}_${price}_${totalUses}`;
+      const processedKey = `processed_mp_tx_${paymentId}`;
       const isAlreadyProcessed = localStorage.getItem(processedKey);
 
       if (!isAlreadyProcessed) {
@@ -335,10 +343,7 @@ export function MyCombos() {
             }
 
             fetchClientData();
-            
-            const cleanHash = window.location.hash.split('?')[0];
-            window.history.replaceState(null, '', window.location.pathname + cleanHash);
-            
+
             alert(`🎉 ¡Gracias por tu compra! El combo "${comboTitle}" ha sido acreditado en tu cuenta con éxito. Sumaste +${bonusPoints} puntos.`);
           } catch(err) {
             console.error(err);
@@ -348,7 +353,7 @@ export function MyCombos() {
         executeLogging();
       }
     }
-  }, [profile, transactions]);
+  }, [profile]);
 
   if (!profile || loading || designLoading) {
     return (
