@@ -95,6 +95,13 @@
   html:not(.dark) .admin-sidebar p {
     color: #1e293b;
   }
+  /* La marca del panel (CLUB CRAFT) siempre legible en modo claro, aunque el diseño la pise */
+  html:not(.dark) .admin-sidebar h2 {
+    color: #0f172a !important;
+  }
+  html:not(.dark) .admin-sidebar h2 .text-love {
+    color: #D90015 !important;
+  }
   /* Iconos del menú (SVG) legibles en modo claro */
   html:not(.dark) .admin-sidebar svg {
     color: #475569;
