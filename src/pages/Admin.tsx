@@ -67,6 +67,9 @@ export function Admin() {
   });
 
   const [customRolesList, setCustomRolesList] = useState<CustomRole[]>(() => getRoles());
+  // Edición de un miembro del staff (Personal Registrado en Base de Datos)
+  const [editingStaffId, setEditingStaffId] = useState<string | null>(null);
+  const [editStaffForm, setEditStaffForm] = useState({ full_name: '', dni: '', role: 'waiter', branch: '' });
   const [showAddRoleModal, setShowAddRoleModal] = useState(false);
   const [editingRole, setEditingRole] = useState<CustomRole | null>(null);
   const [newRoleForm, setNewRoleForm] = useState({
@@ -1083,6 +1086,51 @@ export function Admin() {
       setLoading(false);
     }
   };
+  const openEditStaff = (member: any) => {
+    setEditStaffForm({
+      full_name: member.full_name || '',
+      dni: member.dni || '',
+      role: member.role || 'waiter',
+      branch: member.branch || ''
+    });
+    setEditingStaffId(member.id);
+  };
+
+  const handleSaveStaffEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingStaffId) return;
+    if (!editStaffForm.full_name.trim() || !editStaffForm.dni.trim()) {
+      alert('El nombre y el DNI son obligatorios.');
+      return;
+    }
+    setLoading(true);
+    try {
+      const { error } = await supabase.from('profiles').update({
+        full_name: editStaffForm.full_name.trim(),
+        dni: editStaffForm.dni.trim(),
+        role: editStaffForm.role,
+        branch: editStaffForm.branch || null
+      }).eq('id', editingStaffId);
+
+      if (error) {
+        if ((error as any).code === '23505' || /duplicate|unique/i.test(error.message || '')) {
+          alert('Ese DNI ya está registrado en otra cuenta.');
+        } else {
+          alert('Error al guardar: ' + error.message);
+        }
+        return;
+      }
+
+      setEditingStaffId(null);
+      alert('¡Usuario del staff actualizado!');
+      await fetchData();
+    } catch (err: any) {
+      alert('Error al guardar: ' + (err?.message || err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const updateUserRole = async (userId: string, newRole: string) => {
     const roleObj = customRolesList.find(r => r.id === newRole);
     const roleName = roleObj?.name || newRole;
@@ -2391,12 +2439,19 @@ export function Admin() {
                                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[9px] text-slate-405 dark:text-slate-400 mt-1 uppercase font-bold tracking-wider">
                                   <span>📧 {member.email}</span>
                                   <span>💳 DNI: {member.dni}</span>
-                                  <span className="text-indigo-500 font-black">PRODUCCIÓN: {member.role}</span>
+                                  <span className="text-indigo-500 font-black">ROL: {customRolesList.find(r => r.id === member.role)?.name || member.role}</span>
+                                  {(member as any).branch && <span className="text-emerald-600 font-black">🏬 {(member as any).branch}</span>}
                                 </div>
                               </div>
                               <div className="flex gap-2 shrink-0">
-                                <button 
-                                  onClick={() => updateUserRole(member.id, member.role === 'admin' ? 'waiter' : 'admin')} 
+                                <button
+                                  onClick={() => openEditStaff(member)}
+                                  className="text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-300 hover:bg-love hover:text-white transition-all border border-slate-200 dark:border-slate-800 shadow-sm cursor-pointer"
+                                >
+                                  Editar
+                                </button>
+                                <button
+                                  onClick={() => updateUserRole(member.id, member.role === 'admin' ? 'waiter' : 'admin')}
                                   className="text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-300 hover:bg-love hover:text-white transition-all border border-slate-200 dark:border-slate-800 shadow-sm cursor-pointer"
                                 >
                                   {member.role === 'admin' ? 'Hacer Cajero' : 'Hacer Admin'}
@@ -2509,6 +2564,81 @@ export function Admin() {
                         </div>
                       ))}
                     </div>
+                  </div>
+                )}
+
+                {/* MODAL PARA EDITAR UN MIEMBRO DEL STAFF */}
+                {editingStaffId && (
+                  <div className="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-[999] flex items-center justify-center p-4">
+                    <form
+                      onSubmit={handleSaveStaffEdit}
+                      className="bg-white dark:bg-slate-900 w-full max-w-md rounded-xl border border-slate-100 dark:border-slate-800 p-6 space-y-4 shadow-2xl relative"
+                    >
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-black uppercase tracking-wider text-ink dark:text-white">Editar usuario del staff</h3>
+                        <button type="button" onClick={() => setEditingStaffId(null)} className="p-1.5 text-slate-400 hover:text-love bg-transparent border-none cursor-pointer">
+                          <X size={16} />
+                        </button>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-2 block">Nombre completo</label>
+                        <input
+                          type="text"
+                          value={editStaffForm.full_name}
+                          onChange={(e) => setEditStaffForm({ ...editStaffForm, full_name: e.target.value })}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-sm focus:border-love outline-none text-ink dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-2 block">DNI / Documento</label>
+                        <input
+                          type="text"
+                          value={editStaffForm.dni}
+                          onChange={(e) => setEditStaffForm({ ...editStaffForm, dni: e.target.value })}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-sm focus:border-love outline-none text-ink dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-2 block">Rol</label>
+                        <select
+                          value={editStaffForm.role}
+                          onChange={(e) => setEditStaffForm({ ...editStaffForm, role: e.target.value })}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-sm focus:border-love outline-none text-ink dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                        >
+                          {customRolesList.map(r => (
+                            <option key={r.id} value={r.id}>{r.name}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest pl-2 block">Sucursal asignada (para cajeros)</label>
+                        <select
+                          value={editStaffForm.branch}
+                          onChange={(e) => setEditStaffForm({ ...editStaffForm, branch: e.target.value })}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-sm focus:border-love outline-none text-ink dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+                        >
+                          <option value="">Todas las sucursales (sin asignar)</option>
+                          {(designConfig.branches || [])
+                            .filter(b => b.active !== false)
+                            .map(b => (
+                              <option key={b.id} value={b.name}>{b.name}</option>
+                            ))}
+                        </select>
+                      </div>
+
+                      <div className="pt-4 flex justify-end gap-2">
+                        <button type="button" onClick={() => setEditingStaffId(null)} className="px-4 py-3 text-[9px] font-black uppercase tracking-widest rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 transition-all border-none cursor-pointer">
+                          Cancelar
+                        </button>
+                        <button type="submit" disabled={loading} className="px-4 py-3 text-[9px] font-black uppercase tracking-widest rounded-xl bg-love text-white shadow-lg shadow-love/15 transition-all border-none cursor-pointer disabled:opacity-50">
+                          {loading ? 'Guardando...' : 'Guardar cambios'}
+                        </button>
+                      </div>
+                    </form>
                   </div>
                 )}
 
