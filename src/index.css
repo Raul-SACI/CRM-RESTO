@@ -131,7 +131,7 @@
   }
   /* Título de sección legible en modo claro */
   html:not(.dark) .admin-section-title {
-    color: #0f172a;
+    color: #0f172a !important;
   }
 }
 

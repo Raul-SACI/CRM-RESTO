@@ -1203,10 +1203,10 @@ export function Admin() {
         )}>
           {isSidebarExpanded ? (
             <div>
-              <h2 className="text-xl md:text-2xl font-black uppercase tracking-tighter italic text-ink dark:text-white">
+              <h2 className="text-xl md:text-2xl font-black uppercase tracking-tighter italic !text-slate-900 dark:!text-white">
                 CLUB <span className="text-love dark:text-white">CRAFT</span>
               </h2>
-              <p className="text-[9px] md:text-[10px] uppercase tracking-[0.25em] text-slate-400 dark:text-white/50 font-bold font-mono">
+              <p className="text-[9px] md:text-[10px] uppercase tracking-[0.25em] !text-slate-500 dark:!text-white/50 font-bold font-mono">
                 Panel Administrativo
               </p>
             </div>
@@ -1225,6 +1225,7 @@ export function Admin() {
           </button>
         </div>
         
+        {isFullAdmin && (<>
         <button
           onClick={() => {
             setIsSimulatingClient(true);
@@ -1274,6 +1275,7 @@ export function Admin() {
           {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
           {isSidebarExpanded && <span>{theme === 'dark' ? 'Modo Claro' : 'Modo Oscuro'}</span>}
         </button>
+        </>)}
 
         <div className={cn(
           "admin-menu-items flex flex-row lg:flex-col p-1 lg:p-0 bg-slate-100 lg:bg-transparent rounded-2xl border border-slate-200 lg:border-none overflow-x-auto lg:overflow-x-visible scrollbar-hide lg:w-full",
@@ -1400,8 +1402,8 @@ export function Admin() {
           const h = heads[activeTab] || { t: '', s: '' };
           return (
             <div className="border-b border-slate-200 dark:border-slate-800 pb-4 mb-2">
-              <h1 className="admin-section-title text-2xl md:text-3xl font-black uppercase tracking-tighter italic text-ink dark:text-white leading-none">{h.t}</h1>
-              <p className="text-[10px] uppercase tracking-[0.18em] text-slate-400 font-bold font-mono mt-1.5">{h.s}</p>
+              <h1 className="admin-section-title text-2xl md:text-3xl font-black uppercase tracking-tighter italic !text-slate-900 dark:!text-white leading-none">{h.t}</h1>
+              <p className="text-[10px] uppercase tracking-[0.18em] !text-slate-600 dark:!text-slate-400 font-bold font-mono mt-1.5">{h.s}</p>
             </div>
           );
         })()}
