@@ -288,9 +288,9 @@ export function Layout({ children }: LayoutProps) {
               </NavLink>
             )}
 
-            {(hasPermission(profile?.role, 'ver_admin') || hasPermission(realProfile?.role, 'ver_admin')) && (
+            {(hasPermission(profile?.role, 'ver_admin') || hasPermission(realProfile?.role, 'ver_admin') || hasPermission(profile?.role, 'ver_reportes') || hasPermission(realProfile?.role, 'ver_reportes')) && (
               <NavLink to="/admin" className={({ isActive }) => `px-3 md:px-4 py-1.5 md:py-2 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-tighter transition-all shrink-0 ${isActive ? 'bg-love text-white shadow-lg shadow-love/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400'}`}>
-                Admin
+                Panel
               </NavLink>
             )}
 
@@ -306,7 +306,7 @@ export function Layout({ children }: LayoutProps) {
           </div>
 
           {/* Inline compact links for other roles like Admin when in phone mode */}
-          {((isSimulatingClient && simDevice === 'phone') || window.innerWidth < 640) && (hasPermission(profile?.role, 'ver_admin') || hasPermission(realProfile?.role, 'ver_admin')) ? (
+          {((isSimulatingClient && simDevice === 'phone') || window.innerWidth < 640) && (hasPermission(profile?.role, 'ver_admin') || hasPermission(realProfile?.role, 'ver_admin') || hasPermission(profile?.role, 'ver_reportes') || hasPermission(realProfile?.role, 'ver_reportes')) ? (
             <div className="flex items-center gap-1 sm:hidden">
               <NavLink to="/admin" className={({ isActive }) => cn(
                 "px-2.5 py-1.5 rounded-lg transition-all shrink-0 font-black text-[9px] border-none",

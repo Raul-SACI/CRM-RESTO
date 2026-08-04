@@ -20,13 +20,17 @@ import {
   getRolesCache,
   saveRoleToSupabase,
   deleteRoleFromSupabase,
+  hasPermission,
   type CustomUser,
   type CustomRole,
   type CustomPermission
 } from '@/src/lib/permissions';
 
 export function Admin() {
-  const { isSimulatingClient, setIsSimulatingClient, signOut } = useAuth();
+  const { isSimulatingClient, setIsSimulatingClient, signOut, realProfile } = useAuth();
+  // Acceso completo al panel, o solo a reportes (Dashboard + Movimientos).
+  const isFullAdmin = hasPermission(realProfile?.role, 'ver_admin');
+  const reportesOnlyTabs = ['dashboard', 'history'];
   const { theme, toggleTheme } = useTheme();
   const [activeTab, setActiveTab] = useState<'dashboard' | 'clients' | 'prizes' | 'combos' | 'staff' | 'history' | 'settings' | 'design' | 'feedback' | 'notifications' | 'autonotif'>('dashboard');
 
@@ -180,6 +184,14 @@ export function Admin() {
       setCustomRolesList(getRolesCache());
     })();
   }, []);
+
+  // Si el usuario solo tiene "Ver Reportes", lo mantenemos en Dashboard/Movimientos.
+  useEffect(() => {
+    if (!isFullAdmin && !reportesOnlyTabs.includes(activeTab)) {
+      setActiveTab('dashboard');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isFullAdmin, activeTab]);
 
   useEffect(() => {
     if (designConfig?.terms) {
@@ -656,7 +668,8 @@ export function Admin() {
         
         const filtered = (data || []).filter((p: any) => {
           const role = String(p.role || '').toLowerCase();
-          return role === 'waiter' || role === 'admin';
+          // Mostramos TODO el staff (cualquier rol que no sea cliente), incluidos los roles personalizados.
+          return !!role && role !== 'client';
         });
         setStaff(filtered);
         safeSetItem(cacheKey, JSON.stringify(filtered));
@@ -1294,12 +1307,16 @@ export function Admin() {
               feedback: <MessageSquare size={14} />
             };
             // Menú agrupado por secciones (estilo sistema de gestión)
-            const groups: { title: string; tabs: string[] }[] = [
+            const allGroups: { title: string; tabs: string[] }[] = [
               { title: 'General', tabs: ['dashboard', 'clients', 'history'] },
               { title: 'Programa', tabs: ['prizes', 'combos', 'feedback'] },
               { title: 'Comunicación', tabs: ['notifications', 'autonotif'] },
               { title: 'Configuración', tabs: ['staff', 'settings', 'design'] }
             ];
+            // Si el usuario solo tiene "Ver Reportes", solo mostramos Dashboard y Movimientos.
+            const groups = allGroups
+              .map(g => ({ ...g, tabs: isFullAdmin ? g.tabs : g.tabs.filter(t => reportesOnlyTabs.includes(t)) }))
+              .filter(g => g.tabs.length > 0);
 
             const renderBtn = (tab: string) => (
               <button

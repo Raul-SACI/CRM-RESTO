@@ -32,7 +32,8 @@ export const DEFAULT_PERMISSIONS: CustomPermission[] = [
   { id: 'canjear_premios', name: 'Canjear Premios', description: 'Capacidad de aprobar canjes de premios' },
   { id: 'editar_diseno', name: 'Modificar Diseño', description: 'Acceso a cambiar colores, logos, órdenes de botones' },
   { id: 'editar_config', name: 'Ajustes del Sistema', description: 'Editar niveles, sucursales y montos' },
-  { id: 'gestionar_usuarios', name: 'Usuarios & Permisos', description: 'Administrar cuentas, roles y sus permisos' }
+  { id: 'gestionar_usuarios', name: 'Usuarios & Permisos', description: 'Administrar cuentas, roles y sus permisos' },
+  { id: 'ver_reportes', name: 'Ver Reportes', description: 'Acceso solo a Dashboard y Movimientos del panel (sin gestionar el resto)' }
 ];
 
 // Roles base: sirven de RESPALDO si Supabase no responde, para que el acceso del

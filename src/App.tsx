@@ -196,8 +196,8 @@ function AppRoutes() {
           path="/admin" 
           element={
             user ? (
-              hasPermission(realProfile?.role, 'ver_admin')
-                ? <Layout><Admin /></Layout> 
+              (hasPermission(realProfile?.role, 'ver_admin') || hasPermission(realProfile?.role, 'ver_reportes'))
+                ? <Layout><Admin /></Layout>
                 : <Navigate to="/" replace />
             ) : (
               <Navigate to="/auth" state={{ from: location }} replace />
