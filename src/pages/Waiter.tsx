@@ -9,6 +9,7 @@ import { cn } from '@/src/lib/utils';
 import { Profile, SystemSettings } from '@/src/types';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import { useDesign } from '@/src/components/DesignEngine';
+import { WelcomeGuide, CASHIER_GUIDE_STEPS } from '@/src/components/WelcomeGuide';
 
 import { numberToWords } from '@/src/lib/numberToWords';
 
@@ -585,11 +586,13 @@ export function Waiter() {
   };
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       className="max-w-xl lg:max-w-4xl mx-auto space-y-6 pt-4 px-2"
     >
+      {/* Guía de bienvenida para el cajero (una vez por dispositivo) */}
+      <WelcomeGuide steps={CASHIER_GUIDE_STEPS} storageKey="craft_onboarding_staff_v1" enabled={true} />
       <div className="flex items-center justify-between mb-4 bg-white p-4 md:p-6 rounded-2xl md:rounded-3xl border border-slate-100 shadow-xl shadow-slate-200/50">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 md:w-10 md:h-10 bg-love rounded-lg flex items-center justify-center font-bold text-lg md:text-xl uppercase shadow-lg shadow-love/30 text-white">C</div>

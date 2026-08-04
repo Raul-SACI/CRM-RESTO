@@ -14,6 +14,7 @@ import { notifyClient, checkLevelUp } from '@/src/lib/notify';
 import { Transaction, SystemSettings, Profile, Prize } from '@/src/types';
 import { cn } from '@/src/lib/utils';
 import { useDesign } from '@/src/components/DesignEngine';
+import { WelcomeGuide, CLIENT_GUIDE_STEPS } from '@/src/components/WelcomeGuide';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, 
   Tooltip, ResponsiveContainer, Cell, PieChart as RePieChart, Pie 
@@ -1104,6 +1105,9 @@ export function Dashboard() {
         animate={{ opacity: 1 }}
         className="flex flex-col gap-6 max-w-sm sm:max-w-2xl lg:max-w-4xl mx-auto pb-24 text-left"
       >
+        {/* Guía de bienvenida para clientes (una vez por dispositivo) */}
+        <WelcomeGuide steps={CLIENT_GUIDE_STEPS} storageKey="craft_onboarding_client_v1" enabled={realProfile?.role === 'client'} />
+
         {/* Header greeting */}
         <div className="flex justify-between items-center px-1">
           <div>
