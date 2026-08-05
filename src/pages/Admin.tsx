@@ -163,6 +163,7 @@ export function Admin() {
 
   // Combos form editing states
   const [editingComboId, setEditingComboId] = useState<string | null>(null);
+  const [savingCombo, setSavingCombo] = useState(false);
   const [comboForm, setComboForm] = useState({
     id: '',
     title: '',
@@ -1997,6 +1998,17 @@ export function Admin() {
                     ))}
                   </div>
 
+                  {/* Overlay de guardado: pantalla borrosa + spinner mientras se guarda el combo */}
+                  {savingCombo && (
+                    <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-slate-950/40 backdrop-blur-sm">
+                      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl px-8 py-7 flex flex-col items-center gap-3">
+                        <div className="w-10 h-10 border-4 border-love border-t-transparent rounded-full animate-spin" />
+                        <p className="text-xs font-black uppercase tracking-widest !text-slate-900 dark:!text-white">Guardando cambios...</p>
+                        <p className="text-[10px] font-bold text-slate-400">Esperá un momento, no cierres la pantalla</p>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Combos Form */}
                   <div className="bg-slate-50 dark:bg-slate-950 p-6 rounded-xl border border-slate-100 dark:border-slate-800 mt-6 text-left">
                     <h4 className="text-xs font-black uppercase tracking-widest text-love mb-6">
@@ -2006,36 +2018,44 @@ export function Admin() {
                     <form 
                       onSubmit={async (e) => {
                         e.preventDefault();
-                        const updatedCombos = [...((designConfig as any).combos || [])];
-                        if (editingComboId) {
-                          const idx = updatedCombos.findIndex((c: any) => c.id === editingComboId);
-                          if (idx !== -1) updatedCombos[idx] = comboForm;
-                        } else {
-                          const newCombo = {
-                            ...comboForm,
-                            id: 'combo-' + Date.now()
-                          };
-                          updatedCombos.push(newCombo);
+                        if (savingCombo) return;
+                        setSavingCombo(true);
+                        try {
+                          const updatedCombos = [...((designConfig as any).combos || [])];
+                          if (editingComboId) {
+                            const idx = updatedCombos.findIndex((c: any) => c.id === editingComboId);
+                            if (idx !== -1) updatedCombos[idx] = comboForm;
+                          } else {
+                            const newCombo = {
+                              ...comboForm,
+                              id: 'combo-' + Date.now()
+                            };
+                            updatedCombos.push(newCombo);
+                          }
+
+                          const updated = { ...designConfig, combos: updatedCombos };
+                          await saveDesignConfig(updated);
+                          alert(editingComboId ? "Combo actualizado correctamente" : "Combo creado exitosamente");
+
+                          // Reset Form
+                          setEditingComboId(null);
+                          setComboForm({
+                            id: '',
+                            title: '',
+                            description: '',
+                            price: 65000,
+                            normalPrice: 80000,
+                            totalUses: 5,
+                            imageUrl: '',
+                            isActive: true,
+                            expirationDays: 30
+                          });
+                        } catch (err: any) {
+                          alert('No se pudo guardar el combo: ' + (err?.message || err));
+                        } finally {
+                          setSavingCombo(false);
                         }
-
-                        const updated = { ...designConfig, combos: updatedCombos };
-                        await saveDesignConfig(updated);
-                        alert(editingComboId ? "Combo actualizado correctamente" : "Combo creado exitosamente");
-
-                        // Reset Form
-                        setEditingComboId(null);
-                        setComboForm({
-                          id: '',
-                          title: '',
-                          description: '',
-                          price: 65000,
-                          normalPrice: 80000,
-                          totalUses: 5,
-                          imageUrl: '',
-                          isActive: true,
-                          expirationDays: 30
-                        });
-                      }} 
+                      }}
                       className="space-y-4"
                     >
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2163,9 +2183,11 @@ export function Admin() {
                       <div className="flex items-center gap-2 pt-4">
                         <button
                           type="submit"
-                          className="px-6 py-3 bg-love text-white rounded-xl text-xs uppercase font-black tracking-widest hover:scale-[1.02] transition-colors cursor-pointer border-none"
+                          disabled={savingCombo}
+                          className="px-6 py-3 bg-love text-white rounded-xl text-xs uppercase font-black tracking-widest hover:scale-[1.02] transition-colors cursor-pointer border-none disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
                         >
-                          {editingComboId ? 'Guardar Cambios' : 'Crear Combo'}
+                          {savingCombo && <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                          {savingCombo ? 'Guardando...' : (editingComboId ? 'Guardar Cambios' : 'Crear Combo')}
                         </button>
                         {editingComboId && (
                           <button
