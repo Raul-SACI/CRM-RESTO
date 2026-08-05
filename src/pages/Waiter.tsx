@@ -51,6 +51,11 @@ export function Waiter() {
 
   // Registro de usos: códigos pendientes que generan los clientes
   const [useRequests, setUseRequests] = useState<any[]>([]);
+  // Canjes de premios pendientes de confirmar (transacciones con código y sin comprobante)
+  const [pendingCanjes, setPendingCanjes] = useState<any[]>([]);
+  const [confirmingCanjeTx, setConfirmingCanjeTx] = useState<any | null>(null);
+  const [canjeInvoice, setCanjeInvoice] = useState('');
+  const [savingCanje, setSavingCanje] = useState(false);
   const [usosLoading, setUsosLoading] = useState(false);
   const [confirmingUse, setConfirmingUse] = useState<string | null>(null);
   const [confirmedUses, setConfirmedUses] = useState<string[]>([]);
@@ -519,11 +524,54 @@ export function Waiter() {
     }
   };
 
-  // Auto-refresco de la lista de usos mientras el cajero está en esa pestaña
+  // Canjes de premios pendientes: transacciones con código de canje y SIN comprobante cargado.
+  const fetchPendingCanjes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('*, profiles!client_id(full_name, dni)')
+        .ilike('description', 'CANJE:%')
+        .is('invoice_number', null)
+        .not('redemption_code', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      setPendingCanjes(data || []);
+    } catch (e) {
+      console.warn('Error cargando canjes pendientes:', e);
+    }
+  };
+
+  // Confirma un canje: guarda el N° de comprobante emitido en caja.
+  const confirmCanje = async () => {
+    if (!confirmingCanjeTx) return;
+    if (!canjeInvoice.trim()) {
+      alert('Ingresá el N° de comprobante emitido en caja.');
+      return;
+    }
+    setSavingCanje(true);
+    try {
+      const { error } = await supabase
+        .from('transactions')
+        .update({ invoice_number: canjeInvoice.trim(), branch: selectedBranch || confirmingCanjeTx.branch || 'CAJA' })
+        .eq('id', confirmingCanjeTx.id);
+      if (error) throw error;
+      setPendingCanjes(prev => prev.filter(t => t.id !== confirmingCanjeTx.id));
+      setConfirmingCanjeTx(null);
+      setCanjeInvoice('');
+    } catch (e: any) {
+      alert('No se pudo confirmar el canje: ' + (e?.message || e));
+    } finally {
+      setSavingCanje(false);
+    }
+  };
+
+  // Auto-refresco de la lista de usos y canjes mientras el cajero está en esa pestaña
   useEffect(() => {
     if (cashierView !== 'usos') return;
     fetchUseRequests();
-    const t = setInterval(fetchUseRequests, 15000); // refresca cada 15s
+    fetchPendingCanjes();
+    const t = setInterval(() => { fetchUseRequests(); fetchPendingCanjes(); }, 15000); // refresca cada 15s
     return () => clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cashierView]);
@@ -627,15 +675,6 @@ export function Waiter() {
           Cargar Puntos
         </button>
         <button
-          onClick={() => setCashierView('movimientos')}
-          className={cn(
-            "flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer border-none",
-            cashierView === 'movimientos' ? "bg-love text-white shadow-md shadow-love/25" : "bg-transparent text-slate-400 hover:text-ink"
-          )}
-        >
-          Movimientos
-        </button>
-        <button
           onClick={() => setCashierView('usos')}
           className={cn(
             "flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer border-none relative",
@@ -643,9 +682,18 @@ export function Waiter() {
           )}
         >
           Registro de Usos
-          {useRequests.length > 0 && cashierView !== 'usos' && (
-            <span className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-500 text-white text-[9px] rounded-full flex items-center justify-center font-black">{useRequests.length}</span>
+          {(useRequests.length + pendingCanjes.length) > 0 && cashierView !== 'usos' && (
+            <span className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-500 text-white text-[9px] rounded-full flex items-center justify-center font-black">{useRequests.length + pendingCanjes.length}</span>
           )}
+        </button>
+        <button
+          onClick={() => setCashierView('movimientos')}
+          className={cn(
+            "flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer border-none",
+            cashierView === 'movimientos' ? "bg-love text-white shadow-md shadow-love/25" : "bg-transparent text-slate-400 hover:text-ink"
+          )}
+        >
+          Movimientos
         </button>
       </div>
 
@@ -1035,17 +1083,48 @@ export function Waiter() {
               <p className="text-xs font-black uppercase tracking-widest text-ink">Códigos pendientes</p>
               <p className="text-[9px] text-slate-400 font-bold mt-0.5">El cliente te muestra el código. Confirmá para descontar 1 uso.</p>
             </div>
-            <button onClick={fetchUseRequests} className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 border-none cursor-pointer" title="Actualizar">
+            <button onClick={() => { fetchUseRequests(); fetchPendingCanjes(); }} className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 border-none cursor-pointer" title="Actualizar">
               <RefreshCw size={16} className={usosLoading ? 'animate-spin' : ''} />
             </button>
           </div>
+
+          {/* Canjes de premios pendientes de confirmar */}
+          {pendingCanjes.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-[10px] uppercase font-black tracking-widest text-love px-1">🎁 Canjes de premios ({pendingCanjes.length})</p>
+              {pendingCanjes.map((tx) => {
+                const prof = Array.isArray(tx.profiles) ? tx.profiles[0] : tx.profiles;
+                const prize = (tx.description || '').replace(/^CANJE:/i, '').trim();
+                return (
+                  <div key={tx.id} className="rounded-2xl border border-love/20 bg-white shadow-sm p-4 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-lg font-black font-mono tracking-wider text-love">{tx.redemption_code}</p>
+                      <p className="text-xs font-black text-ink truncate">{prof?.full_name || 'Cliente'}</p>
+                      <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest truncate">DNI {prof?.dni || 's/d'} · {prize}</p>
+                    </div>
+                    <button
+                      onClick={() => { setConfirmingCanjeTx(tx); setCanjeInvoice(''); }}
+                      className="shrink-0 px-4 py-3 bg-love hover:bg-love/90 text-white rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer border-none flex items-center gap-2"
+                    >
+                      <CheckCircle2 size={15} /> Confirmar Canje
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Códigos de pases / combos */}
+          {pendingCanjes.length > 0 && (useRequests.length > 0 || usedToday.length > 0) && (
+            <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 px-1 pt-2">🎫 Pases / combos</p>
+          )}
 
           {usosLoading && useRequests.length === 0 ? (
             <div className="text-center py-12">
               <div className="w-8 h-8 border-2 border-love border-t-transparent rounded-full animate-spin mx-auto" />
               <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mt-4">Cargando...</p>
             </div>
-          ) : useRequests.length === 0 ? (
+          ) : (useRequests.length === 0 && pendingCanjes.length === 0) ? (
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-12 text-center">
               <Ticket size={28} className="text-slate-200 mx-auto mb-3" />
               <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">No hay códigos pendientes</p>
@@ -1107,6 +1186,44 @@ export function Waiter() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Modal: N° de comprobante para confirmar un canje */}
+      {confirmingCanjeTx && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-sm">
+          <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-6">
+            <h3 className="text-sm font-black uppercase tracking-wider !text-slate-900 mb-1">Confirmar canje</h3>
+            <p className="text-xs !text-slate-500 mb-4">
+              Código <span className="font-black text-love font-mono">{confirmingCanjeTx.redemption_code}</span> · {(confirmingCanjeTx.description || '').replace(/^CANJE:/i, '').trim()}
+            </p>
+            <label className="text-[10px] font-black uppercase tracking-widest !text-slate-400 block mb-1.5">N° de comprobante emitido en caja</label>
+            <input
+              type="text"
+              value={canjeInvoice}
+              onChange={(e) => setCanjeInvoice(e.target.value)}
+              placeholder="Ej: 0001-00004567"
+              autoFocus
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-love !text-slate-900 font-semibold"
+            />
+            <div className="flex justify-end gap-2 mt-5">
+              <button
+                type="button"
+                onClick={() => { setConfirmingCanjeTx(null); setCanjeInvoice(''); }}
+                className="px-4 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl bg-slate-100 hover:bg-slate-200 !text-slate-500 border-none cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={confirmCanje}
+                disabled={savingCanje}
+                className="px-5 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl bg-love text-white border-none cursor-pointer shadow-red disabled:opacity-50"
+              >
+                {savingCanje ? 'Guardando...' : 'Confirmar canje'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </motion.div>
