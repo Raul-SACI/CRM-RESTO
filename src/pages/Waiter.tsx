@@ -56,6 +56,7 @@ export function Waiter() {
   const [confirmingCanjeTx, setConfirmingCanjeTx] = useState<any | null>(null);
   const [canjeInvoice, setCanjeInvoice] = useState('');
   const [savingCanje, setSavingCanje] = useState(false);
+  const [usosSearch, setUsosSearch] = useState('');
   const [usosLoading, setUsosLoading] = useState(false);
   const [confirmingUse, setConfirmingUse] = useState<string | null>(null);
   const [confirmedUses, setConfirmedUses] = useState<string[]>([]);
@@ -499,10 +500,20 @@ export function Waiter() {
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
       if (error) throw error;
+
+      // Enriquecemos cada pedido con DNI y email del cliente (para poder buscarlos)
+      const clientIds = Array.from(new Set((data || []).map((r: any) => r.client_id).filter(Boolean)));
+      const profMap: Record<string, any> = {};
+      if (clientIds.length) {
+        const { data: profs } = await supabase.from('profiles').select('id, dni, email').in('id', clientIds);
+        (profs || []).forEach((p: any) => { profMap[p.id] = p; });
+      }
+      const enrich = (r: any) => ({ ...r, client_dni: profMap[r.client_id]?.dni ?? r.client_dni, client_email: profMap[r.client_id]?.email ?? r.client_email });
+
       // Conservamos los que están mostrándose como "confirmados" (verde) un momento
       setUseRequests(prev => {
         const stillConfirmed = prev.filter(r => confirmedUses.includes(r.id));
-        const fresh = (data || []).filter((r: any) => !confirmedUses.includes(r.id));
+        const fresh = (data || []).filter((r: any) => !confirmedUses.includes(r.id)).map(enrich);
         return [...stillConfirmed, ...fresh];
       });
 
@@ -529,7 +540,7 @@ export function Waiter() {
     try {
       const { data, error } = await supabase
         .from('transactions')
-        .select('*, profiles!client_id(full_name, dni)')
+        .select('*, profiles!client_id(full_name, dni, email)')
         .ilike('description', 'CANJE:%')
         .is('invoice_number', null)
         .not('redemption_code', 'is', null)
@@ -1007,7 +1018,17 @@ export function Waiter() {
         </div>
       )}
       {/* Vista de Registro de Usos */}
-      {cashierView === 'usos' && (
+      {cashierView === 'usos' && (() => {
+        const q = usosSearch.trim().toLowerCase();
+        const inc = (v: any) => String(v ?? '').toLowerCase().includes(q);
+        const filteredCanjes = !q ? pendingCanjes : pendingCanjes.filter((tx) => {
+          const prof = Array.isArray(tx.profiles) ? tx.profiles[0] : tx.profiles;
+          return inc(tx.redemption_code) || inc(prof?.full_name) || inc(prof?.dni) || inc(prof?.email);
+        });
+        const filteredUseRequests = !q ? useRequests : useRequests.filter((req) =>
+          inc(req.code) || inc(req.client_name) || inc(req.client_dni) || inc(req.client_email)
+        );
+        return (
         <div className="space-y-4">
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center justify-between">
             <div>
@@ -1019,11 +1040,28 @@ export function Waiter() {
             </button>
           </div>
 
+          {/* Buscador: filtra canjes y pases por DNI, email o código */}
+          <div className="relative">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 !text-slate-400" />
+            <input
+              type="text"
+              value={usosSearch}
+              onChange={(e) => setUsosSearch(e.target.value)}
+              placeholder="Buscar por DNI, email o código..."
+              className="w-full bg-white border border-slate-200 rounded-xl pl-9 pr-9 py-3 text-sm outline-none focus:border-love !text-slate-900 font-semibold"
+            />
+            {usosSearch && (
+              <button type="button" onClick={() => setUsosSearch('')} className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-lg hover:bg-slate-100 !text-slate-400 border-none cursor-pointer" title="Limpiar">
+                <X size={15} />
+              </button>
+            )}
+          </div>
+
           {/* Canjes de premios pendientes de confirmar */}
-          {pendingCanjes.length > 0 && (
+          {filteredCanjes.length > 0 && (
             <div className="space-y-2">
-              <p className="text-[10px] uppercase font-black tracking-widest text-love px-1">🎁 Canjes de premios ({pendingCanjes.length})</p>
-              {pendingCanjes.map((tx) => {
+              <p className="text-[10px] uppercase font-black tracking-widest text-love px-1">🎁 Canjes de premios ({filteredCanjes.length})</p>
+              {filteredCanjes.map((tx) => {
                 const prof = Array.isArray(tx.profiles) ? tx.profiles[0] : tx.profiles;
                 const prize = (tx.description || '').replace(/^CANJE:/i, '').trim();
                 return (
@@ -1046,7 +1084,7 @@ export function Waiter() {
           )}
 
           {/* Códigos de pases / combos */}
-          {pendingCanjes.length > 0 && (useRequests.length > 0 || usedToday.length > 0) && (
+          {filteredCanjes.length > 0 && (filteredUseRequests.length > 0 || usedToday.length > 0) && (
             <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 px-1 pt-2">🎫 Pases / combos</p>
           )}
 
@@ -1055,15 +1093,15 @@ export function Waiter() {
               <div className="w-8 h-8 border-2 border-love border-t-transparent rounded-full animate-spin mx-auto" />
               <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mt-4">Cargando...</p>
             </div>
-          ) : (useRequests.length === 0 && pendingCanjes.length === 0) ? (
+          ) : (filteredUseRequests.length === 0 && filteredCanjes.length === 0) ? (
             <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-12 text-center">
               <Ticket size={28} className="text-slate-200 mx-auto mb-3" />
-              <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">No hay códigos pendientes</p>
-              <p className="text-[9px] text-slate-300 mt-1">Aparecerán acá cuando un cliente genere uno</p>
+              <p className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">{q ? 'Sin resultados para tu búsqueda' : 'No hay códigos pendientes'}</p>
+              <p className="text-[9px] text-slate-300 mt-1">{q ? 'Probá con otro DNI, email o código' : 'Aparecerán acá cuando un cliente genere uno'}</p>
             </div>
           ) : (
             <div className="space-y-2">
-              {useRequests.map((req) => {
+              {filteredUseRequests.map((req) => {
                 const isConfirmed = confirmedUses.includes(req.id);
                 return (
                 <div key={req.id} className={cn(
@@ -1118,7 +1156,8 @@ export function Waiter() {
             </div>
           )}
         </div>
-      )}
+        );
+      })()}
 
       {/* Modal: N° de comprobante para confirmar un canje */}
       {confirmingCanjeTx && (
