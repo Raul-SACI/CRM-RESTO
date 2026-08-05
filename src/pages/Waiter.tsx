@@ -873,7 +873,7 @@ export function Waiter() {
                     <label className="block text-[9px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest pl-2">Número de Factura <span className="text-love">*</span></label>
                     <input
                       required
-                      placeholder="Ej: 0001-00004567"
+                      placeholder="Ej: 2525268"
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-love text-ink font-bold transition-all"
                       value={invoiceNumber}
                       onChange={(e) => setInvoiceNumber(e.target.value)}
@@ -1133,7 +1133,7 @@ export function Waiter() {
               type="text"
               value={canjeInvoice}
               onChange={(e) => setCanjeInvoice(e.target.value)}
-              placeholder="Ej: 0001-00004567"
+              placeholder="Ej: 2525268"
               autoFocus
               className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-love !text-slate-900 font-semibold"
             />
