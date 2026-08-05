@@ -1037,8 +1037,15 @@ export function Admin() {
       const date = new Date(tx.created_at);
       
       const cleanDesc = (tx.description || '').split('||JSON_ITEMS')[0].trim();
-      const isCanje = cleanDesc.toUpperCase().startsWith('CANJE:');
-      const operacion = isCanje ? 'Canje' : (cleanDesc.toUpperCase().startsWith('CONSUMO') ? 'Consumo' : 'Otro');
+      const descU = cleanDesc.toUpperCase();
+      // Misma lógica que la tabla en pantalla, para que no se confunda una carga con un consumo.
+      const isCanje = descU.startsWith('CANJE:');
+      const isCompra = descU.startsWith('COMPRA_COMBO:');
+      const isUso = descU.startsWith('CONSUMO_COMBO:');
+      const operacion = isCanje ? 'Canje'
+        : isCompra ? 'Compra'
+        : isUso ? 'Uso'
+        : ((tx.points_earned || 0) > 0 ? 'Carga' : 'Otro');
       const premio = isCanje ? cleanDesc.split(':')[1]?.trim() || '—' : '—';
 
       return {
@@ -3114,8 +3121,8 @@ export function Admin() {
 
                         return (
                         <tr key={tx.id} className="border-b border-slate-100 hover:bg-slate-50">
-                          <td className="px-6 py-3 !text-slate-800 dark:!text-white">{date.toLocaleDateString('es-AR')}</td>
-                          <td className="px-6 py-3 !text-slate-500 dark:!text-white/70">{date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</td>
+                          <td className="px-6 py-3 !text-slate-900">{date.toLocaleDateString('es-AR')}</td>
+                          <td className="px-6 py-3 !text-slate-600">{date.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}</td>
                           <td className="px-6 py-3 bg-slate-50 font-black text-slate-400 uppercase">{tx.branch || '—'}</td>
                           <td className="px-6 py-3 uppercase font-black text-ink">
                             {(() => {
