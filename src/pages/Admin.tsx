@@ -7,6 +7,7 @@ import { cn } from '@/src/lib/utils';
 import * as XLSX from 'xlsx';
 import { useDesign, COLOR_PRESETS, CORNER_PRESETS, AVAILABLE_FONTS, type DesignConfig, type BannerConfig } from '@/src/components/DesignEngine';
 import { BirthdayCalendar } from '@/src/components/BirthdayCalendar';
+import { notifyClient } from '@/src/lib/notify';
 import { useAuth, useTheme } from '@/src/App';
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell, PieChart, Pie } from 'recharts';
@@ -107,6 +108,10 @@ export function Admin() {
   const [newClient, setNewClient] = useState({ fullName: '', email: '', dni: '', birthDate: '', password: '' });
   const [editingClient, setEditingClient] = useState<Profile | null>(null);
   const [editClientForm, setEditClientForm] = useState({ fullName: '', email: '', dni: '', birthDate: '' });
+  // Regalo de puntos desde admin (con causa registrada + aviso al cliente)
+  const [giftClient, setGiftClient] = useState<Profile | null>(null);
+  const [giftForm, setGiftForm] = useState({ points: '', reason: '', message: '' });
+  const [giftSaving, setGiftSaving] = useState(false);
   const [selectedClients, setSelectedClients] = useState<string[]>([]);
   const [deleting, setDeleting] = useState(false);
   const [selectedBranchFilter, setSelectedBranchFilter] = useState<string>('Todas');
@@ -1043,11 +1048,14 @@ export function Admin() {
       const isCanje = descU.startsWith('CANJE:');
       const isCompra = descU.startsWith('COMPRA_COMBO:');
       const isUso = descU.startsWith('CONSUMO_COMBO:');
+      const isRegalo = descU.startsWith('REGALO:') || descU.startsWith('REGALO_NIVEL:');
       const operacion = isCanje ? 'Canje'
         : isCompra ? 'Compra'
         : isUso ? 'Uso'
+        : isRegalo ? 'Regalo'
         : ((tx.points_earned || 0) > 0 ? 'Carga' : 'Otro');
-      const premio = isCanje ? cleanDesc.split(':')[1]?.trim() || '—' : '—';
+      const premio = isCanje ? cleanDesc.split(':')[1]?.trim() || '—'
+        : isRegalo ? cleanDesc.split(':')[1]?.trim() || '—' : '—';
 
       return {
         'Fecha': date.toLocaleDateString('es-AR'),
@@ -1108,6 +1116,64 @@ export function Admin() {
       setLoading(false);
     }
   };
+
+  // Abre el modal de regalo de puntos con un mensaje sugerido para el cliente.
+  const startGiftPoints = (client: Profile) => {
+    setGiftClient(client);
+    setGiftForm({
+      points: '',
+      reason: '',
+      message: `¡Hola ${client.full_name || ''}! Te acreditamos puntos de regalo. ¡Muchas gracias por ser parte de CRAFT!`
+    });
+  };
+
+  // Acredita puntos de regalo: registra la transacción (con la causa) y avisa al cliente.
+  const handleGiftPoints = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!giftClient) return;
+    const pts = parseInt(giftForm.points, 10);
+    if (!pts || pts <= 0) { alert('Ingresá una cantidad de puntos válida (mayor a 0).'); return; }
+    if (!giftForm.reason.trim()) { alert('Escribí el motivo del regalo (queda registrado).'); return; }
+
+    setGiftSaving(true);
+    try {
+      // 1. Registrar la transacción trazable del regalo
+      const { error: txError } = await supabase.from('transactions').insert({
+        client_id: giftClient.id,
+        waiter_id: realProfile?.id || giftClient.id,
+        amount: 0,
+        points_earned: pts,
+        branch: 'REGALO ADMIN',
+        description: `REGALO: ${giftForm.reason.trim()}`
+      });
+      if (txError) throw txError;
+
+      // 2. Sumar los puntos al saldo del cliente
+      const { error: updError } = await supabase
+        .from('profiles')
+        .update({ points: (giftClient.points || 0) + pts })
+        .eq('id', giftClient.id);
+      if (updError) throw updError;
+
+      // 3. Avisar al cliente (campanita + email)
+      await notifyClient({
+        clientId: giftClient.id,
+        clientEmail: (giftClient as any).email,
+        title: '🎁 ¡Puntos de regalo en CRAFT!',
+        message: `${giftForm.message.trim()} (+${pts} puntos)`
+      });
+
+      alert(`¡Listo! Le acreditaste ${pts} puntos de regalo a ${giftClient.full_name}.`);
+      setGiftClient(null);
+      setGiftForm({ points: '', reason: '', message: '' });
+      await fetchData(true);
+    } catch (err: any) {
+      alert('No se pudo acreditar el regalo: ' + (err?.message || err));
+    } finally {
+      setGiftSaving(false);
+    }
+  };
+
   const handleDeleteStaff = async (member: any) => {
     if (member.email === 'administrador@organizacionysistemasr.com' || member.role === 'admin') {
       alert('No se puede eliminar una cuenta de administrador desde acá, por seguridad.');
@@ -1767,14 +1833,21 @@ export function Admin() {
                           </td>
                           <td className="px-6 py-4 text-right">
                             <div className="flex items-center justify-end gap-2">
-                              <button 
+                              <button
+                                onClick={() => startGiftPoints(client)}
+                                className="p-2 text-slate-300 hover:text-emerald-500 transition-colors"
+                                title="Regalar puntos"
+                              >
+                                <Gift size={16} />
+                              </button>
+                              <button
                                 onClick={() => startEditingClient(client)}
                                 className="p-2 text-slate-300 hover:text-ink transition-colors"
                                 title="Editar Datos"
                               >
                                 <Pencil size={16} />
                               </button>
-                              <button 
+                              <button
                                 onClick={() => handleDeleteClients([client.id])}
                                 className="p-2 text-slate-300 hover:text-love transition-colors"
                                 title="Eliminar Cliente"
@@ -3134,11 +3207,14 @@ export function Admin() {
                         const isCanje = descU.startsWith('CANJE:');
                         const isCompra = descU.startsWith('COMPRA_COMBO:');
                         const isUso = descU.startsWith('CONSUMO_COMBO:');
+                        const isRegalo = descU.startsWith('REGALO:') || descU.startsWith('REGALO_NIVEL:');
                         const operacion = isCanje ? 'Canje'
                           : isCompra ? 'Compra'
                           : isUso ? 'Uso'
+                          : isRegalo ? 'Regalo'
                           : ((tx.points_earned || 0) > 0 ? 'Carga' : 'Otro');
-                        const premio = isCanje ? cleanDesc.split(':')[1]?.trim() || '—' : '—';
+                        const premio = isCanje ? cleanDesc.split(':')[1]?.trim() || '—'
+                          : isRegalo ? cleanDesc.split(':')[1]?.trim() || '—' : '—';
                         const date = new Date(tx.created_at);
 
                         return (
@@ -3167,6 +3243,7 @@ export function Admin() {
                                 : operacion === 'Compra' ? "bg-amber-500/10 text-amber-600"
                                 : operacion === 'Uso' ? "bg-slate-500/10 text-slate-500"
                                 : operacion === 'Carga' ? "bg-emerald-500/10 text-emerald-600"
+                                : operacion === 'Regalo' ? "bg-pink-500/10 text-pink-600"
                                 : "bg-ink/10 text-ink"
                             )}>
                               {operacion}
@@ -5250,6 +5327,81 @@ export function Admin() {
           )}
         </>
       )}
+
+      {/* Regalar Puntos Modal */}
+      <AnimatePresence>
+        {giftClient && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-ink/60 backdrop-blur-sm z-[100] flex items-center justify-center p-6"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="bg-white border border-slate-200 p-8 rounded-xl w-full max-w-md shadow-2xl relative"
+            >
+              <button
+                type="button"
+                onClick={() => setGiftClient(null)}
+                className="absolute top-6 right-6 text-slate-300 hover:text-love transition-colors border-none bg-transparent cursor-pointer"
+              >
+                <X size={24} />
+              </button>
+
+              <h3 className="text-xl font-black mb-1 uppercase tracking-tight italic text-ink flex items-center gap-2">
+                <Gift size={20} className="text-emerald-500" /> Regalar <span className="text-love">Puntos</span>
+              </h3>
+              <p className="text-xs text-slate-500 font-bold mb-6">Para <span className="text-ink font-black">{giftClient.full_name}</span> · Saldo actual: <span className="text-love font-black">{giftClient.points} pts</span></p>
+
+              <form onSubmit={handleGiftPoints} className="space-y-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Puntos a regalar</label>
+                  <input
+                    type="number"
+                    min={1}
+                    required
+                    placeholder="Ej: 100"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-love !text-slate-900 font-bold"
+                    value={giftForm.points}
+                    onChange={e => setGiftForm({ ...giftForm, points: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Motivo / Causa (queda registrado)</label>
+                  <input
+                    required
+                    placeholder="Ej: Compensación por demora / Premio por ayuda"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-love !text-slate-900"
+                    value={giftForm.reason}
+                    onChange={e => setGiftForm({ ...giftForm, reason: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Mensaje que verá el cliente</label>
+                  <textarea
+                    required
+                    rows={3}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-love !text-slate-900 resize-none"
+                    value={giftForm.message}
+                    onChange={e => setGiftForm({ ...giftForm, message: e.target.value })}
+                  />
+                  <p className="text-[9px] text-slate-400 font-bold ml-1">Se le agrega automáticamente "(+X puntos)" al final.</p>
+                </div>
+                <button
+                  type="submit"
+                  disabled={giftSaving}
+                  className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-4 rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-emerald-500/20 mt-2 disabled:opacity-50 border-none cursor-pointer flex items-center justify-center gap-2"
+                >
+                  {giftSaving && <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />}
+                  {giftSaving ? 'Acreditando...' : 'Acreditar Puntos de Regalo'}
+                </button>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Edit Client Modal */}
       <AnimatePresence>
