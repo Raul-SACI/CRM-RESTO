@@ -33,6 +33,25 @@ export function MyCombos() {
     if (!profile) return;
     setGeneratingCode(combo.id);
     try {
+      // Validación: máximo 1 uso por día de ESTE combo
+      const inicioDelDia = new Date();
+      inicioDelDia.setHours(0, 0, 0, 0);
+      const { count: usosHoy, error: countError } = await supabase
+        .from('combo_use_requests')
+        .select('id', { count: 'exact', head: true })
+        .eq('client_id', profile.id)
+        .eq('combo_id', combo.id)
+        .in('status', ['pending', 'used'])
+        .gte('created_at', inicioDelDia.toISOString());
+
+      if (countError) throw countError;
+
+      if ((usosHoy || 0) >= 1) {
+        alert(`Ya usaste este combo hoy. Solo se permite 1 uso por día de "${combo.title}". ¡Volvé mañana!`);
+        setGeneratingCode(null);
+        return;
+      }
+
       // Código de 6 caracteres alfanuméricos (sin caracteres confusos)
       const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
       let rnd = '';
