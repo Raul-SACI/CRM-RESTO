@@ -1021,6 +1021,8 @@ export function Waiter() {
       {cashierView === 'usos' && (() => {
         const q = usosSearch.trim().toLowerCase();
         const inc = (v: any) => String(v ?? '').toLowerCase().includes(q);
+        // Fecha y hora en que el cliente generó el código
+        const fmtDT = (v: any) => v ? new Date(v).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
         const filteredCanjes = !q ? pendingCanjes : pendingCanjes.filter((tx) => {
           const prof = Array.isArray(tx.profiles) ? tx.profiles[0] : tx.profiles;
           return inc(tx.redemption_code) || inc(prof?.full_name) || inc(prof?.dni) || inc(prof?.email);
@@ -1070,6 +1072,7 @@ export function Waiter() {
                       <p className="text-lg font-black font-mono tracking-wider text-love">{tx.redemption_code}</p>
                       <p className="text-xs font-black text-ink truncate">{prof?.full_name || 'Cliente'}</p>
                       <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest truncate">DNI {prof?.dni || 's/d'} · {prize}</p>
+                      <p className="text-[9px] !text-slate-500 font-bold tracking-wide mt-0.5">🕐 {fmtDT(tx.created_at)}</p>
                     </div>
                     <button
                       onClick={() => { setConfirmingCanjeTx(tx); setCanjeInvoice(''); }}
@@ -1112,6 +1115,7 @@ export function Waiter() {
                     <p className={cn("text-lg font-black font-mono tracking-wider", isConfirmed ? "text-emerald-600" : "text-love")}>{req.code}</p>
                     <p className="text-xs font-black text-ink truncate">{req.client_name}</p>
                     <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest truncate">{req.combo_title}</p>
+                    <p className="text-[9px] !text-slate-500 font-bold tracking-wide mt-0.5">🕐 {fmtDT(req.created_at)}</p>
                   </div>
                   {isConfirmed ? (
                     <div className="shrink-0 px-4 py-3 bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2">

@@ -83,7 +83,11 @@ export function Rewards() {
         return;
       }
 
-      const redemptionCode = Math.random().toString(36).substring(2, 10).toUpperCase();
+      // Código de canje con prefijo CANJE- (igual que los USO- de los combos)
+      const codeChars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let codeRnd = '';
+      for (let i = 0; i < 6; i++) codeRnd += codeChars[Math.floor(Math.random() * codeChars.length)];
+      const redemptionCode = `CANJE-${codeRnd}`;
 
       // 1. Registrar la transacción de canje
       const { error: txError } = await supabase.from('transactions').insert({
