@@ -62,10 +62,29 @@ export function Rewards() {
 
     setRedeeming(prize.id);
     setStatus(null);
-    
-    const redemptionCode = Math.random().toString(36).substring(2, 10).toUpperCase();
 
     try {
+      // 0. Validar: máximo 1 canje por día por cliente
+      const inicioDelDia = new Date();
+      inicioDelDia.setHours(0, 0, 0, 0);
+      const { count: canjesHoy, error: countError } = await supabase
+        .from('transactions')
+        .select('id', { count: 'exact', head: true })
+        .eq('client_id', profile.id)
+        .ilike('description', 'CANJE:%')
+        .gte('created_at', inicioDelDia.toISOString());
+
+      if (countError) throw countError;
+
+      if ((canjesHoy || 0) >= 1) {
+        setStatus({ type: 'error', message: 'Ya realizaste un canje hoy. Solo se permite un canje de premios por día. ¡Volvé mañana!' });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        setRedeeming(null);
+        return;
+      }
+
+      const redemptionCode = Math.random().toString(36).substring(2, 10).toUpperCase();
+
       // 1. Registrar la transacción de canje
       const { error: txError } = await supabase.from('transactions').insert({
         client_id: profile.id,
