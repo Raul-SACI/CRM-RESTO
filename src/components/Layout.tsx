@@ -282,6 +282,13 @@ export function Layout({ children }: LayoutProps) {
             })}
 
 
+            {/* Acceso exclusivo para clientes ocultos (mystery shoppers) */}
+            {realProfile?.role !== 'waiter' && realProfile?.is_mystery_shopper && (
+              <NavLink to="/my-supervision" className={({ isActive }) => `flex items-center gap-1.5 px-3 md:px-4 py-1.5 md:py-2 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-tighter transition-all shrink-0 ${isActive ? 'bg-love text-white shadow-lg shadow-love/20' : 'bg-slate-900 text-white hover:bg-black'}`}>
+                <ShieldCheck size={12} /> Supervisión
+              </NavLink>
+            )}
+
             {(hasPermission(profile?.role, 'cargar_puntos') || hasPermission(realProfile?.role, 'cargar_puntos')) && (
               <NavLink to="/waiter" className={({ isActive }) => `px-3 md:px-4 py-1.5 md:py-2 rounded-full text-[9px] md:text-[10px] font-bold uppercase tracking-tighter transition-all shrink-0 ${isActive ? 'bg-love text-white shadow-lg shadow-love/20' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400'}`}>
                 Carga de Puntos
@@ -356,6 +363,7 @@ export function Layout({ children }: LayoutProps) {
               { label: 'Inicio', to: '/', icon: <Home size={19} /> },
               { label: 'Premios', to: '/rewards', icon: <Gift size={19} /> },
               { label: 'Mis combos', to: '/my-combos', icon: <Ticket size={19} /> },
+              ...(realProfile?.is_mystery_shopper ? [{ label: 'Supervisión', to: '/my-supervision', icon: <ShieldCheck size={19} /> }] : []),
               { label: 'Mi Cuenta', to: '/my-account', icon: <User size={19} /> },
               { label: 'Sucursales', to: '/branches', icon: <MapPin size={19} /> }
             ].map((item) => (

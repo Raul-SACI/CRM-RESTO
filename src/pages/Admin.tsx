@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { supabase, createIsolatedClient } from '@/src/lib/supabase';
-import { Profile, Prize, Transaction, SystemSettings } from '@/src/types';
+import { Profile, Prize, Transaction, SystemSettings, MysteryReport } from '@/src/types';
 import { motion, AnimatePresence } from 'motion/react';
-import { Users, Gift, Settings, Search, Plus, Trash2, Pencil, Calendar, Award, History, DollarSign, Upload, Image as ImageIcon, FileSpreadsheet, UserPlus, X, Palette, Home, User, Star, MessageSquare, FileText, HelpCircle, LogOut, MapPin, ChevronLeft, ChevronRight, Package, Bell, Send, Sun, Moon } from 'lucide-react';
+import { Users, Gift, Settings, Search, Plus, Trash2, Pencil, Calendar, Award, History, DollarSign, Upload, Image as ImageIcon, FileSpreadsheet, UserPlus, X, Palette, Home, User, Star, MessageSquare, FileText, HelpCircle, LogOut, MapPin, ChevronLeft, ChevronRight, Package, Bell, Send, Sun, Moon, ShieldCheck, Clock, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
 import * as XLSX from 'xlsx';
 import { useDesign, COLOR_PRESETS, CORNER_PRESETS, AVAILABLE_FONTS, type DesignConfig, type BannerConfig } from '@/src/components/DesignEngine';
@@ -34,7 +34,7 @@ export function Admin() {
   const isFullAdmin = hasPermission(realProfile?.role, 'ver_admin');
   const reportesOnlyTabs = ['dashboard', 'history'];
   const { theme, toggleTheme } = useTheme();
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'clients' | 'prizes' | 'combos' | 'staff' | 'history' | 'settings' | 'design' | 'feedback' | 'notifications' | 'autonotif'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'clients' | 'prizes' | 'combos' | 'staff' | 'history' | 'settings' | 'design' | 'feedback' | 'notifications' | 'autonotif' | 'supervisiones'>('dashboard');
 
   // Notificaciones (avisos)
   const [notifForm, setNotifForm] = useState({ title: '', message: '', target: 'all', clientId: '', alsoEmail: false });
@@ -97,6 +97,11 @@ export function Admin() {
   const [staff, setStaff] = useState<Profile[]>([]);
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
+  // Supervisiones de clientes ocultos (mystery shoppers)
+  const [mysteryReports, setMysteryReports] = useState<MysteryReport[]>([]);
+  const [rewardReport, setRewardReport] = useState<MysteryReport | null>(null);
+  const [rewardForm, setRewardForm] = useState({ points: '', message: '' });
+  const [rewardSaving, setRewardSaving] = useState(false);
   const [settings, setSettings] = useState<SystemSettings | null>(null);
   const [newPrize, setNewPrize] = useState({ title: '', description: '', points_cost: 0, image_url: '' });
   const [editingPrizeId, setEditingPrizeId] = useState<string | null>(null);
@@ -741,6 +746,22 @@ export function Admin() {
           // La base no respondio: mostramos vacío (no usamos caché local).
           setFeedbacks([]);
         }
+      } else if (activeTab === 'supervisiones') {
+        try {
+          const { data, error } = await supabase
+            .from('mystery_reports')
+            .select('*, profiles!client_id(full_name, email, dni)')
+            .order('created_at', { ascending: false });
+          if (error) throw error;
+          setMysteryReports((data || []) as MysteryReport[]);
+        } catch (e) {
+          // Fallback plano por si la relación no está disponible.
+          const { data } = await supabase
+            .from('mystery_reports')
+            .select('*')
+            .order('created_at', { ascending: false });
+          setMysteryReports((data || []) as MysteryReport[]);
+        }
       }
     } catch (e: any) {
       console.error("Fetch error in Admin:", e);
@@ -1174,6 +1195,107 @@ export function Admin() {
     }
   };
 
+  // Designa (o quita) a un cliente como "cliente oculto" (mystery shopper).
+  const toggleMysteryShopper = async (client: Profile) => {
+    const makeMystery = !client.is_mystery_shopper;
+    const msg = makeMystery
+      ? `¿Designar a "${client.full_name}" como CLIENTE OCULTO?\n\nVerá el formulario de supervisión en su app. Nadie más (ni los cajeros) sabrá que fue designado.`
+      : `¿Quitar a "${client.full_name}" como cliente oculto?\n\nDejará de ver el formulario de supervisión.`;
+    if (!confirm(msg)) return;
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ is_mystery_shopper: makeMystery })
+        .eq('id', client.id);
+      if (error) throw error;
+
+      if (makeMystery) {
+        // Aviso discreto al cliente designado.
+        await notifyClient({
+          clientId: client.id,
+          clientEmail: (client as any).email,
+          title: '🕵️ Fuiste seleccionado para un programa especial',
+          message: 'Ahora tenés acceso a la sección "Supervisión" en tu app. Ingresá para conocer los detalles.'
+        });
+      }
+      await fetchData();
+    } catch (err: any) {
+      alert('No se pudo actualizar: ' + (err?.message || err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Abre el modal para leer un reporte y (opcionalmente) regalar puntos por completarlo.
+  const startRewardReport = (report: MysteryReport) => {
+    setRewardReport(report);
+    setRewardForm({
+      points: '',
+      message: '¡Gracias por completar la supervisión! Te acreditamos puntos por tu colaboración.'
+    });
+  };
+
+  // Marca el reporte como revisado y, si se cargaron puntos, los acredita al cliente.
+  const handleRewardReport = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!rewardReport) return;
+    const pts = parseInt(rewardForm.points, 10) || 0;
+    if (pts < 0) { alert('Los puntos no pueden ser negativos.'); return; }
+
+    setRewardSaving(true);
+    try {
+      // 1. Si hay puntos, registrar transacción trazable y sumar al saldo del cliente.
+      if (pts > 0) {
+        const { error: txError } = await supabase.from('transactions').insert({
+          client_id: rewardReport.client_id,
+          waiter_id: realProfile?.id || rewardReport.client_id,
+          amount: 0,
+          points_earned: pts,
+          branch: 'SUPERVISIÓN',
+          description: `REGALO SUPERVISIÓN: reporte de ${rewardReport.branch || 'sucursal'}`
+        });
+        if (txError) throw txError;
+
+        // Traer el saldo actual del cliente y sumarle los puntos.
+        const { data: prof } = await supabase
+          .from('profiles')
+          .select('points, email, full_name')
+          .eq('id', rewardReport.client_id)
+          .maybeSingle();
+        const current = prof?.points || 0;
+        const { error: updError } = await supabase
+          .from('profiles')
+          .update({ points: current + pts })
+          .eq('id', rewardReport.client_id);
+        if (updError) throw updError;
+
+        // Aviso al cliente.
+        await notifyClient({
+          clientId: rewardReport.client_id,
+          clientEmail: prof?.email,
+          title: '🎁 ¡Puntos por tu supervisión!',
+          message: `${rewardForm.message.trim()} (+${pts} puntos)`
+        });
+      }
+
+      // 2. Marcar el reporte como revisado (aunque no se hayan dado puntos).
+      const { error: repError } = await supabase
+        .from('mystery_reports')
+        .update({ status: 'revisado', points_awarded: pts })
+        .eq('id', rewardReport.id);
+      if (repError) throw repError;
+
+      setRewardReport(null);
+      setRewardForm({ points: '', message: '' });
+      await fetchData();
+    } catch (err: any) {
+      alert('No se pudo procesar: ' + (err?.message || err));
+    } finally {
+      setRewardSaving(false);
+    }
+  };
+
   const handleDeleteStaff = async (member: any) => {
     if (member.email === 'administrador@organizacionysistemasr.com' || member.role === 'admin') {
       alert('No se puede eliminar una cuenta de administrador desde acá, por seguridad.');
@@ -1368,7 +1490,8 @@ export function Admin() {
               autonotif: 'Avisos Automáticos',
               settings: 'Ajustes',
               design: 'Diseño',
-              feedback: 'Opiniones'
+              feedback: 'Opiniones',
+              supervisiones: 'Supervisiones'
             };
             const icons: Record<string, React.ReactNode> = {
               dashboard: <Award size={14} />,
@@ -1381,12 +1504,13 @@ export function Admin() {
               autonotif: <Calendar size={14} />,
               settings: <Settings size={14} />,
               design: <Palette size={14} />,
-              feedback: <MessageSquare size={14} />
+              feedback: <MessageSquare size={14} />,
+              supervisiones: <ShieldCheck size={14} />
             };
             // Menú agrupado por secciones (estilo sistema de gestión)
             const allGroups: { title: string; tabs: string[] }[] = [
               { title: 'General', tabs: ['dashboard', 'clients', 'history'] },
-              { title: 'Programa', tabs: ['prizes', 'combos', 'feedback'] },
+              { title: 'Programa', tabs: ['prizes', 'combos', 'feedback', 'supervisiones'] },
               { title: 'Comunicación', tabs: ['notifications', 'autonotif'] },
               { title: 'Configuración', tabs: ['staff', 'settings', 'design'] }
             ];
@@ -1472,7 +1596,8 @@ export function Admin() {
             autonotif: { t: 'Avisos Automáticos', s: 'Cumpleaños, vencimientos e inactividad' },
             settings: { t: 'Ajustes', s: 'Configuración general del programa' },
             design: { t: 'Diseño', s: 'Apariencia y contenido de la app' },
-            feedback: { t: 'Opiniones', s: 'Valoraciones de los miembros' }
+            feedback: { t: 'Opiniones', s: 'Valoraciones de los miembros' },
+            supervisiones: { t: 'Supervisiones', s: 'Reportes de clientes ocultos (confidencial)' }
           };
           const h = heads[activeTab] || { t: '', s: '' };
           return (
@@ -1814,7 +1939,14 @@ export function Admin() {
                             />
                           </td>
                           <td className="px-6 py-4">
-                            <p className="font-bold">{client.full_name}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="font-bold">{client.full_name}</p>
+                              {client.is_mystery_shopper && (
+                                <span className="inline-flex items-center gap-1 text-[8px] font-black uppercase tracking-widest text-slate-900 bg-amber-300 px-2 py-0.5 rounded-full" title="Cliente oculto designado">
+                                  <ShieldCheck size={10} /> Oculto
+                                </span>
+                              )}
+                            </div>
                             <p className="text-[10px] text-slate-400 italic font-mono">{client.email}</p>
                           </td>
                           <td className="px-6 py-4 font-mono text-xs text-slate-500">{client.dni}</td>
@@ -1833,6 +1965,16 @@ export function Admin() {
                           </td>
                           <td className="px-6 py-4 text-right">
                             <div className="flex items-center justify-end gap-2">
+                              <button
+                                onClick={() => toggleMysteryShopper(client)}
+                                className={cn(
+                                  "p-2 transition-colors",
+                                  client.is_mystery_shopper ? "text-amber-500 hover:text-amber-600" : "text-slate-300 hover:text-amber-500"
+                                )}
+                                title={client.is_mystery_shopper ? "Quitar como cliente oculto" : "Designar como cliente oculto"}
+                              >
+                                <ShieldCheck size={16} />
+                              </button>
                               <button
                                 onClick={() => startGiftPoints(client)}
                                 className="p-2 text-slate-300 hover:text-emerald-500 transition-colors"
@@ -5325,8 +5467,202 @@ export function Admin() {
               </div>
             </div>
           )}
+
+          {activeTab === 'supervisiones' && (
+            <div className="space-y-6">
+              {/* Tarjetas resumen */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-white rounded-xl p-6 border border-slate-100 shadow-sm">
+                  <p className="text-[10px] uppercase font-black tracking-widest text-slate-400">Reportes recibidos</p>
+                  <h4 className="text-4xl font-black text-ink mt-2 leading-none font-mono">{mysteryReports.length}</h4>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-4">De tus clientes ocultos</p>
+                </div>
+                <div className="bg-white rounded-xl p-6 border border-slate-100 shadow-sm">
+                  <p className="text-[10px] uppercase font-black tracking-widest text-slate-400">Pendientes de leer</p>
+                  <h4 className="text-4xl font-black text-amber-500 mt-2 leading-none font-mono">
+                    {mysteryReports.filter(r => r.status === 'pendiente').length}
+                  </h4>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-4">Esperando tu revisión</p>
+                </div>
+                <div className="bg-white rounded-xl p-6 border border-slate-100 shadow-sm">
+                  <p className="text-[10px] uppercase font-black tracking-widest text-slate-400">Promedio general</p>
+                  <h4 className="text-4xl font-black text-love mt-2 leading-none font-mono">
+                    {mysteryReports.length > 0
+                      ? (mysteryReports.reduce((a, r) => a + (r.rating_overall || 0), 0) / mysteryReports.length).toFixed(1)
+                      : '—'}
+                    <span className="text-sm font-bold text-slate-400"> / 5.0</span>
+                  </h4>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-4">Calidad percibida en los locales</p>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-[2rem] p-6 md:p-8 border border-slate-100 shadow-sm">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 bg-love/10 rounded-xl flex items-center justify-center text-love">
+                    <ShieldCheck size={20} />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black uppercase tracking-tighter text-ink">Reportes de <span className="text-love">Supervisión</span></h3>
+                    <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mt-1">Solo vos podés ver esta información</p>
+                  </div>
+                </div>
+
+                {mysteryReports.length === 0 ? (
+                  <div className="py-12 text-center text-slate-400 font-bold uppercase text-[10px] tracking-widest">
+                    Todavía no hay supervisiones. Designá clientes ocultos desde la pestaña Clientes.
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {mysteryReports.map((r) => {
+                      const cats = [
+                        { label: 'Limpieza', v: r.rating_cleanliness },
+                        { label: 'Atención', v: r.rating_service },
+                        { label: 'Tiempos', v: r.rating_speed },
+                        { label: 'Producto', v: r.rating_food },
+                      ];
+                      return (
+                        <div key={r.id} className="p-5 rounded-2xl bg-slate-50 border border-slate-200/60">
+                          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-ink bg-white border border-slate-200 px-2.5 py-1 rounded-full">
+                                  <MapPin size={11} className="text-love" /> {r.branch || 'Sin sucursal'}
+                                </span>
+                                <span className="text-[10px] font-mono text-slate-400">
+                                  Visita: {r.visit_date ? new Date(r.visit_date + 'T00:00:00').toLocaleDateString('es-AR') : '—'}
+                                </span>
+                                {r.status === 'revisado' ? (
+                                  <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">
+                                    <CheckCircle2 size={11} /> Revisado{!!r.points_awarded && r.points_awarded > 0 && ` · +${r.points_awarded} pts`}
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full">
+                                    <Clock size={11} /> Pendiente
+                                  </span>
+                                )}
+                              </div>
+
+                              <p className="text-sm font-extrabold text-ink mt-2">
+                                {r.profiles?.full_name || 'Cliente oculto'}
+                                <span className="text-[10px] font-mono text-slate-400 ml-2">{r.profiles?.email || ''}</span>
+                              </p>
+
+                              {/* Calificación general */}
+                              <div className="flex items-center gap-1 mt-2">
+                                <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 mr-1">General</span>
+                                {[1, 2, 3, 4, 5].map((s) => (
+                                  <Star key={s} size={15} className={cn((r.rating_overall || 0) >= s ? 'fill-yellow-400 text-yellow-400' : 'text-slate-200')} />
+                                ))}
+                              </div>
+
+                              {/* Categorías */}
+                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3">
+                                {cats.map((c) => (
+                                  <div key={c.label} className="bg-white rounded-xl border border-slate-100 px-3 py-2">
+                                    <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">{c.label}</p>
+                                    <div className="flex items-center gap-0.5 mt-1">
+                                      {[1, 2, 3, 4, 5].map((s) => (
+                                        <Star key={s} size={11} className={cn((c.v || 0) >= s ? 'fill-yellow-400 text-yellow-400' : 'text-slate-200')} />
+                                      ))}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+
+                              {r.comment && (
+                                <p className="text-xs text-slate-600 font-medium italic border-l-2 border-love/30 pl-3 py-1 mt-3">
+                                  "{r.comment}"
+                                </p>
+                              )}
+                            </div>
+
+                            <div className="shrink-0 flex sm:flex-col gap-2">
+                              <button
+                                onClick={() => startRewardReport(r)}
+                                className="flex items-center justify-center gap-1.5 bg-love text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-love/90 transition-all shadow-lg shadow-love/20 cursor-pointer border-none"
+                                title={r.status === 'revisado' ? 'Volver a revisar / ajustar puntos' : 'Leer y regalar puntos'}
+                              >
+                                <Gift size={13} /> {r.status === 'revisado' ? 'Ajustar' : 'Regalar puntos'}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </>
       )}
+
+      {/* Regalar Puntos por Supervisión Modal */}
+      <AnimatePresence>
+        {rewardReport && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-ink/70 backdrop-blur-md z-[100] flex items-center justify-center p-4"
+            onClick={() => !rewardSaving && setRewardReport(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 15 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 15 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-[2rem] w-full max-w-md shadow-2xl relative p-7"
+            >
+              <button
+                onClick={() => !rewardSaving && setRewardReport(null)}
+                className="absolute top-6 right-6 text-slate-400 hover:text-love transition-colors cursor-pointer bg-transparent border-0"
+              >
+                <X size={22} />
+              </button>
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-10 h-10 bg-love/10 rounded-xl flex items-center justify-center text-love">
+                  <Gift size={20} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black uppercase tracking-tighter text-ink">Recompensar supervisión</h3>
+                  <p className="text-[10px] uppercase font-black tracking-widest text-slate-400">{rewardReport.branch || 'Sucursal'}</p>
+                </div>
+              </div>
+
+              <form onSubmit={handleRewardReport} className="space-y-4">
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Puntos a regalar (0 = solo marcar revisado)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={rewardForm.points}
+                    onChange={(e) => setRewardForm({ ...rewardForm, points: e.target.value })}
+                    placeholder="Ej. 300"
+                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm font-bold text-ink outline-none focus:border-love"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Mensaje para el cliente</label>
+                  <textarea
+                    value={rewardForm.message}
+                    onChange={(e) => setRewardForm({ ...rewardForm, message: e.target.value })}
+                    rows={3}
+                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm font-medium text-ink outline-none focus:border-love resize-none"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={rewardSaving}
+                  className="w-full py-3 bg-love text-white rounded-xl text-[11px] font-black uppercase tracking-widest cursor-pointer border-none disabled:opacity-50 hover:bg-love/90 transition-all"
+                >
+                  {rewardSaving ? 'Procesando…' : 'Confirmar y marcar revisado'}
+                </button>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Regalar Puntos Modal */}
       <AnimatePresence>
