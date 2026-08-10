@@ -16,6 +16,7 @@ import { Help } from '@/src/pages/Help';
 import { Branches } from '@/src/pages/Branches';
 import { MyCombos } from '@/src/pages/MyCombos';
 import { MyAccount } from '@/src/pages/MyAccount';
+import { MySupervision } from '@/src/pages/MySupervision';
 import { Layout } from '@/src/components/Layout';
 import { CompleteProfile } from '@/src/components/CompleteProfile';
 import { motion, AnimatePresence } from 'motion/react';
@@ -181,8 +182,23 @@ function AppRoutes() {
           } 
         />
         
-        <Route 
-          path="/waiter" 
+        <Route
+          path="/my-supervision"
+          element={
+            user ? (
+              realProfile?.role === 'waiter'
+                ? <Navigate to="/waiter" replace />
+                : realProfile?.is_mystery_shopper
+                  ? <Layout><MySupervision /></Layout>
+                  : <Navigate to="/" replace />
+            ) : (
+              <Navigate to="/auth" state={{ from: location }} replace />
+            )
+          }
+        />
+
+        <Route
+          path="/waiter"
           element={
             user ? (
               hasPermission(realProfile?.role, 'cargar_puntos')

@@ -164,3 +164,8 @@ BEGIN
   AND id != p_user_id; -- Solo si el ID es diferente
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 7. Clientes ocultos (mystery shoppers) y supervisiones.
+--    La definición completa (columna is_mystery_shopper, tabla mystery_reports
+--    y sus políticas RLS admin-only) está en: supabase_mystery_shopper.sql
+--    Ejecutá ese archivo en el Editor SQL de Supabase para habilitar la función.
