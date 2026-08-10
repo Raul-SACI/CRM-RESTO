@@ -87,6 +87,9 @@ export interface DesignConfig {
   // Custom combos prepago added by user
   combos?: ComboConfig[];
 
+  // Configuración editable del formulario de supervisión (clientes ocultos)
+  supervision?: import('@/src/lib/supervision').SupervisionConfig;
+
   // Configuración de avisos automáticos (Grupo 2)
   autoNotif?: AutoNotifConfig;
   

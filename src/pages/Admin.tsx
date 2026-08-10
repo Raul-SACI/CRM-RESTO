@@ -8,6 +8,7 @@ import * as XLSX from 'xlsx';
 import { useDesign, COLOR_PRESETS, CORNER_PRESETS, AVAILABLE_FONTS, type DesignConfig, type BannerConfig } from '@/src/components/DesignEngine';
 import { BirthdayCalendar } from '@/src/components/BirthdayCalendar';
 import { notifyClient } from '@/src/lib/notify';
+import { resolveSupervisionConfig, SUP_TEXT_FIELDS, SUP_OPTION_LISTS, DEFAULT_SUPERVISION, type SupervisionConfig } from '@/src/lib/supervision';
 import { useAuth, useTheme } from '@/src/App';
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell, PieChart, Pie } from 'recharts';
@@ -102,6 +103,10 @@ export function Admin() {
   const [rewardReport, setRewardReport] = useState<MysteryReport | null>(null);
   const [rewardForm, setRewardForm] = useState({ points: '', message: '' });
   const [rewardSaving, setRewardSaving] = useState(false);
+  // Editor de las preguntas del formulario de supervisión
+  const [showSupEditor, setShowSupEditor] = useState(false);
+  const [supDraft, setSupDraft] = useState<SupervisionConfig>(DEFAULT_SUPERVISION);
+  const [savingSup, setSavingSup] = useState(false);
   const [settings, setSettings] = useState<SystemSettings | null>(null);
   const [newPrize, setNewPrize] = useState({ title: '', description: '', points_cost: 0, image_url: '' });
   const [editingPrizeId, setEditingPrizeId] = useState<string | null>(null);
@@ -1225,6 +1230,43 @@ export function Admin() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Editor de preguntas del formulario de supervisión.
+  const openSupEditor = () => {
+    setSupDraft(resolveSupervisionConfig(designConfig?.supervision));
+    setShowSupEditor(true);
+  };
+
+  const setSupField = (key: keyof SupervisionConfig['fields'], prop: 'label' | 'hint', value: string) => {
+    setSupDraft((prev) => ({
+      ...prev,
+      fields: { ...prev.fields, [key]: { ...prev.fields[key], [prop]: value } },
+    }));
+  };
+
+  const setSupOptions = (key: string, value: string[]) => {
+    setSupDraft((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleSaveSupConfig = async () => {
+    setSavingSup(true);
+    try {
+      // Normalizamos: quitamos opciones vacías; los textos vacíos vuelven al default al resolver.
+      const cleaned = resolveSupervisionConfig(supDraft);
+      await saveDesignConfig({ ...designConfig, supervision: cleaned });
+      setShowSupEditor(false);
+      alert('¡Preguntas del formulario actualizadas! Los clientes ocultos ya ven los cambios.');
+    } catch (err: any) {
+      alert('No se pudo guardar: ' + (err?.message || err));
+    } finally {
+      setSavingSup(false);
+    }
+  };
+
+  const handleResetSupConfig = () => {
+    if (!confirm('¿Restaurar todas las preguntas y opciones a los valores por defecto?')) return;
+    setSupDraft(resolveSupervisionConfig(null));
   };
 
   // Abre el modal para leer un reporte y (opcionalmente) regalar puntos por completarlo.
@@ -5494,6 +5536,121 @@ export function Admin() {
                   </h4>
                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-4">Calidad percibida en los locales</p>
                 </div>
+              </div>
+
+              {/* Editor de las preguntas del formulario */}
+              <div className="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+                <div className="p-6 md:p-8 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-ink/5 rounded-xl flex items-center justify-center text-ink">
+                      <Pencil size={18} />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-black uppercase tracking-tighter text-ink">Editar formulario</h3>
+                      <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mt-0.5">Cambiá los textos de las preguntas y las opciones</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => (showSupEditor ? setShowSupEditor(false) : openSupEditor())}
+                    className="shrink-0 px-4 py-2 rounded-xl bg-ink text-white text-[10px] font-black uppercase tracking-widest cursor-pointer border-none hover:bg-black transition-all"
+                  >
+                    {showSupEditor ? 'Cerrar' : 'Editar preguntas'}
+                  </button>
+                </div>
+
+                {showSupEditor && (
+                  <div className="px-6 md:px-8 pb-8 space-y-5 border-t border-slate-100 pt-6">
+                    {(() => {
+                      let lastSection = '';
+                      return SUP_TEXT_FIELDS.map((f) => {
+                        const showHeader = f.section !== lastSection;
+                        lastSection = f.section;
+                        return (
+                          <div key={f.key}>
+                            {showHeader && (
+                              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-love mb-2 mt-2">{f.section}</p>
+                            )}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                              <div>
+                                <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1 block">Pregunta</label>
+                                <input
+                                  type="text"
+                                  value={supDraft.fields[f.key].label}
+                                  onChange={(e) => setSupField(f.key, 'label', e.target.value)}
+                                  className="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm font-medium text-ink outline-none focus:border-love"
+                                />
+                              </div>
+                              {f.hasHint && (
+                                <div>
+                                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1 block">Aclaración (opcional)</label>
+                                  <input
+                                    type="text"
+                                    value={supDraft.fields[f.key].hint || ''}
+                                    onChange={(e) => setSupField(f.key, 'hint', e.target.value)}
+                                    className="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm font-medium text-slate-600 outline-none focus:border-love"
+                                  />
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Etiquetas de las dos opciones de "¿Qué pediste?" */}
+                            {f.key === 'orderType' && (
+                              <div className="grid grid-cols-2 gap-2 mt-2">
+                                <div>
+                                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1 block">Opción A</label>
+                                  <input type="text" value={supDraft.orderTypeDrinkLabel}
+                                    onChange={(e) => setSupDraft((p) => ({ ...p, orderTypeDrinkLabel: e.target.value }))}
+                                    className="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm font-medium text-ink outline-none focus:border-love" />
+                                </div>
+                                <div>
+                                  <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1 block">Opción B</label>
+                                  <input type="text" value={supDraft.orderTypeFoodLabel}
+                                    onChange={(e) => setSupDraft((p) => ({ ...p, orderTypeFoodLabel: e.target.value }))}
+                                    className="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm font-medium text-ink outline-none focus:border-love" />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      });
+                    })()}
+
+                    {/* Listas de opciones (una por línea) */}
+                    <div className="pt-2">
+                      <p className="text-[11px] font-black uppercase tracking-[0.2em] text-love mb-2">Opciones de respuesta</p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {SUP_OPTION_LISTS.map((o) => (
+                          <div key={o.key}>
+                            <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1 block">{o.label}</label>
+                            <textarea
+                              rows={3}
+                              value={(supDraft[o.key] as string[]).join('\n')}
+                              onChange={(e) => setSupOptions(o.key, e.target.value.split('\n'))}
+                              placeholder="Una opción por línea"
+                              className="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm font-medium text-ink outline-none focus:border-love resize-none font-mono text-xs"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-2 italic">Escribí una opción por línea. Cambiar estas opciones no afecta los reportes ya enviados.</p>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 pt-2">
+                      <button onClick={handleSaveSupConfig} disabled={savingSup}
+                        className="px-5 py-2.5 rounded-xl bg-love text-white text-[11px] font-black uppercase tracking-widest cursor-pointer border-none disabled:opacity-50 hover:bg-love/90 transition-all">
+                        {savingSup ? 'Guardando…' : 'Guardar cambios'}
+                      </button>
+                      <button onClick={() => setShowSupEditor(false)} disabled={savingSup}
+                        className="px-5 py-2.5 rounded-xl bg-slate-100 text-slate-600 text-[11px] font-black uppercase tracking-widest cursor-pointer border-none hover:bg-slate-200 transition-all">
+                        Cancelar
+                      </button>
+                      <button onClick={handleResetSupConfig} disabled={savingSup}
+                        className="px-5 py-2.5 rounded-xl bg-transparent text-slate-400 text-[11px] font-black uppercase tracking-widest cursor-pointer border border-slate-200 hover:text-love hover:border-love/30 transition-all ml-auto">
+                        Restaurar por defecto
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="bg-white rounded-[2rem] p-6 md:p-8 border border-slate-100 shadow-sm">
