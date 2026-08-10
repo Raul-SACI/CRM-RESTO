@@ -18,12 +18,24 @@ export interface MysteryReport {
   client_id: string;
   branch?: string | null;
   visit_date?: string | null;
-  rating_cleanliness?: number | null;
-  rating_service?: number | null;
-  rating_speed?: number | null;
-  rating_food?: number | null;
-  rating_overall?: number | null;
-  comment?: string | null;
+  visit_time?: string | null;
+  // Calificaciones (1 a 5 estrellas)
+  rating_cleanliness?: number | null;          // Limpieza e higiene del local
+  rating_cleanliness_bathroom?: number | null; // Limpieza e higiene del baño
+  rating_service?: number | null;              // Predisposición del mozo/a
+  rating_aesthetics?: number | null;           // Estética del plato/bebida
+  rating_food?: number | null;                 // Calidad del plato/bebida
+  rating_overall?: number | null;              // Calificación general
+  rating_speed?: number | null;                // (obsoleto, se conserva por compatibilidad)
+  // Datos y tiempos
+  waiter_name?: string | null;                 // Nombre de quién atendió
+  wait_greeting?: string | null;               // Espera hasta que te atendieron
+  wait_order_taken?: string | null;            // Espera hasta que tomaron el pedido
+  order_type?: string | null;                  // 'bebida' | 'bebida_comida'
+  wait_order_delivered?: string | null;        // Espera hasta que trajeron el pedido
+  wait_bill?: string | null;                   // Espera hasta que trajeron la cuenta
+  photo_url?: string | null;                   // Foto del plato/bebida
+  comment?: string | null;                     // Observaciones
   status: 'pendiente' | 'revisado';
   points_awarded?: number | null;
   created_at: string;
