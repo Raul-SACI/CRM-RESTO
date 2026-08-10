@@ -36,6 +36,7 @@ export interface MysteryReport {
   wait_bill?: string | null;                   // Espera hasta que trajeron la cuenta
   photo_url?: string | null;                   // Foto del plato/bebida
   comment?: string | null;                     // Observaciones
+  custom_answers?: Record<string, any> | null; // Respuestas a preguntas personalizadas (por id)
   status: 'pendiente' | 'revisado';
   points_awarded?: number | null;
   created_at: string;

@@ -123,6 +123,14 @@ export function MySupervision() {
   const [photoUrl, setPhotoUrl] = useState('');
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
+  // Respuestas a las preguntas personalizadas (por id)
+  const [customAnswers, setCustomAnswers] = useState<Record<string, any>>({});
+  const setCustom = (id: string, v: any) => setCustomAnswers((p) => ({ ...p, [id]: v }));
+
+  // Campos fijos que el admin ocultó
+  const disabled = new Set(cfg.disabledFields || []);
+  const show = (k: string) => !disabled.has(k);
+
   const [saving, setSaving] = useState(false);
   const [justSent, setJustSent] = useState(false);
 
@@ -183,7 +191,7 @@ export function MySupervision() {
     setBranch(''); setVisitDate(new Date().toISOString().split('T')[0]); setVisitTime('');
     setRatings({ cleanlinessVenue: 0, cleanlinessBathroom: 0, disposition: 0, aesthetics: 0, foodQuality: 0, overall: 0 });
     setWaiterName(''); setWaitGreeting(''); setWaitOrderTaken(''); setOrderType(''); setWaitOrderDelivered('');
-    setWaitBill(''); setComment(''); setPhotoUrl('');
+    setWaitBill(''); setComment(''); setPhotoUrl(''); setCustomAnswers({});
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -213,6 +221,7 @@ export function MySupervision() {
         wait_bill: waitBill || null,
         photo_url: photoUrl || null,
         comment: comment.trim() || null,
+        custom_answers: Object.keys(customAnswers).length ? customAnswers : null,
         status: 'pendiente',
       });
       if (error) throw error;
@@ -301,76 +310,98 @@ export function MySupervision() {
           </div>
         </div>
 
-        <SectionTitle>Limpieza e higiene</SectionTitle>
-        <Field label={F.cleanlinessVenue.label} hint={F.cleanlinessVenue.hint}>
-          <StarRating value={ratings.cleanlinessVenue} onChange={(v) => setR('cleanlinessVenue', v)} />
-        </Field>
-        <Field label={F.cleanlinessBathroom.label} hint={F.cleanlinessBathroom.hint}>
-          <StarRating value={ratings.cleanlinessBathroom} onChange={(v) => setR('cleanlinessBathroom', v)} />
-        </Field>
+        {(show('cleanlinessVenue') || show('cleanlinessBathroom')) && <SectionTitle>Limpieza e higiene</SectionTitle>}
+        {show('cleanlinessVenue') && (
+          <Field label={F.cleanlinessVenue.label} hint={F.cleanlinessVenue.hint}>
+            <StarRating value={ratings.cleanlinessVenue} onChange={(v) => setR('cleanlinessVenue', v)} />
+          </Field>
+        )}
+        {show('cleanlinessBathroom') && (
+          <Field label={F.cleanlinessBathroom.label} hint={F.cleanlinessBathroom.hint}>
+            <StarRating value={ratings.cleanlinessBathroom} onChange={(v) => setR('cleanlinessBathroom', v)} />
+          </Field>
+        )}
 
-        <SectionTitle>Atención</SectionTitle>
-        <Field label={F.disposition.label} hint={F.disposition.hint}>
-          <StarRating value={ratings.disposition} onChange={(v) => setR('disposition', v)} />
-        </Field>
-        <Field label={F.waiterName.label} hint={F.waiterName.hint}>
-          <input type="text" value={waiterName} onChange={(e) => setWaiterName(e.target.value)}
-            placeholder="Ej. Sofía"
-            className="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-sm font-medium text-ink outline-none focus:border-love" />
-        </Field>
-        <Field label={F.waitGreeting.label} hint={F.waitGreeting.hint}>
-          <OptionGroup options={cfg.waitGreetingOptions} value={waitGreeting} onChange={setWaitGreeting} />
-        </Field>
-        <Field label={F.waitOrderTaken.label} hint={F.waitOrderTaken.hint}>
-          <OptionGroup options={cfg.waitOrderTakenOptions} value={waitOrderTaken} onChange={setWaitOrderTaken} />
-        </Field>
+        {(show('disposition') || show('waiterName') || show('waitGreeting') || show('waitOrderTaken')) && <SectionTitle>Atención</SectionTitle>}
+        {show('disposition') && (
+          <Field label={F.disposition.label} hint={F.disposition.hint}>
+            <StarRating value={ratings.disposition} onChange={(v) => setR('disposition', v)} />
+          </Field>
+        )}
+        {show('waiterName') && (
+          <Field label={F.waiterName.label} hint={F.waiterName.hint}>
+            <input type="text" value={waiterName} onChange={(e) => setWaiterName(e.target.value)}
+              placeholder="Ej. Sofía"
+              className="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-sm font-medium text-ink outline-none focus:border-love" />
+          </Field>
+        )}
+        {show('waitGreeting') && (
+          <Field label={F.waitGreeting.label} hint={F.waitGreeting.hint}>
+            <OptionGroup options={cfg.waitGreetingOptions} value={waitGreeting} onChange={setWaitGreeting} />
+          </Field>
+        )}
+        {show('waitOrderTaken') && (
+          <Field label={F.waitOrderTaken.label} hint={F.waitOrderTaken.hint}>
+            <OptionGroup options={cfg.waitOrderTakenOptions} value={waitOrderTaken} onChange={setWaitOrderTaken} />
+          </Field>
+        )}
 
-        <SectionTitle>El pedido</SectionTitle>
-        <Field label={F.orderType.label} hint={F.orderType.hint}>
-          <OptionGroup
-            options={[cfg.orderTypeDrinkLabel, cfg.orderTypeFoodLabel]}
-            value={orderType === 'bebida' ? cfg.orderTypeDrinkLabel : orderType === 'bebida_comida' ? cfg.orderTypeFoodLabel : ''}
-            onChange={(v) => setOrderType(v === cfg.orderTypeDrinkLabel ? 'bebida' : 'bebida_comida')}
-          />
-        </Field>
-        {orderType && (
+        {(show('orderType') || show('waitOrderDelivered')) && <SectionTitle>El pedido</SectionTitle>}
+        {show('orderType') && (
+          <Field label={F.orderType.label} hint={F.orderType.hint}>
+            <OptionGroup
+              options={[cfg.orderTypeDrinkLabel, cfg.orderTypeFoodLabel]}
+              value={orderType === 'bebida' ? cfg.orderTypeDrinkLabel : orderType === 'bebida_comida' ? cfg.orderTypeFoodLabel : ''}
+              onChange={(v) => setOrderType(v === cfg.orderTypeDrinkLabel ? 'bebida' : 'bebida_comida')}
+            />
+          </Field>
+        )}
+        {show('waitOrderDelivered') && orderType && (
           <Field label={F.waitOrderDelivered.label} hint={F.waitOrderDelivered.hint}>
             <OptionGroup options={deliverOptions} value={waitOrderDelivered} onChange={setWaitOrderDelivered} />
           </Field>
         )}
 
-        <SectionTitle>El plato / bebida</SectionTitle>
-        <Field label={F.photo.label} hint={F.photo.hint}>
-          {photoUrl ? (
-            <div className="relative inline-block">
-              <img src={photoUrl} alt="Foto del plato" className="w-32 h-32 object-cover rounded-xl border border-slate-200" />
-              <button type="button" onClick={() => setPhotoUrl('')}
-                className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-love text-white flex items-center justify-center border-none cursor-pointer shadow">
-                <X size={14} />
-              </button>
-            </div>
-          ) : (
-            <label className={cn(
-              'inline-flex items-center gap-2 px-4 py-3 rounded-xl border border-dashed border-slate-300 text-sm font-bold text-slate-500 cursor-pointer hover:border-love hover:text-love transition-all',
-              uploadingPhoto && 'opacity-60 pointer-events-none'
-            )}>
-              {uploadingPhoto ? <Loader2 size={18} className="animate-spin" /> : <Camera size={18} />}
-              {uploadingPhoto ? 'Subiendo…' : 'Tomar / subir foto'}
-              <input type="file" accept="image/*" capture="environment" onChange={handlePhoto} className="hidden" />
-            </label>
-          )}
-        </Field>
-        <Field label={F.aesthetics.label} hint={F.aesthetics.hint}>
-          <StarRating value={ratings.aesthetics} onChange={(v) => setR('aesthetics', v)} />
-        </Field>
-        <Field label={F.foodQuality.label} hint={F.foodQuality.hint}>
-          <StarRating value={ratings.foodQuality} onChange={(v) => setR('foodQuality', v)} />
-        </Field>
+        {(show('photo') || show('aesthetics') || show('foodQuality')) && <SectionTitle>El plato / bebida</SectionTitle>}
+        {show('photo') && (
+          <Field label={F.photo.label} hint={F.photo.hint}>
+            {photoUrl ? (
+              <div className="relative inline-block">
+                <img src={photoUrl} alt="Foto del plato" className="w-32 h-32 object-cover rounded-xl border border-slate-200" />
+                <button type="button" onClick={() => setPhotoUrl('')}
+                  className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-love text-white flex items-center justify-center border-none cursor-pointer shadow">
+                  <X size={14} />
+                </button>
+              </div>
+            ) : (
+              <label className={cn(
+                'inline-flex items-center gap-2 px-4 py-3 rounded-xl border border-dashed border-slate-300 text-sm font-bold text-slate-500 cursor-pointer hover:border-love hover:text-love transition-all',
+                uploadingPhoto && 'opacity-60 pointer-events-none'
+              )}>
+                {uploadingPhoto ? <Loader2 size={18} className="animate-spin" /> : <Camera size={18} />}
+                {uploadingPhoto ? 'Subiendo…' : 'Tomar / subir foto'}
+                <input type="file" accept="image/*" capture="environment" onChange={handlePhoto} className="hidden" />
+              </label>
+            )}
+          </Field>
+        )}
+        {show('aesthetics') && (
+          <Field label={F.aesthetics.label} hint={F.aesthetics.hint}>
+            <StarRating value={ratings.aesthetics} onChange={(v) => setR('aesthetics', v)} />
+          </Field>
+        )}
+        {show('foodQuality') && (
+          <Field label={F.foodQuality.label} hint={F.foodQuality.hint}>
+            <StarRating value={ratings.foodQuality} onChange={(v) => setR('foodQuality', v)} />
+          </Field>
+        )}
 
         <SectionTitle>Cierre</SectionTitle>
-        <Field label={F.waitBill.label} hint={F.waitBill.hint}>
-          <OptionGroup options={cfg.waitBillOptions} value={waitBill} onChange={setWaitBill} />
-        </Field>
+        {show('waitBill') && (
+          <Field label={F.waitBill.label} hint={F.waitBill.hint}>
+            <OptionGroup options={cfg.waitBillOptions} value={waitBill} onChange={setWaitBill} />
+          </Field>
+        )}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-4 rounded-2xl bg-love/5 border border-love/20">
           <div>
             <p className="text-sm font-black uppercase tracking-tight text-love">{F.overall.label}</p>
@@ -378,12 +409,39 @@ export function MySupervision() {
           </div>
           <StarRating value={ratings.overall} onChange={(v) => setR('overall', v)} />
         </div>
-        <div>
-          <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">{F.comment.label}</label>
-          <textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={4}
-            placeholder="Contanos con detalle cualquier cosa que quieras destacar o mejorar…"
-            className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm font-medium text-ink outline-none focus:border-love resize-none" />
-        </div>
+        {show('comment') && (
+          <div>
+            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">{F.comment.label}</label>
+            <textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={4}
+              placeholder="Contanos con detalle cualquier cosa que quieras destacar o mejorar…"
+              className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm font-medium text-ink outline-none focus:border-love resize-none" />
+          </div>
+        )}
+
+        {/* Preguntas personalizadas agregadas por el admin */}
+        {cfg.customQuestions.length > 0 && (
+          <>
+            <SectionTitle>Preguntas adicionales</SectionTitle>
+            {cfg.customQuestions.map((q) => {
+              let control: React.ReactNode = null;
+              if (q.type === 'stars') {
+                control = <StarRating value={Number(customAnswers[q.id]) || 0} onChange={(v) => setCustom(q.id, v)} />;
+              } else if (q.type === 'options') {
+                control = <OptionGroup options={q.options || []} value={customAnswers[q.id] || ''} onChange={(v) => setCustom(q.id, v)} />;
+              } else {
+                control = (
+                  <input type="text" value={customAnswers[q.id] || ''} onChange={(e) => setCustom(q.id, e.target.value)}
+                    className="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-sm font-medium text-ink outline-none focus:border-love" />
+                );
+              }
+              return (
+                <React.Fragment key={q.id}>
+                  <Field label={q.label} hint={q.hint || undefined}>{control}</Field>
+                </React.Fragment>
+              );
+            })}
+          </>
+        )}
 
         <button type="submit" disabled={saving || uploadingPhoto}
           className="w-full py-3.5 bg-love text-white rounded-xl text-[12px] font-black uppercase tracking-widest flex items-center justify-center gap-2 cursor-pointer border-none disabled:opacity-50 hover:bg-love/90 transition-all shadow-lg shadow-love/20">
