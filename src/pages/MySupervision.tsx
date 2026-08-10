@@ -7,12 +7,8 @@ import { motion } from 'motion/react';
 import { ShieldCheck, Star, Send, CheckCircle2, Clock, Loader2, MapPin, Camera, X } from 'lucide-react';
 import { MysteryReport } from '@/src/types';
 import { BRANCHES } from '@/src/constants';
+import { resolveSupervisionConfig } from '@/src/lib/supervision';
 import { cn } from '@/src/lib/utils';
-
-// Opciones de tiempo reutilizables
-const WAIT_3 = ['0-3 minutos', '4-6 minutos', 'Más de 6 minutos'];
-const DELIVER_DRINK = ['0-6 minutos', 'Más de 6 minutos'];
-const DELIVER_FOOD = ['7-12 minutos', '12-15 minutos', 'Más de 15 minutos'];
 
 // Selector de estrellas (1 a 5).
 function StarRating({ value, onChange }: { value: number; onChange: (v: number) => void }) {
@@ -93,6 +89,10 @@ export function MySupervision() {
   const navigate = useNavigate();
 
   const activeProfile = realProfile || profile;
+
+  // Textos y opciones editables por el admin (con fallback a los por defecto).
+  const cfg = resolveSupervisionConfig(designConfig?.supervision);
+  const F = cfg.fields;
 
   const branchNames: string[] =
     (designConfig?.branches || []).map((b) => b.name).filter(Boolean).length > 0
@@ -248,7 +248,7 @@ export function MySupervision() {
     );
   }
 
-  const deliverOptions = orderType === 'bebida' ? DELIVER_DRINK : orderType === 'bebida_comida' ? DELIVER_FOOD : [];
+  const deliverOptions = orderType === 'bebida' ? cfg.deliverDrinkOptions : orderType === 'bebida_comida' ? cfg.deliverFoodOptions : [];
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 pb-24">
@@ -302,48 +302,45 @@ export function MySupervision() {
         </div>
 
         <SectionTitle>Limpieza e higiene</SectionTitle>
-        <Field label="Limpieza e higiene del local" hint="Pisos, vidrios, mesas">
+        <Field label={F.cleanlinessVenue.label} hint={F.cleanlinessVenue.hint}>
           <StarRating value={ratings.cleanlinessVenue} onChange={(v) => setR('cleanlinessVenue', v)} />
         </Field>
-        <Field label="Limpieza e higiene del baño">
+        <Field label={F.cleanlinessBathroom.label} hint={F.cleanlinessBathroom.hint}>
           <StarRating value={ratings.cleanlinessBathroom} onChange={(v) => setR('cleanlinessBathroom', v)} />
         </Field>
 
         <SectionTitle>Atención</SectionTitle>
-        <Field label="Predisposición del mozo/a para atenderte">
+        <Field label={F.disposition.label} hint={F.disposition.hint}>
           <StarRating value={ratings.disposition} onChange={(v) => setR('disposition', v)} />
         </Field>
-        <Field label="Nombre de quién te atendió">
+        <Field label={F.waiterName.label} hint={F.waiterName.hint}>
           <input type="text" value={waiterName} onChange={(e) => setWaiterName(e.target.value)}
             placeholder="Ej. Sofía"
             className="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-sm font-medium text-ink outline-none focus:border-love" />
         </Field>
-        <Field label="Tiempo de espera hasta que te atendieron">
-          <OptionGroup options={WAIT_3} value={waitGreeting} onChange={setWaitGreeting} />
+        <Field label={F.waitGreeting.label} hint={F.waitGreeting.hint}>
+          <OptionGroup options={cfg.waitGreetingOptions} value={waitGreeting} onChange={setWaitGreeting} />
         </Field>
-        <Field label="Tiempo de espera hasta que te tomaron el pedido" hint="Cuando ya habías dejado la carta a un lado">
-          <OptionGroup options={WAIT_3} value={waitOrderTaken} onChange={setWaitOrderTaken} />
+        <Field label={F.waitOrderTaken.label} hint={F.waitOrderTaken.hint}>
+          <OptionGroup options={cfg.waitOrderTakenOptions} value={waitOrderTaken} onChange={setWaitOrderTaken} />
         </Field>
 
         <SectionTitle>El pedido</SectionTitle>
-        <Field label="¿Qué pediste?">
+        <Field label={F.orderType.label} hint={F.orderType.hint}>
           <OptionGroup
-            options={['Solo bebida', 'Bebida y comida']}
-            value={orderType === 'bebida' ? 'Solo bebida' : orderType === 'bebida_comida' ? 'Bebida y comida' : ''}
-            onChange={(v) => setOrderType(v === 'Solo bebida' ? 'bebida' : 'bebida_comida')}
+            options={[cfg.orderTypeDrinkLabel, cfg.orderTypeFoodLabel]}
+            value={orderType === 'bebida' ? cfg.orderTypeDrinkLabel : orderType === 'bebida_comida' ? cfg.orderTypeFoodLabel : ''}
+            onChange={(v) => setOrderType(v === cfg.orderTypeDrinkLabel ? 'bebida' : 'bebida_comida')}
           />
         </Field>
         {orderType && (
-          <Field
-            label="Tiempo de espera hasta que te trajeron el pedido"
-            hint={orderType === 'bebida' ? 'Desde que se lo indicaste al mozo/a (bebida)' : 'Desde que se lo indicaste al mozo/a (bebida y comida)'}
-          >
+          <Field label={F.waitOrderDelivered.label} hint={F.waitOrderDelivered.hint}>
             <OptionGroup options={deliverOptions} value={waitOrderDelivered} onChange={setWaitOrderDelivered} />
           </Field>
         )}
 
         <SectionTitle>El plato / bebida</SectionTitle>
-        <Field label="Sacá una foto a tu plato / bebida">
+        <Field label={F.photo.label} hint={F.photo.hint}>
           {photoUrl ? (
             <div className="relative inline-block">
               <img src={photoUrl} alt="Foto del plato" className="w-32 h-32 object-cover rounded-xl border border-slate-200" />
@@ -363,26 +360,26 @@ export function MySupervision() {
             </label>
           )}
         </Field>
-        <Field label="Estética del plato / bebida">
+        <Field label={F.aesthetics.label} hint={F.aesthetics.hint}>
           <StarRating value={ratings.aesthetics} onChange={(v) => setR('aesthetics', v)} />
         </Field>
-        <Field label="Calidad del plato / bebida">
+        <Field label={F.foodQuality.label} hint={F.foodQuality.hint}>
           <StarRating value={ratings.foodQuality} onChange={(v) => setR('foodQuality', v)} />
         </Field>
 
         <SectionTitle>Cierre</SectionTitle>
-        <Field label="Tiempo de espera hasta que te trajeron la cuenta" hint="Desde que se la pediste al mozo/a">
-          <OptionGroup options={WAIT_3} value={waitBill} onChange={setWaitBill} />
+        <Field label={F.waitBill.label} hint={F.waitBill.hint}>
+          <OptionGroup options={cfg.waitBillOptions} value={waitBill} onChange={setWaitBill} />
         </Field>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-4 rounded-2xl bg-love/5 border border-love/20">
           <div>
-            <p className="text-sm font-black uppercase tracking-tight text-love">Calificación general de la experiencia</p>
-            <p className="text-[11px] text-slate-400">Tu valoración global de la visita</p>
+            <p className="text-sm font-black uppercase tracking-tight text-love">{F.overall.label}</p>
+            {F.overall.hint && <p className="text-[11px] text-slate-400">{F.overall.hint}</p>}
           </div>
           <StarRating value={ratings.overall} onChange={(v) => setR('overall', v)} />
         </div>
         <div>
-          <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Observaciones</label>
+          <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">{F.comment.label}</label>
           <textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={4}
             placeholder="Contanos con detalle cualquier cosa que quieras destacar o mejorar…"
             className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm font-medium text-ink outline-none focus:border-love resize-none" />
