@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { LogOut, Home, Gift, User, ShieldCheck, Moon, Sun, HelpCircle, FileText, ChevronRight, X, ArrowLeft, ArrowRight, Palette, Check, MapPin, Ticket } from 'lucide-react';
+import { LogOut, Home, Gift, User, ShieldCheck, Moon, Sun, HelpCircle, FileText, ChevronRight, X, ArrowLeft, ArrowRight, Palette, Check, MapPin, Ticket, MoreHorizontal } from 'lucide-react';
 import { supabase } from '@/src/lib/supabase';
 import { useAuth, useTheme } from '@/src/App';
 import { useDesign } from '@/src/components/DesignEngine';
@@ -25,6 +25,8 @@ export function Layout({ children }: LayoutProps) {
 
   const [showFAQ, setShowFAQ] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
+  // Menú "Más" del dock inferior (móvil): agrupa los accesos que no entran fijos.
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [activeFaqIndex, setActiveFaqIndex] = useState<number | null>(null);
 
   // Live visual button customization design modes
@@ -359,21 +361,19 @@ export function Layout({ children }: LayoutProps) {
               ? "sticky bottom-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 p-2.5 flex justify-around shrink-0 -mx-4 -mb-4 rounded-b-[1.7rem] shadow-[0_-8px_30px_rgba(0,0,0,0.08)]" 
               : "fixed bottom-0 left-0 right-0 sm:hidden bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border-t border-slate-200/60 dark:border-slate-800 px-2 py-2 shadow-[0_-8px_25px_rgba(0,0,0,0.06)] flex items-center justify-around z-[90]"
           )}>
+            {/* Accesos fijos: solo los principales. El resto va en "Más". */}
             {[
               { label: 'Inicio', to: '/', icon: <Home size={19} /> },
               { label: 'Premios', to: '/rewards', icon: <Gift size={19} /> },
-              { label: 'Mis combos', to: '/my-combos', icon: <Ticket size={19} /> },
-              ...(realProfile?.is_mystery_shopper ? [{ label: 'Supervisión', to: '/my-supervision', icon: <ShieldCheck size={19} /> }] : []),
-              { label: 'Mi Cuenta', to: '/my-account', icon: <User size={19} /> },
-              { label: 'Sucursales', to: '/branches', icon: <MapPin size={19} /> }
+              { label: 'Mis combos', to: '/my-combos', icon: <Ticket size={19} /> }
             ].map((item) => (
-              <NavLink 
+              <NavLink
                 key={item.to}
                 to={item.to}
                 className={({ isActive }) => cn(
                   "flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-2xl transition-all cursor-pointer border-none text-center bg-transparent shrink-0",
-                  isActive 
-                    ? "scale-105" 
+                  isActive
+                    ? "scale-105"
                     : "hover:text-slate-600 dark:hover:text-slate-300"
                 )}
               >
@@ -396,24 +396,90 @@ export function Layout({ children }: LayoutProps) {
               </NavLink>
             ))}
 
-            {/* mobile logout button at the very end */}
-            <button 
-              onClick={handleLogout}
-              className="flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-2xl transition-all cursor-pointer border-none text-center bg-transparent shrink-0 group"
-            >
-              <div className="transition-transform duration-200 text-slate-600 dark:text-slate-400 group-hover:text-love group-hover:scale-110">
-                <LogOut size={19} />
-              </div>
-              <span className="text-[7px] uppercase tracking-wider font-extrabold text-slate-600 dark:text-slate-400 group-hover:text-love transition-colors duration-200">
-                Salir
-              </span>
-            </button>
+            {/* Botón "Más": abre el resto de los accesos (incluye Salir). */}
+            {(() => {
+              const moreRoutes = ['/my-account', '/branches', '/my-supervision'];
+              const isMoreActive = moreRoutes.includes(location.pathname);
+              return (
+                <button
+                  onClick={() => setShowMoreMenu(true)}
+                  className="flex flex-col items-center gap-0.5 py-1 px-2.5 rounded-2xl transition-all cursor-pointer border-none text-center bg-transparent shrink-0"
+                >
+                  <div className={cn(
+                    "transition-transform duration-200",
+                    isMoreActive ? "scale-110 text-love" : "text-slate-600 dark:text-slate-400"
+                  )}>
+                    <MoreHorizontal size={19} />
+                  </div>
+                  <span className={cn(
+                    "text-[7px] uppercase tracking-wider font-extrabold transition-colors duration-200",
+                    isMoreActive ? "text-love font-black" : "text-slate-600 dark:text-slate-400"
+                  )}>
+                    Más
+                  </span>
+                </button>
+              );
+            })()}
           </div>
         )}
 
           </div>
         </div>
       </div>
+
+      {/* Menú "Más" del dock inferior (móvil): resto de accesos + Salir */}
+      <AnimatePresence>
+        {showMoreMenu && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowMoreMenu(false)}
+            className="fixed inset-0 bg-ink/50 backdrop-blur-sm z-[95] flex items-end"
+          >
+            <motion.div
+              initial={{ y: 60, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 60, opacity: 0 }}
+              transition={{ type: 'spring', damping: 26, stiffness: 320 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full bg-white dark:bg-slate-900 rounded-t-[2rem] border-t border-slate-200 dark:border-slate-800 p-5 pb-8 shadow-2xl"
+            >
+              <div className="w-10 h-1 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-5" />
+              <div className="grid grid-cols-3 gap-3">
+                {[
+                  ...(realProfile?.is_mystery_shopper ? [{ label: 'Supervisión', to: '/my-supervision', icon: <ShieldCheck size={22} /> }] : []),
+                  { label: 'Mi Cuenta', to: '/my-account', icon: <User size={22} /> },
+                  { label: 'Sucursales', to: '/branches', icon: <MapPin size={22} /> }
+                ].map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    onClick={() => setShowMoreMenu(false)}
+                    className={({ isActive }) => cn(
+                      "flex flex-col items-center justify-center gap-2 py-4 rounded-2xl border transition-all text-center",
+                      isActive
+                        ? "bg-love/10 border-love/30 text-love"
+                        : "bg-slate-50 dark:bg-slate-800/60 border-slate-100 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100"
+                    )}
+                  >
+                    {item.icon}
+                    <span className="text-[9px] uppercase tracking-wider font-black">{item.label}</span>
+                  </NavLink>
+                ))}
+
+                <button
+                  onClick={() => { setShowMoreMenu(false); handleLogout(); }}
+                  className="flex flex-col items-center justify-center gap-2 py-4 rounded-2xl border border-love/20 bg-love/5 text-love transition-all hover:bg-love hover:text-white cursor-pointer"
+                >
+                  <LogOut size={22} />
+                  <span className="text-[9px] uppercase tracking-wider font-black">Salir</span>
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Interactive FAQ Sliding Drawer / Overlay Modal */}
       <AnimatePresence>
