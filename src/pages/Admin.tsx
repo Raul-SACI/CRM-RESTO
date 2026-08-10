@@ -5775,8 +5775,10 @@ export function Admin() {
                         { label: 'Limpieza local', v: r.rating_cleanliness },
                         { label: 'Limpieza baño', v: r.rating_cleanliness_bathroom },
                         { label: 'Predisposición', v: r.rating_service },
-                        { label: 'Estética', v: r.rating_aesthetics },
-                        { label: 'Calidad', v: r.rating_food },
+                        { label: 'Estética comida', v: r.rating_aesthetics },
+                        { label: 'Calidad comida', v: r.rating_food },
+                        { label: 'Estética bebida', v: r.rating_aesthetics_drink },
+                        { label: 'Calidad bebida', v: r.rating_food_drink },
                       ].filter((c) => !!c.v);
                       const orderTypeLabel = r.order_type === 'bebida' ? 'Solo bebida' : r.order_type === 'bebida_comida' ? 'Bebida y comida' : null;
                       const waits = [
