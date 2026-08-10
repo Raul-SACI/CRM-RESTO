@@ -8,7 +8,7 @@ import * as XLSX from 'xlsx';
 import { useDesign, COLOR_PRESETS, CORNER_PRESETS, AVAILABLE_FONTS, type DesignConfig, type BannerConfig } from '@/src/components/DesignEngine';
 import { BirthdayCalendar } from '@/src/components/BirthdayCalendar';
 import { notifyClient } from '@/src/lib/notify';
-import { resolveSupervisionConfig, SUP_TEXT_FIELDS, SUP_OPTION_LISTS, DEFAULT_SUPERVISION, type SupervisionConfig } from '@/src/lib/supervision';
+import { resolveSupervisionConfig, SUP_TEXT_FIELDS, SUP_OPTION_LISTS, SUP_REQUIRED_FIELDS, DEFAULT_SUPERVISION, makeCustomQuestion, type SupervisionConfig, type CustomQuestion } from '@/src/lib/supervision';
 import { useAuth, useTheme } from '@/src/App';
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell, PieChart, Pie } from 'recharts';
@@ -1247,6 +1247,30 @@ export function Admin() {
 
   const setSupOptions = (key: string, value: string[]) => {
     setSupDraft((prev) => ({ ...prev, [key]: value }));
+  };
+
+  // Mostrar/ocultar un campo fijo del formulario.
+  const toggleSupField = (key: string) => {
+    if (SUP_REQUIRED_FIELDS.includes(key)) return; // no se puede ocultar
+    setSupDraft((prev) => {
+      const set = new Set(prev.disabledFields || []);
+      if (set.has(key)) set.delete(key); else set.add(key);
+      return { ...prev, disabledFields: Array.from(set) };
+    });
+  };
+
+  // Preguntas personalizadas
+  const addCustomQuestion = () => {
+    setSupDraft((prev) => ({ ...prev, customQuestions: [...(prev.customQuestions || []), makeCustomQuestion()] }));
+  };
+  const updateCustomQuestion = (id: string, patch: Partial<CustomQuestion>) => {
+    setSupDraft((prev) => ({
+      ...prev,
+      customQuestions: (prev.customQuestions || []).map((q) => (q.id === id ? { ...q, ...patch } : q)),
+    }));
+  };
+  const removeCustomQuestion = (id: string) => {
+    setSupDraft((prev) => ({ ...prev, customQuestions: (prev.customQuestions || []).filter((q) => q.id !== id) }));
   };
 
   const handleSaveSupConfig = async () => {
@@ -5565,12 +5589,28 @@ export function Admin() {
                       return SUP_TEXT_FIELDS.map((f) => {
                         const showHeader = f.section !== lastSection;
                         lastSection = f.section;
+                        const excluded = (supDraft.disabledFields || []).includes(f.key);
+                        const required = SUP_REQUIRED_FIELDS.includes(f.key);
                         return (
                           <div key={f.key}>
                             {showHeader && (
                               <p className="text-[11px] font-black uppercase tracking-[0.2em] text-love mb-2 mt-2">{f.section}</p>
                             )}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            <div className="flex items-center justify-between gap-2 mb-1">
+                              <label className={cn("flex items-center gap-2 cursor-pointer select-none", required && "cursor-default")}>
+                                <input
+                                  type="checkbox"
+                                  checked={!excluded}
+                                  disabled={required}
+                                  onChange={() => toggleSupField(f.key)}
+                                  className="rounded border-slate-300 text-love focus:ring-love"
+                                />
+                                <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">
+                                  {excluded ? 'Oculta — no aparece en el formulario' : (required ? 'Siempre visible' : 'Incluir esta pregunta')}
+                                </span>
+                              </label>
+                            </div>
+                            <div className={cn("grid grid-cols-1 md:grid-cols-2 gap-2", excluded && "opacity-40 pointer-events-none")}>
                               <div>
                                 <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1 block">Pregunta</label>
                                 <input
@@ -5635,6 +5675,66 @@ export function Admin() {
                       <p className="text-[10px] text-slate-400 mt-2 italic">Escribí una opción por línea. Cambiar estas opciones no afecta los reportes ya enviados.</p>
                     </div>
 
+                    {/* Preguntas personalizadas: agregar / eliminar */}
+                    <div className="pt-2">
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <p className="text-[11px] font-black uppercase tracking-[0.2em] text-love">Preguntas adicionales</p>
+                        <button onClick={addCustomQuestion}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-ink text-white text-[9px] font-black uppercase tracking-widest cursor-pointer border-none hover:bg-black transition-all">
+                          <Plus size={12} /> Agregar pregunta
+                        </button>
+                      </div>
+
+                      {(supDraft.customQuestions || []).length === 0 ? (
+                        <p className="text-[11px] text-slate-400 italic py-2">No hay preguntas adicionales. Agregá las que quieras (estrellas, opciones o texto libre).</p>
+                      ) : (
+                        <div className="space-y-3">
+                          {(supDraft.customQuestions || []).map((q) => (
+                            <div key={q.id} className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                              <div className="flex items-center gap-2">
+                                <select
+                                  value={q.type}
+                                  onChange={(e) => updateCustomQuestion(q.id, { type: e.target.value as CustomQuestion['type'] })}
+                                  className="px-2.5 py-2 rounded-lg bg-white border border-slate-200 text-[11px] font-black uppercase tracking-wide text-ink outline-none focus:border-love cursor-pointer"
+                                >
+                                  <option value="stars">Estrellas</option>
+                                  <option value="options">Opciones</option>
+                                  <option value="text">Texto libre</option>
+                                </select>
+                                <input
+                                  type="text"
+                                  value={q.label}
+                                  onChange={(e) => updateCustomQuestion(q.id, { label: e.target.value })}
+                                  placeholder="Escribí la pregunta…"
+                                  className="flex-1 px-3 py-2 rounded-lg bg-white border border-slate-200 text-sm font-medium text-ink outline-none focus:border-love"
+                                />
+                                <button onClick={() => removeCustomQuestion(q.id)} title="Eliminar pregunta"
+                                  className="shrink-0 p-2 rounded-lg text-slate-300 hover:text-love hover:bg-love/10 transition-colors bg-transparent border-none cursor-pointer">
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                              <input
+                                type="text"
+                                value={q.hint || ''}
+                                onChange={(e) => updateCustomQuestion(q.id, { hint: e.target.value })}
+                                placeholder="Aclaración (opcional)"
+                                className="w-full px-3 py-2 rounded-lg bg-white border border-slate-200 text-sm font-medium text-slate-600 outline-none focus:border-love"
+                              />
+                              {q.type === 'options' && (
+                                <textarea
+                                  rows={3}
+                                  value={(q.options || []).join('\n')}
+                                  onChange={(e) => updateCustomQuestion(q.id, { options: e.target.value.split('\n') })}
+                                  placeholder="Una opción por línea"
+                                  className="w-full px-3 py-2 rounded-lg bg-white border border-slate-200 text-xs font-mono text-ink outline-none focus:border-love resize-none"
+                                />
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
                     <div className="flex flex-wrap items-center gap-2 pt-2">
                       <button onClick={handleSaveSupConfig} disabled={savingSup}
                         className="px-5 py-2.5 rounded-xl bg-love text-white text-[11px] font-black uppercase tracking-widest cursor-pointer border-none disabled:opacity-50 hover:bg-love/90 transition-all">
@@ -5685,6 +5785,11 @@ export function Admin() {
                         { label: `Entrega${orderTypeLabel ? ' · ' + orderTypeLabel : ''}`, v: r.wait_order_delivered },
                         { label: 'Cuenta', v: r.wait_bill },
                       ].filter((w) => !!w.v);
+                      const customQs = resolveSupervisionConfig(designConfig?.supervision).customQuestions;
+                      const customAns = r.custom_answers || {};
+                      const answered = customQs
+                        .map((q) => ({ q, val: customAns[q.id] }))
+                        .filter((x) => x.val !== undefined && x.val !== null && x.val !== '');
                       return (
                         <div key={r.id} className="p-5 rounded-2xl bg-slate-50 border border-slate-200/60">
                           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
@@ -5762,6 +5867,26 @@ export function Admin() {
                                 <p className="text-xs text-slate-600 font-medium italic border-l-2 border-love/30 pl-3 py-1 mt-3">
                                   "{r.comment}"
                                 </p>
+                              )}
+
+                              {/* Respuestas a preguntas adicionales */}
+                              {answered.length > 0 && (
+                                <div className="mt-3 space-y-1.5">
+                                  {answered.map(({ q, val }) => (
+                                    <div key={q.id} className="flex items-center gap-2 flex-wrap">
+                                      <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">{q.label}:</span>
+                                      {q.type === 'stars' ? (
+                                        <span className="flex items-center gap-0.5">
+                                          {[1, 2, 3, 4, 5].map((s) => (
+                                            <Star key={s} size={11} className={cn((Number(val) || 0) >= s ? 'fill-yellow-400 text-yellow-400' : 'text-slate-200')} />
+                                          ))}
+                                        </span>
+                                      ) : (
+                                        <span className="text-xs font-bold text-ink">{String(val)}</span>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
                               )}
                             </div>
 

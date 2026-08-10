@@ -8,6 +8,24 @@ export interface SupervisionField {
   hint?: string;
 }
 
+// Pregunta agregada por el admin (además de las fijas del formulario).
+export type CustomQuestionType = 'stars' | 'options' | 'text';
+export interface CustomQuestion {
+  id: string;
+  type: CustomQuestionType;
+  label: string;
+  hint?: string;
+  options?: string[]; // solo para type 'options'
+}
+
+export function makeCustomQuestion(): CustomQuestion {
+  const id =
+    (typeof crypto !== 'undefined' && (crypto as any).randomUUID)
+      ? (crypto as any).randomUUID()
+      : `q_${Date.now()}_${Math.floor(Math.random() * 1e6)}`;
+  return { id, type: 'stars', label: '', hint: '', options: [] };
+}
+
 export interface SupervisionConfig {
   fields: {
     cleanlinessVenue: SupervisionField;
@@ -32,7 +50,14 @@ export interface SupervisionConfig {
   waitBillOptions: string[];
   deliverDrinkOptions: string[];
   deliverFoodOptions: string[];
+  // Claves de campos fijos que el admin decidió ocultar del formulario.
+  disabledFields: string[];
+  // Preguntas extra agregadas por el admin.
+  customQuestions: CustomQuestion[];
 }
+
+// Campos fijos que NO se pueden ocultar (anclas del formulario).
+export const SUP_REQUIRED_FIELDS: string[] = ['overall'];
 
 export type SupervisionFieldKey = keyof SupervisionConfig['fields'];
 export type SupervisionOptionKey =
@@ -66,7 +91,29 @@ export const DEFAULT_SUPERVISION: SupervisionConfig = {
   waitBillOptions: ['0-3 minutos', '4-6 minutos', 'Más de 6 minutos'],
   deliverDrinkOptions: ['0-6 minutos', 'Más de 6 minutos'],
   deliverFoodOptions: ['7-12 minutos', '12-15 minutos', 'Más de 15 minutos'],
+  disabledFields: [],
+  customQuestions: [],
 };
+
+// Sanitiza la lista de preguntas personalizadas guardada.
+function sanitizeCustomQuestions(list: any): CustomQuestion[] {
+  if (!Array.isArray(list)) return [];
+  return list
+    .filter((q) => q && typeof q.id === 'string')
+    .map((q) => {
+      const type: CustomQuestionType = q.type === 'options' || q.type === 'text' ? q.type : 'stars';
+      return {
+        id: q.id,
+        type,
+        label: String(q.label || '').trim(),
+        hint: q.hint ? String(q.hint) : '',
+        options: type === 'options'
+          ? (Array.isArray(q.options) ? q.options.map((o: any) => String(o)).filter((o: string) => o.trim()) : [])
+          : [],
+      };
+    })
+    .filter((q) => q.label); // descartamos las preguntas sin texto
+}
 
 const arr = (a: any, fallback: string[]): string[] =>
   Array.isArray(a) && a.filter((x) => String(x || '').trim()).length > 0
@@ -96,6 +143,10 @@ export function resolveSupervisionConfig(sc?: Partial<SupervisionConfig> | null)
     waitBillOptions: arr(sc.waitBillOptions, d.waitBillOptions),
     deliverDrinkOptions: arr(sc.deliverDrinkOptions, d.deliverDrinkOptions),
     deliverFoodOptions: arr(sc.deliverFoodOptions, d.deliverFoodOptions),
+    disabledFields: Array.isArray(sc.disabledFields)
+      ? sc.disabledFields.filter((k) => typeof k === 'string' && !SUP_REQUIRED_FIELDS.includes(k))
+      : [],
+    customQuestions: sanitizeCustomQuestions(sc.customQuestions),
   };
 }
 
