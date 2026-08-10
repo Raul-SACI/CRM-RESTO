@@ -78,8 +78,10 @@ interface RatingsState {
   cleanlinessVenue: number;
   cleanlinessBathroom: number;
   disposition: number;
-  aesthetics: number;
-  foodQuality: number;
+  aestheticsFood: number;
+  qualityFood: number;
+  aestheticsDrink: number;
+  qualityDrink: number;
   overall: number;
 }
 
@@ -106,7 +108,8 @@ export function MySupervision() {
 
   // Estrellas
   const [ratings, setRatings] = useState<RatingsState>({
-    cleanlinessVenue: 0, cleanlinessBathroom: 0, disposition: 0, aesthetics: 0, foodQuality: 0, overall: 0,
+    cleanlinessVenue: 0, cleanlinessBathroom: 0, disposition: 0,
+    aestheticsFood: 0, qualityFood: 0, aestheticsDrink: 0, qualityDrink: 0, overall: 0,
   });
   const setR = (k: keyof RatingsState, v: number) => setRatings((p) => ({ ...p, [k]: v }));
 
@@ -139,8 +142,14 @@ export function MySupervision() {
 
   const isMystery = !!activeProfile?.is_mystery_shopper;
 
-  // Al cambiar qué pidió, se resetea el tiempo de entrega (las opciones cambian).
-  useEffect(() => { setWaitOrderDelivered(''); }, [orderType]);
+  // Al cambiar qué pidió: se resetea el tiempo de entrega (cambian las opciones)
+  // y se limpian las calificaciones de comida si pasó a "solo bebida".
+  useEffect(() => {
+    setWaitOrderDelivered('');
+    if (orderType === 'bebida') {
+      setRatings((p) => ({ ...p, aestheticsFood: 0, qualityFood: 0 }));
+    }
+  }, [orderType]);
 
   const fetchReports = async () => {
     if (!activeProfile?.id) return;
@@ -189,7 +198,7 @@ export function MySupervision() {
 
   const resetForm = () => {
     setBranch(''); setVisitDate(new Date().toISOString().split('T')[0]); setVisitTime('');
-    setRatings({ cleanlinessVenue: 0, cleanlinessBathroom: 0, disposition: 0, aesthetics: 0, foodQuality: 0, overall: 0 });
+    setRatings({ cleanlinessVenue: 0, cleanlinessBathroom: 0, disposition: 0, aestheticsFood: 0, qualityFood: 0, aestheticsDrink: 0, qualityDrink: 0, overall: 0 });
     setWaiterName(''); setWaitGreeting(''); setWaitOrderTaken(''); setOrderType(''); setWaitOrderDelivered('');
     setWaitBill(''); setComment(''); setPhotoUrl(''); setCustomAnswers({});
   };
@@ -210,8 +219,10 @@ export function MySupervision() {
         rating_cleanliness: ratings.cleanlinessVenue || null,
         rating_cleanliness_bathroom: ratings.cleanlinessBathroom || null,
         rating_service: ratings.disposition || null,
-        rating_aesthetics: ratings.aesthetics || null,
-        rating_food: ratings.foodQuality || null,
+        rating_aesthetics: ratings.aestheticsFood || null,
+        rating_food: ratings.qualityFood || null,
+        rating_aesthetics_drink: ratings.aestheticsDrink || null,
+        rating_food_drink: ratings.qualityDrink || null,
         rating_overall: ratings.overall,
         waiter_name: waiterName.trim() || null,
         wait_greeting: waitGreeting || null,
@@ -362,7 +373,7 @@ export function MySupervision() {
           </Field>
         )}
 
-        {(show('photo') || show('aesthetics') || show('foodQuality')) && <SectionTitle>El plato / bebida</SectionTitle>}
+        {(show('photo') || show('aestheticsFood') || show('qualityFood') || show('aestheticsDrink') || show('qualityDrink')) && <SectionTitle>El plato / bebida</SectionTitle>}
         {show('photo') && (
           <Field label={F.photo.label} hint={F.photo.hint}>
             {photoUrl ? (
@@ -385,15 +396,44 @@ export function MySupervision() {
             )}
           </Field>
         )}
-        {show('aesthetics') && (
-          <Field label={F.aesthetics.label} hint={F.aesthetics.hint}>
-            <StarRating value={ratings.aesthetics} onChange={(v) => setR('aesthetics', v)} />
-          </Field>
+
+        {/* Calificaciones según lo que pidió el cliente */}
+        {!orderType && (show('aestheticsFood') || show('qualityFood') || show('aestheticsDrink') || show('qualityDrink')) && (
+          <div className="p-4 rounded-2xl bg-slate-50 border border-dashed border-slate-200 text-[12px] text-slate-400 font-semibold">
+            Elegí arriba <span className="text-love font-bold">"{F.orderType.label}"</span> para calificar el plato y/o la bebida.
+          </div>
         )}
-        {show('foodQuality') && (
-          <Field label={F.foodQuality.label} hint={F.foodQuality.hint}>
-            <StarRating value={ratings.foodQuality} onChange={(v) => setR('foodQuality', v)} />
-          </Field>
+
+        {orderType === 'bebida_comida' && (show('aestheticsFood') || show('qualityFood')) && (
+          <>
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400 pt-1">🍽️ Comida</p>
+            {show('aestheticsFood') && (
+              <Field label={F.aestheticsFood.label} hint={F.aestheticsFood.hint}>
+                <StarRating value={ratings.aestheticsFood} onChange={(v) => setR('aestheticsFood', v)} />
+              </Field>
+            )}
+            {show('qualityFood') && (
+              <Field label={F.qualityFood.label} hint={F.qualityFood.hint}>
+                <StarRating value={ratings.qualityFood} onChange={(v) => setR('qualityFood', v)} />
+              </Field>
+            )}
+          </>
+        )}
+
+        {(orderType === 'bebida' || orderType === 'bebida_comida') && (show('aestheticsDrink') || show('qualityDrink')) && (
+          <>
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400 pt-1">🥤 Bebida</p>
+            {show('aestheticsDrink') && (
+              <Field label={F.aestheticsDrink.label} hint={F.aestheticsDrink.hint}>
+                <StarRating value={ratings.aestheticsDrink} onChange={(v) => setR('aestheticsDrink', v)} />
+              </Field>
+            )}
+            {show('qualityDrink') && (
+              <Field label={F.qualityDrink.label} hint={F.qualityDrink.hint}>
+                <StarRating value={ratings.qualityDrink} onChange={(v) => setR('qualityDrink', v)} />
+              </Field>
+            )}
+          </>
         )}
 
         <SectionTitle>Cierre</SectionTitle>

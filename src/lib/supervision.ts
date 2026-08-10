@@ -37,8 +37,10 @@ export interface SupervisionConfig {
     orderType: SupervisionField;
     waitOrderDelivered: SupervisionField;
     photo: SupervisionField;
-    aesthetics: SupervisionField;
-    foodQuality: SupervisionField;
+    aestheticsFood: SupervisionField;
+    qualityFood: SupervisionField;
+    aestheticsDrink: SupervisionField;
+    qualityDrink: SupervisionField;
     waitBill: SupervisionField;
     overall: SupervisionField;
     comment: SupervisionField;
@@ -78,8 +80,10 @@ export const DEFAULT_SUPERVISION: SupervisionConfig = {
     orderType: { label: '¿Qué pediste?', hint: '' },
     waitOrderDelivered: { label: 'Tiempo de espera hasta que te trajeron el pedido', hint: 'Desde que se lo indicaste al mozo/a' },
     photo: { label: 'Sacá una foto a tu plato / bebida', hint: '' },
-    aesthetics: { label: 'Estética del plato / bebida', hint: '' },
-    foodQuality: { label: 'Calidad del plato / bebida', hint: '' },
+    aestheticsFood: { label: 'Estética de la comida', hint: '' },
+    qualityFood: { label: 'Calidad de la comida', hint: '' },
+    aestheticsDrink: { label: 'Estética de la bebida', hint: '' },
+    qualityDrink: { label: 'Calidad de la bebida', hint: '' },
     waitBill: { label: 'Tiempo de espera hasta que te trajeron la cuenta', hint: 'Desde que se la pediste al mozo/a' },
     overall: { label: 'Calificación general de la experiencia', hint: 'Tu valoración global de la visita' },
     comment: { label: 'Observaciones', hint: '' },
@@ -161,8 +165,10 @@ export const SUP_TEXT_FIELDS: { key: SupervisionFieldKey; section: string; hasHi
   { key: 'orderType', section: 'El pedido', hasHint: true },
   { key: 'waitOrderDelivered', section: 'El pedido', hasHint: true },
   { key: 'photo', section: 'El plato', hasHint: true },
-  { key: 'aesthetics', section: 'El plato', hasHint: true },
-  { key: 'foodQuality', section: 'El plato', hasHint: true },
+  { key: 'aestheticsFood', section: 'El plato', hasHint: true },
+  { key: 'qualityFood', section: 'El plato', hasHint: true },
+  { key: 'aestheticsDrink', section: 'El plato', hasHint: true },
+  { key: 'qualityDrink', section: 'El plato', hasHint: true },
   { key: 'waitBill', section: 'Cierre', hasHint: true },
   { key: 'overall', section: 'Cierre', hasHint: true },
   { key: 'comment', section: 'Cierre', hasHint: false },

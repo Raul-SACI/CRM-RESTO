@@ -23,8 +23,10 @@ export interface MysteryReport {
   rating_cleanliness?: number | null;          // Limpieza e higiene del local
   rating_cleanliness_bathroom?: number | null; // Limpieza e higiene del baño
   rating_service?: number | null;              // Predisposición del mozo/a
-  rating_aesthetics?: number | null;           // Estética del plato/bebida
-  rating_food?: number | null;                 // Calidad del plato/bebida
+  rating_aesthetics?: number | null;           // Estética de la comida
+  rating_food?: number | null;                 // Calidad de la comida
+  rating_aesthetics_drink?: number | null;     // Estética de la bebida
+  rating_food_drink?: number | null;           // Calidad de la bebida
   rating_overall?: number | null;              // Calificación general
   rating_speed?: number | null;                // (obsoleto, se conserva por compatibilidad)
   // Datos y tiempos
