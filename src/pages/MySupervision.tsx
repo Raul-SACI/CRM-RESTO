@@ -4,12 +4,17 @@ import { useAuth } from '@/src/App';
 import { useDesign } from '@/src/components/DesignEngine';
 import { supabase } from '@/src/lib/supabase';
 import { motion } from 'motion/react';
-import { ShieldCheck, Star, Send, CheckCircle2, Clock, Loader2, MapPin } from 'lucide-react';
+import { ShieldCheck, Star, Send, CheckCircle2, Clock, Loader2, MapPin, Camera, X } from 'lucide-react';
 import { MysteryReport } from '@/src/types';
 import { BRANCHES } from '@/src/constants';
 import { cn } from '@/src/lib/utils';
 
-// Selector de estrellas reutilizable (1 a 5).
+// Opciones de tiempo reutilizables
+const WAIT_3 = ['0-3 minutos', '4-6 minutos', 'Más de 6 minutos'];
+const DELIVER_DRINK = ['0-6 minutos', 'Más de 6 minutos'];
+const DELIVER_FOOD = ['7-12 minutos', '12-15 minutos', 'Más de 15 minutos'];
+
+// Selector de estrellas (1 a 5).
 function StarRating({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   const [hover, setHover] = useState(0);
   return (
@@ -24,30 +29,62 @@ function StarRating({ value, onChange }: { value: number; onChange: (v: number) 
           className="p-0.5 bg-transparent border-none cursor-pointer transition-transform hover:scale-110"
           aria-label={`${star} estrellas`}
         >
-          <Star
-            size={26}
-            className={cn(
-              (hover || value) >= star ? 'fill-yellow-400 text-yellow-400' : 'text-slate-300'
-            )}
-          />
+          <Star size={26} className={cn((hover || value) >= star ? 'fill-yellow-400 text-yellow-400' : 'text-slate-300')} />
         </button>
       ))}
     </div>
   );
 }
 
-const CATEGORIES: { key: keyof RatingsState; label: string; hint: string }[] = [
-  { key: 'cleanliness', label: 'Limpieza e higiene', hint: 'Mesas, baños, pisos y presentación del local' },
-  { key: 'service', label: 'Atención del personal', hint: 'Amabilidad, predisposición y trato recibido' },
-  { key: 'speed', label: 'Tiempos de espera', hint: 'Demora en tomar el pedido y en entregarlo' },
-  { key: 'food', label: 'Calidad del producto', hint: 'Sabor, temperatura y presentación del plato' },
-];
+// Grupo de opciones (botones tipo "segmented").
+function OptionGroup({ options, value, onChange }: { options: string[]; value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {options.map((opt) => (
+        <button
+          key={opt}
+          type="button"
+          onClick={() => onChange(opt)}
+          className={cn(
+            'px-3.5 py-2 rounded-xl text-[11px] font-black uppercase tracking-tight border transition-all cursor-pointer',
+            value === opt
+              ? 'bg-love text-white border-love shadow-md shadow-love/20'
+              : 'bg-white text-slate-500 border-slate-200 hover:border-love/40'
+          )}
+        >
+          {opt}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// Fila con etiqueta + control (estrellas u opciones).
+function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-2">
+      <div>
+        <p className="text-sm font-extrabold text-ink leading-tight">{label}</p>
+        {hint && <p className="text-[11px] text-slate-400">{hint}</p>}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-love pt-2">{children}</h3>
+  );
+}
 
 interface RatingsState {
-  cleanliness: number;
-  service: number;
-  speed: number;
-  food: number;
+  cleanlinessVenue: number;
+  cleanlinessBathroom: number;
+  disposition: number;
+  aesthetics: number;
+  foodQuality: number;
+  overall: number;
 }
 
 export function MySupervision() {
@@ -62,11 +99,30 @@ export function MySupervision() {
       ? (designConfig!.branches as any[]).map((b) => b.name)
       : [...BRANCHES];
 
+  // Datos de la visita
   const [branch, setBranch] = useState('');
   const [visitDate, setVisitDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
-  const [ratings, setRatings] = useState<RatingsState>({ cleanliness: 0, service: 0, speed: 0, food: 0 });
-  const [overall, setOverall] = useState(0);
+  const [visitTime, setVisitTime] = useState('');
+
+  // Estrellas
+  const [ratings, setRatings] = useState<RatingsState>({
+    cleanlinessVenue: 0, cleanlinessBathroom: 0, disposition: 0, aesthetics: 0, foodQuality: 0, overall: 0,
+  });
+  const setR = (k: keyof RatingsState, v: number) => setRatings((p) => ({ ...p, [k]: v }));
+
+  // Textos y tiempos
+  const [waiterName, setWaiterName] = useState('');
+  const [waitGreeting, setWaitGreeting] = useState('');
+  const [waitOrderTaken, setWaitOrderTaken] = useState('');
+  const [orderType, setOrderType] = useState<'' | 'bebida' | 'bebida_comida'>('');
+  const [waitOrderDelivered, setWaitOrderDelivered] = useState('');
+  const [waitBill, setWaitBill] = useState('');
   const [comment, setComment] = useState('');
+
+  // Foto
+  const [photoUrl, setPhotoUrl] = useState('');
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+
   const [saving, setSaving] = useState(false);
   const [justSent, setJustSent] = useState(false);
 
@@ -74,6 +130,9 @@ export function MySupervision() {
   const [loadingReports, setLoadingReports] = useState(true);
 
   const isMystery = !!activeProfile?.is_mystery_shopper;
+
+  // Al cambiar qué pidió, se resetea el tiempo de entrega (las opciones cambian).
+  useEffect(() => { setWaitOrderDelivered(''); }, [orderType]);
 
   const fetchReports = async () => {
     if (!activeProfile?.id) return;
@@ -97,19 +156,41 @@ export function MySupervision() {
     else setLoadingReports(false);
   }, [activeProfile?.id, isMystery]);
 
+  const handlePhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !activeProfile?.id) return;
+    if (!file.type.startsWith('image/')) { alert('El archivo debe ser una imagen.'); return; }
+    setUploadingPhoto(true);
+    try {
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+      const fileName = `${activeProfile.id}/${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from('supervision-fotos')
+        .upload(fileName, file, { upsert: true, contentType: file.type });
+      if (upErr) throw upErr;
+      const { data: pub } = supabase.storage.from('supervision-fotos').getPublicUrl(fileName);
+      if (!pub?.publicUrl) throw new Error('No se pudo obtener el link de la foto');
+      setPhotoUrl(pub.publicUrl);
+    } catch (err: any) {
+      alert('No se pudo subir la foto: ' + (err?.message || err) + '\n\nVerificá que el bucket "supervision-fotos" exista en Supabase.');
+    } finally {
+      setUploadingPhoto(false);
+      (e.target as HTMLInputElement).value = '';
+    }
+  };
+
   const resetForm = () => {
-    setBranch('');
-    setVisitDate(new Date().toISOString().split('T')[0]);
-    setRatings({ cleanliness: 0, service: 0, speed: 0, food: 0 });
-    setOverall(0);
-    setComment('');
+    setBranch(''); setVisitDate(new Date().toISOString().split('T')[0]); setVisitTime('');
+    setRatings({ cleanlinessVenue: 0, cleanlinessBathroom: 0, disposition: 0, aesthetics: 0, foodQuality: 0, overall: 0 });
+    setWaiterName(''); setWaitGreeting(''); setWaitOrderTaken(''); setOrderType(''); setWaitOrderDelivered('');
+    setWaitBill(''); setComment(''); setPhotoUrl('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeProfile?.id) return;
     if (!branch) { alert('Elegí la sucursal que supervisaste.'); return; }
-    if (!overall) { alert('Poné una calificación general (1 a 5 estrellas).'); return; }
+    if (!ratings.overall) { alert('Poné la calificación general (1 a 5 estrellas).'); return; }
 
     setSaving(true);
     try {
@@ -117,11 +198,20 @@ export function MySupervision() {
         client_id: activeProfile.id,
         branch,
         visit_date: visitDate || null,
-        rating_cleanliness: ratings.cleanliness || null,
-        rating_service: ratings.service || null,
-        rating_speed: ratings.speed || null,
-        rating_food: ratings.food || null,
-        rating_overall: overall,
+        visit_time: visitTime || null,
+        rating_cleanliness: ratings.cleanlinessVenue || null,
+        rating_cleanliness_bathroom: ratings.cleanlinessBathroom || null,
+        rating_service: ratings.disposition || null,
+        rating_aesthetics: ratings.aesthetics || null,
+        rating_food: ratings.foodQuality || null,
+        rating_overall: ratings.overall,
+        waiter_name: waiterName.trim() || null,
+        wait_greeting: waitGreeting || null,
+        wait_order_taken: waitOrderTaken || null,
+        order_type: orderType || null,
+        wait_order_delivered: waitOrderDelivered || null,
+        wait_bill: waitBill || null,
+        photo_url: photoUrl || null,
         comment: comment.trim() || null,
         status: 'pendiente',
       });
@@ -158,17 +248,17 @@ export function MySupervision() {
     );
   }
 
+  const deliverOptions = orderType === 'bebida' ? DELIVER_DRINK : orderType === 'bebida_comida' ? DELIVER_FOOD : [];
+
   return (
     <div className="max-w-3xl mx-auto space-y-6 pb-24">
       {/* Encabezado */}
       <div className="bg-ink text-white rounded-[2rem] p-7 md:p-9 relative overflow-hidden">
-        <div className="absolute -right-6 -top-6 opacity-10">
-          <ShieldCheck size={140} />
-        </div>
+        <div className="absolute -right-6 -top-6 opacity-10"><ShieldCheck size={140} /></div>
         <p className="text-[10px] font-black uppercase tracking-[0.25em] text-love">Programa Confidencial</p>
         <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tighter italic mt-1">Mi Supervisión</h1>
         <p className="text-xs text-white/60 mt-3 max-w-md leading-relaxed">
-          Sos parte de nuestro equipo de clientes ocultos. Después de cada visita, contanos cómo estuvo la experiencia.
+          Sos parte de nuestro equipo de clientes ocultos. Después de cada visita, contanos con detalle cómo estuvo la experiencia.
           Solo vos y el administrador pueden ver estos reportes.
         </p>
       </div>
@@ -185,74 +275,121 @@ export function MySupervision() {
       )}
 
       {/* Formulario */}
-      <form onSubmit={handleSubmit} className="bg-white rounded-[2rem] p-6 md:p-8 border border-slate-100 shadow-sm space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <form onSubmit={handleSubmit} className="bg-white rounded-[2rem] p-6 md:p-8 border border-slate-100 shadow-sm space-y-4">
+        <SectionTitle>Datos de la visita</SectionTitle>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 flex items-center gap-1.5 mb-2">
-              <MapPin size={12} className="text-love" /> Sucursal supervisada
+              <MapPin size={12} className="text-love" /> Sucursal
             </label>
-            <select
-              value={branch}
-              onChange={(e) => setBranch(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm font-medium text-ink outline-none focus:border-love"
-            >
-              <option value="">Elegí una sucursal…</option>
-              {branchNames.map((name) => (
-                <option key={name} value={name}>{name}</option>
-              ))}
+            <select value={branch} onChange={(e) => setBranch(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm font-medium text-ink outline-none focus:border-love">
+              <option value="">Elegí…</option>
+              {branchNames.map((name) => <option key={name} value={name}>{name}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Fecha de la visita</label>
-            <input
-              type="date"
-              value={visitDate}
-              max={new Date().toISOString().split('T')[0]}
+            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Fecha</label>
+            <input type="date" value={visitDate} max={new Date().toISOString().split('T')[0]}
               onChange={(e) => setVisitDate(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm font-medium text-ink outline-none focus:border-love"
-            />
+              className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm font-medium text-ink outline-none focus:border-love" />
+          </div>
+          <div>
+            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Horario</label>
+            <input type="time" value={visitTime} onChange={(e) => setVisitTime(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm font-medium text-ink outline-none focus:border-love" />
           </div>
         </div>
 
-        {/* Categorías con estrellas */}
-        <div className="space-y-4">
-          {CATEGORIES.map((cat) => (
-            <div key={cat.key} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-4 rounded-2xl bg-slate-50 border border-slate-100">
-              <div>
-                <p className="text-sm font-extrabold text-ink">{cat.label}</p>
-                <p className="text-[11px] text-slate-400">{cat.hint}</p>
-              </div>
-              <StarRating value={ratings[cat.key]} onChange={(v) => setRatings((prev) => ({ ...prev, [cat.key]: v }))} />
-            </div>
-          ))}
-        </div>
+        <SectionTitle>Limpieza e higiene</SectionTitle>
+        <Field label="Limpieza e higiene del local" hint="Pisos, vidrios, mesas">
+          <StarRating value={ratings.cleanlinessVenue} onChange={(v) => setR('cleanlinessVenue', v)} />
+        </Field>
+        <Field label="Limpieza e higiene del baño">
+          <StarRating value={ratings.cleanlinessBathroom} onChange={(v) => setR('cleanlinessBathroom', v)} />
+        </Field>
 
-        {/* Calificación general */}
+        <SectionTitle>Atención</SectionTitle>
+        <Field label="Predisposición del mozo/a para atenderte">
+          <StarRating value={ratings.disposition} onChange={(v) => setR('disposition', v)} />
+        </Field>
+        <Field label="Nombre de quién te atendió">
+          <input type="text" value={waiterName} onChange={(e) => setWaiterName(e.target.value)}
+            placeholder="Ej. Sofía"
+            className="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-sm font-medium text-ink outline-none focus:border-love" />
+        </Field>
+        <Field label="Tiempo de espera hasta que te atendieron">
+          <OptionGroup options={WAIT_3} value={waitGreeting} onChange={setWaitGreeting} />
+        </Field>
+        <Field label="Tiempo de espera hasta que te tomaron el pedido" hint="Cuando ya habías dejado la carta a un lado">
+          <OptionGroup options={WAIT_3} value={waitOrderTaken} onChange={setWaitOrderTaken} />
+        </Field>
+
+        <SectionTitle>El pedido</SectionTitle>
+        <Field label="¿Qué pediste?">
+          <OptionGroup
+            options={['Solo bebida', 'Bebida y comida']}
+            value={orderType === 'bebida' ? 'Solo bebida' : orderType === 'bebida_comida' ? 'Bebida y comida' : ''}
+            onChange={(v) => setOrderType(v === 'Solo bebida' ? 'bebida' : 'bebida_comida')}
+          />
+        </Field>
+        {orderType && (
+          <Field
+            label="Tiempo de espera hasta que te trajeron el pedido"
+            hint={orderType === 'bebida' ? 'Desde que se lo indicaste al mozo/a (bebida)' : 'Desde que se lo indicaste al mozo/a (bebida y comida)'}
+          >
+            <OptionGroup options={deliverOptions} value={waitOrderDelivered} onChange={setWaitOrderDelivered} />
+          </Field>
+        )}
+
+        <SectionTitle>El plato / bebida</SectionTitle>
+        <Field label="Sacá una foto a tu plato / bebida">
+          {photoUrl ? (
+            <div className="relative inline-block">
+              <img src={photoUrl} alt="Foto del plato" className="w-32 h-32 object-cover rounded-xl border border-slate-200" />
+              <button type="button" onClick={() => setPhotoUrl('')}
+                className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-love text-white flex items-center justify-center border-none cursor-pointer shadow">
+                <X size={14} />
+              </button>
+            </div>
+          ) : (
+            <label className={cn(
+              'inline-flex items-center gap-2 px-4 py-3 rounded-xl border border-dashed border-slate-300 text-sm font-bold text-slate-500 cursor-pointer hover:border-love hover:text-love transition-all',
+              uploadingPhoto && 'opacity-60 pointer-events-none'
+            )}>
+              {uploadingPhoto ? <Loader2 size={18} className="animate-spin" /> : <Camera size={18} />}
+              {uploadingPhoto ? 'Subiendo…' : 'Tomar / subir foto'}
+              <input type="file" accept="image/*" capture="environment" onChange={handlePhoto} className="hidden" />
+            </label>
+          )}
+        </Field>
+        <Field label="Estética del plato / bebida">
+          <StarRating value={ratings.aesthetics} onChange={(v) => setR('aesthetics', v)} />
+        </Field>
+        <Field label="Calidad del plato / bebida">
+          <StarRating value={ratings.foodQuality} onChange={(v) => setR('foodQuality', v)} />
+        </Field>
+
+        <SectionTitle>Cierre</SectionTitle>
+        <Field label="Tiempo de espera hasta que te trajeron la cuenta" hint="Desde que se la pediste al mozo/a">
+          <OptionGroup options={WAIT_3} value={waitBill} onChange={setWaitBill} />
+        </Field>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-4 rounded-2xl bg-love/5 border border-love/20">
           <div>
-            <p className="text-sm font-black uppercase tracking-tight text-love">Calificación general</p>
+            <p className="text-sm font-black uppercase tracking-tight text-love">Calificación general de la experiencia</p>
             <p className="text-[11px] text-slate-400">Tu valoración global de la visita</p>
           </div>
-          <StarRating value={overall} onChange={setOverall} />
+          <StarRating value={ratings.overall} onChange={(v) => setR('overall', v)} />
         </div>
-
-        {/* Comentario */}
         <div>
-          <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Observaciones (qué viste, qué mejorarías)</label>
-          <textarea
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            rows={4}
-            placeholder="Contanos con detalle cómo fue la experiencia…"
-            className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm font-medium text-ink outline-none focus:border-love resize-none"
-          />
+          <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">Observaciones</label>
+          <textarea value={comment} onChange={(e) => setComment(e.target.value)} rows={4}
+            placeholder="Contanos con detalle cualquier cosa que quieras destacar o mejorar…"
+            className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-200 text-sm font-medium text-ink outline-none focus:border-love resize-none" />
         </div>
 
-        <button
-          type="submit"
-          disabled={saving}
-          className="w-full py-3.5 bg-love text-white rounded-xl text-[12px] font-black uppercase tracking-widest flex items-center justify-center gap-2 cursor-pointer border-none disabled:opacity-50 hover:bg-love/90 transition-all shadow-lg shadow-love/20"
-        >
+        <button type="submit" disabled={saving || uploadingPhoto}
+          className="w-full py-3.5 bg-love text-white rounded-xl text-[12px] font-black uppercase tracking-widest flex items-center justify-center gap-2 cursor-pointer border-none disabled:opacity-50 hover:bg-love/90 transition-all shadow-lg shadow-love/20">
           {saving ? <><Loader2 size={16} className="animate-spin" /> Enviando…</> : <><Send size={16} /> Enviar reporte de supervisión</>}
         </button>
       </form>
@@ -279,6 +416,7 @@ export function MySupervision() {
                   </div>
                   <p className="text-[11px] text-slate-400 mt-0.5">
                     {r.visit_date ? new Date(r.visit_date + 'T00:00:00').toLocaleDateString('es-AR') : new Date(r.created_at).toLocaleDateString('es-AR')}
+                    {r.visit_time ? ` · ${r.visit_time} hs` : ''}
                   </p>
                 </div>
                 <div className="text-right shrink-0">

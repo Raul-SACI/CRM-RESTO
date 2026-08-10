@@ -5515,11 +5515,19 @@ export function Admin() {
                   <div className="space-y-4">
                     {mysteryReports.map((r) => {
                       const cats = [
-                        { label: 'Limpieza', v: r.rating_cleanliness },
-                        { label: 'Atención', v: r.rating_service },
-                        { label: 'Tiempos', v: r.rating_speed },
-                        { label: 'Producto', v: r.rating_food },
-                      ];
+                        { label: 'Limpieza local', v: r.rating_cleanliness },
+                        { label: 'Limpieza baño', v: r.rating_cleanliness_bathroom },
+                        { label: 'Predisposición', v: r.rating_service },
+                        { label: 'Estética', v: r.rating_aesthetics },
+                        { label: 'Calidad', v: r.rating_food },
+                      ].filter((c) => !!c.v);
+                      const orderTypeLabel = r.order_type === 'bebida' ? 'Solo bebida' : r.order_type === 'bebida_comida' ? 'Bebida y comida' : null;
+                      const waits = [
+                        { label: 'Espera atención', v: r.wait_greeting },
+                        { label: 'Toma de pedido', v: r.wait_order_taken },
+                        { label: `Entrega${orderTypeLabel ? ' · ' + orderTypeLabel : ''}`, v: r.wait_order_delivered },
+                        { label: 'Cuenta', v: r.wait_bill },
+                      ].filter((w) => !!w.v);
                       return (
                         <div key={r.id} className="p-5 rounded-2xl bg-slate-50 border border-slate-200/60">
                           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
@@ -5529,7 +5537,7 @@ export function Admin() {
                                   <MapPin size={11} className="text-love" /> {r.branch || 'Sin sucursal'}
                                 </span>
                                 <span className="text-[10px] font-mono text-slate-400">
-                                  Visita: {r.visit_date ? new Date(r.visit_date + 'T00:00:00').toLocaleDateString('es-AR') : '—'}
+                                  Visita: {r.visit_date ? new Date(r.visit_date + 'T00:00:00').toLocaleDateString('es-AR') : '—'}{r.visit_time ? ` · ${r.visit_time} hs` : ''}
                                 </span>
                                 {r.status === 'revisado' ? (
                                   <span className="inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">
@@ -5546,6 +5554,9 @@ export function Admin() {
                                 {r.profiles?.full_name || 'Cliente oculto'}
                                 <span className="text-[10px] font-mono text-slate-400 ml-2">{r.profiles?.email || ''}</span>
                               </p>
+                              {r.waiter_name && (
+                                <p className="text-[11px] text-slate-500 mt-0.5">Atendido por: <span className="font-bold text-ink">{r.waiter_name}</span></p>
+                              )}
 
                               {/* Calificación general */}
                               <div className="flex items-center gap-1 mt-2">
@@ -5555,19 +5566,40 @@ export function Admin() {
                                 ))}
                               </div>
 
-                              {/* Categorías */}
-                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3">
-                                {cats.map((c) => (
-                                  <div key={c.label} className="bg-white rounded-xl border border-slate-100 px-3 py-2">
-                                    <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">{c.label}</p>
-                                    <div className="flex items-center gap-0.5 mt-1">
-                                      {[1, 2, 3, 4, 5].map((s) => (
-                                        <Star key={s} size={11} className={cn((c.v || 0) >= s ? 'fill-yellow-400 text-yellow-400' : 'text-slate-200')} />
-                                      ))}
+                              {/* Categorías con estrellas */}
+                              {cats.length > 0 && (
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-3">
+                                  {cats.map((c) => (
+                                    <div key={c.label} className="bg-white rounded-xl border border-slate-100 px-3 py-2">
+                                      <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">{c.label}</p>
+                                      <div className="flex items-center gap-0.5 mt-1">
+                                        {[1, 2, 3, 4, 5].map((s) => (
+                                          <Star key={s} size={11} className={cn((c.v || 0) >= s ? 'fill-yellow-400 text-yellow-400' : 'text-slate-200')} />
+                                        ))}
+                                      </div>
                                     </div>
-                                  </div>
-                                ))}
-                              </div>
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* Tiempos de espera */}
+                              {waits.length > 0 && (
+                                <div className="flex flex-wrap gap-2 mt-3">
+                                  {waits.map((w) => (
+                                    <span key={w.label} className="inline-flex items-center gap-1.5 text-[10px] font-bold text-slate-600 bg-white border border-slate-200 px-2.5 py-1 rounded-lg">
+                                      <Clock size={10} className="text-love" />
+                                      <span className="text-slate-400 uppercase tracking-wide text-[8px] font-black">{w.label}:</span> {w.v}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+
+                              {/* Foto del plato */}
+                              {r.photo_url && (
+                                <a href={r.photo_url} target="_blank" rel="noreferrer" className="inline-block mt-3">
+                                  <img src={r.photo_url} alt="Foto del plato" className="w-24 h-24 object-cover rounded-xl border border-slate-200 hover:opacity-90 transition-opacity" />
+                                </a>
+                              )}
 
                               {r.comment && (
                                 <p className="text-xs text-slate-600 font-medium italic border-l-2 border-love/30 pl-3 py-1 mt-3">
