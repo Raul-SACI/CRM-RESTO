@@ -9,14 +9,17 @@ import { supabase } from '@/src/lib/supabase';
 import { Profile } from '@/src/types';
 import { Auth } from '@/src/pages/Auth';
 import { Dashboard } from '@/src/pages/Dashboard';
-import { Waiter } from '@/src/pages/Waiter';
-import { Admin } from '@/src/pages/Admin';
-import { Rewards } from '@/src/pages/Rewards';
-import { Help } from '@/src/pages/Help';
-import { Branches } from '@/src/pages/Branches';
-import { MyCombos } from '@/src/pages/MyCombos';
-import { MyAccount } from '@/src/pages/MyAccount';
-import { MySupervision } from '@/src/pages/MySupervision';
+// Carga diferida (lazy): estas páginas se descargan solo cuando se entra a
+// ellas. Así el cliente no baja en el arranque el código de Caja (escáner QR),
+// del Panel admin (Excel, gráficos), ni de las pantallas secundarias.
+const Waiter = React.lazy(() => import('@/src/pages/Waiter').then(m => ({ default: m.Waiter })));
+const Admin = React.lazy(() => import('@/src/pages/Admin').then(m => ({ default: m.Admin })));
+const Rewards = React.lazy(() => import('@/src/pages/Rewards').then(m => ({ default: m.Rewards })));
+const Help = React.lazy(() => import('@/src/pages/Help').then(m => ({ default: m.Help })));
+const Branches = React.lazy(() => import('@/src/pages/Branches').then(m => ({ default: m.Branches })));
+const MyCombos = React.lazy(() => import('@/src/pages/MyCombos').then(m => ({ default: m.MyCombos })));
+const MyAccount = React.lazy(() => import('@/src/pages/MyAccount').then(m => ({ default: m.MyAccount })));
+const MySupervision = React.lazy(() => import('@/src/pages/MySupervision').then(m => ({ default: m.MySupervision })));
 import { Layout } from '@/src/components/Layout';
 import { CompleteProfile } from '@/src/components/CompleteProfile';
 import { motion, AnimatePresence } from 'motion/react';
@@ -95,6 +98,15 @@ function AppRoutes() {
   const from = stateFrom ? (stateFrom.pathname + (stateFrom.search || "")) : "/";
 
   return (
+    <React.Suspense fallback={
+      <div className="min-h-screen bg-paper flex items-center justify-center">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
+          className="w-10 h-10 border-2 border-love border-t-transparent rounded-full"
+        />
+      </div>
+    }>
     <AnimatePresence mode="wait">
       <Routes location={location}>
         <Route 
@@ -226,6 +238,7 @@ function AppRoutes() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AnimatePresence>
+    </React.Suspense>
   );
 }
 
