@@ -61,6 +61,9 @@ export function Waiter() {
   const [confirmingUse, setConfirmingUse] = useState<string | null>(null);
   const [confirmedUses, setConfirmedUses] = useState<string[]>([]);
   const [usedToday, setUsedToday] = useState<any[]>([]);
+  // Modal para confirmar un USO pidiendo el N° de comprobante (igual que el canje)
+  const [confirmingUseReq, setConfirmingUseReq] = useState<any | null>(null);
+  const [usoInvoice, setUsoInvoice] = useState('');
 
   // Sucursales reales (del panel), solo las activas. active undefined = activa.
   const activeBranches = (designConfig.branches || []).filter(b => b.active !== false);
@@ -587,11 +590,19 @@ export function Waiter() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cashierView]);
 
-  // Confirma un código: descuenta 1 uso (registra CONSUMO_COMBO) y marca usado
-  const confirmUse = async (req: any) => {
+  // Confirma un código: pide el N° de comprobante, descuenta 1 uso
+  // (registra CONSUMO_COMBO) y marca el código como usado.
+  const confirmUse = async () => {
+    const req = confirmingUseReq;
+    if (!req) return;
+    const comprobante = usoInvoice.trim();
+    if (!comprobante) {
+      alert('Ingresá el N° de comprobante emitido en caja.');
+      return;
+    }
     setConfirmingUse(req.id);
     try {
-      // 1) Registrar el consumo (esto descuenta 1 uso del pase)
+      // 1) Registrar el consumo (esto descuenta 1 uso del pase), con el comprobante.
       const { error: txError } = await supabase.from('transactions').insert({
         client_id: req.client_id,
         waiter_id: waiterProfile?.id || req.client_id,
@@ -599,7 +610,8 @@ export function Waiter() {
         points_earned: 0,
         branch: selectedBranch || 'CAJA',
         redemption_code: req.code,
-        description: `CONSUMO_COMBO: ${req.combo_id}_1|${req.combo_title}`
+        invoice_number: comprobante,
+        description: `CONSUMO_COMBO: ${req.combo_id}_1|${req.combo_title} (Comp: ${comprobante})`
       });
       if (txError) throw txError;
 
@@ -611,7 +623,15 @@ export function Waiter() {
         .eq('status', 'pending'); // solo si seguía pendiente (evita doble uso)
       if (updError) throw updError;
 
+      // 2b) Guardar el comprobante también en el pedido (best-effort: si la
+      // columna todavía no existe, no rompemos la confirmación).
+      try {
+        await supabase.from('combo_use_requests').update({ invoice_number: comprobante }).eq('id', req.id);
+      } catch (e) { /* la columna invoice_number es opcional */ }
+
       // 3) Marcarlo como confirmado (queda visible un momento en verde)
+      setConfirmingUseReq(null);
+      setUsoInvoice('');
       setConfirmedUses(prev => [...prev, req.id]);
       setTimeout(() => {
         setUseRequests(prev => prev.filter(r => r.id !== req.id));
@@ -1123,7 +1143,7 @@ export function Waiter() {
                     </div>
                   ) : (
                     <button
-                      onClick={() => confirmUse(req)}
+                      onClick={() => { setConfirmingUseReq(req); setUsoInvoice(''); }}
                       disabled={confirmingUse === req.id}
                       className="shrink-0 px-4 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer border-none flex items-center gap-2 disabled:opacity-50"
                     >
@@ -1149,6 +1169,7 @@ export function Waiter() {
                       <p className="text-[11px] font-black text-ink truncate">{u.client_name}</p>
                       <p className="text-[8px] text-slate-400 font-bold uppercase tracking-widest truncate">
                         {u.combo_title} · {u.used_at ? new Date(u.used_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) : ''}
+                        {u.invoice_number ? ` · Comp: ${u.invoice_number}` : ''}
                       </p>
                     </div>
                     <span className="shrink-0 text-emerald-600 flex items-center gap-1 text-[9px] font-black uppercase tracking-widest">
@@ -1162,6 +1183,45 @@ export function Waiter() {
         </div>
         );
       })()}
+
+      {/* Modal: N° de comprobante para confirmar un USO / combo */}
+      {confirmingUseReq && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-sm">
+          <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-6">
+            <h3 className="text-sm font-black uppercase tracking-wider !text-slate-900 mb-1">Confirmar uso</h3>
+            <p className="text-xs !text-slate-500 mb-4">
+              Código <span className="font-black text-love font-mono">{confirmingUseReq.code}</span> · {confirmingUseReq.combo_title}
+            </p>
+            <label className="text-[10px] font-black uppercase tracking-widest !text-slate-400 block mb-1.5">N° de comprobante emitido en caja</label>
+            <input
+              type="text"
+              value={usoInvoice}
+              onChange={(e) => setUsoInvoice(e.target.value)}
+              placeholder="Ej: 2525268"
+              autoFocus
+              onKeyDown={(e) => { if (e.key === 'Enter') confirmUse(); }}
+              className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-love !text-slate-900 font-semibold"
+            />
+            <div className="flex justify-end gap-2 mt-5">
+              <button
+                type="button"
+                onClick={() => { setConfirmingUseReq(null); setUsoInvoice(''); }}
+                className="px-4 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl bg-slate-100 hover:bg-slate-200 !text-slate-500 border-none cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={confirmUse}
+                disabled={confirmingUse === confirmingUseReq.id}
+                className="px-5 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl bg-emerald-500 text-white border-none cursor-pointer disabled:opacity-50"
+              >
+                {confirmingUse === confirmingUseReq.id ? 'Guardando...' : 'Confirmar uso'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal: N° de comprobante para confirmar un canje */}
       {confirmingCanjeTx && (
