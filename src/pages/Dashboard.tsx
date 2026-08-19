@@ -15,10 +15,10 @@ import { Transaction, SystemSettings, Profile, Prize } from '@/src/types';
 import { cn } from '@/src/lib/utils';
 import { useDesign } from '@/src/components/DesignEngine';
 import { WelcomeGuide, CLIENT_GUIDE_STEPS } from '@/src/components/WelcomeGuide';
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, 
-  Tooltip, ResponsiveContainer, Cell, PieChart as RePieChart, Pie 
-} from 'recharts';
+
+// Gráfico de recharts cargado en forma diferida (lazy): así el cliente NO
+// descarga la librería de gráficos en el arranque (solo la usa el admin).
+const AgeBarChart = React.lazy(() => import('@/src/components/AgeBarChart'));
 
 export function Dashboard() {
   const { profile, realProfile, refreshProfile, isSimulatingClient, simDevice } = useAuth();
@@ -970,22 +970,9 @@ export function Dashboard() {
               </h3>
             </div>
             <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={adminStats.ageData}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                  <XAxis dataKey="range" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }} />
-                  <YAxis hide />
-                  <Tooltip 
-                    cursor={{ fill: 'transparent' }}
-                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '10px', textTransform: 'uppercase', fontWeight: 700 }}
-                  />
-                  <Bar dataKey="count" radius={[8, 8, 0, 0]}>
-                    {adminStats.ageData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={index % 2 === 0 ? '#D90015' : '#0f172a'} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+              <React.Suspense fallback={<div className="h-full w-full flex items-center justify-center text-[10px] font-bold uppercase tracking-widest text-slate-300">Cargando gráfico…</div>}>
+                <AgeBarChart data={adminStats.ageData} />
+              </React.Suspense>
             </div>
           </div>
 
