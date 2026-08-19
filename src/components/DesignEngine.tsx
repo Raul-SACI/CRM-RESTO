@@ -353,11 +353,14 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
       if (data && data.description) {
         const parsed = JSON.parse(data.description);
         // Fallbacks for any newly added fields to prevent crashes
-        setDesignConfig({
+        const merged = {
           ...DEFAULT_DESIGN,
           ...parsed,
           banners: Array.isArray(parsed.banners) ? parsed.banners : DEFAULT_DESIGN.banners
-        });
+        };
+        setDesignConfig(merged);
+        // Guardamos en caché local para pintar instantáneo en la próxima carga.
+        try { localStorage.setItem('design_config_cache', JSON.stringify(merged)); } catch (e) { /* cuota llena */ }
       } else {
         setDesignConfig(DEFAULT_DESIGN);
       }
@@ -370,7 +373,22 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    // 1) Pintado instantáneo desde caché local (si existe): no bloqueamos la
+    //    pantalla esperando la base. Igual refrescamos en segundo plano.
+    try {
+      const cached = localStorage.getItem('design_config_cache');
+      if (cached) {
+        setDesignConfig({ ...DEFAULT_DESIGN, ...JSON.parse(cached) });
+        setLoading(false);
+      }
+    } catch (e) { /* caché inválida: seguimos con el fetch */ }
+
+    // 2) Traer la versión fresca desde la base.
     fetchDesign();
+
+    // 3) Red de seguridad: nunca dejar la carga trabada (ej. red lenta del celu).
+    const safety = setTimeout(() => setLoading(false), 3500);
+
     // Volver a leer el diseño al re-enfocar la pestaña, PERO no si el admin
     // está editando (si no, se pisan los cambios sin guardar).
     const onFocus = () => {
@@ -378,7 +396,10 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
       fetchDesign();
     };
     window.addEventListener('focus', onFocus);
-    return () => window.removeEventListener('focus', onFocus);
+    return () => {
+      clearTimeout(safety);
+      window.removeEventListener('focus', onFocus);
+    };
   }, []);
 
   // Update dynamic styles in head

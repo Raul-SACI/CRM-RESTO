@@ -612,8 +612,6 @@ export function Dashboard() {
       setEditForm({ fullName: profile.full_name, dni: profile.dni || '' });
       
       let isMounted = true;
-      
-      fetchClientData();
 
       const fetchAdminStats = async () => {
         try {
@@ -736,18 +734,16 @@ export function Dashboard() {
       };
 
       if (profile.role === 'admin') {
+        fetchClientData(); // en segundo plano (por si se muestran movimientos)
         fetchAdminStats().finally(() => { if (isMounted) setLoading(false); });
       } else {
-        const loadAllData = async () => {
-          await Promise.allSettled([
-            fetchClientData(),
-            fetchPopularPrizes()
-          ]);
-          if (isMounted) setLoading(false);
-        };
-        loadAllData();
+        // El cliente ve su pantalla apenas tiene sus propios movimientos.
+        // Los "recomendados" (premios populares) cargan en segundo plano y NO
+        // bloquean el primer render (antes esperaban un escaneo de ~1000 filas).
+        fetchClientData().finally(() => { if (isMounted) setLoading(false); });
+        fetchPopularPrizes();
       }
-      
+
       fetchSettings();
       return () => { isMounted = false; };
     }
