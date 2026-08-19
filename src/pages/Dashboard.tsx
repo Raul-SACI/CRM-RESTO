@@ -859,7 +859,11 @@ export function Dashboard() {
     }
   };
 
-  if (!profile || loading || designLoading) {
+  // El cliente pinta apenas tiene su perfil: los datos secundarios (movimientos,
+  // recomendados) cargan dentro de sus propias secciones con su loader. Solo el
+  // admin espera a que estén listas sus estadísticas para mostrar el panel.
+  const mustWaitFullScreen = !profile || (profile.role === 'admin' && (loading || designLoading));
+  if (mustWaitFullScreen) {
     return (
       <div className="flex flex-col items-center justify-center text-center min-h-[70vh]">
         <div className="relative w-24 h-28 flex items-end justify-center">
