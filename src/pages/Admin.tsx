@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase, createIsolatedClient } from '@/src/lib/supabase';
-import { Profile, Prize, Transaction, SystemSettings, MysteryReport } from '@/src/types';
+import { Profile, Prize, Transaction, SystemSettings, MysteryReport, MysteryInvitation } from '@/src/types';
 import { motion, AnimatePresence } from 'motion/react';
 import { Users, Gift, Settings, Search, Plus, Trash2, Pencil, Calendar, Award, History, DollarSign, Upload, Image as ImageIcon, FileSpreadsheet, UserPlus, X, Palette, Home, User, Star, MessageSquare, FileText, HelpCircle, LogOut, MapPin, ChevronLeft, ChevronRight, Package, Bell, Send, Sun, Moon, ShieldCheck, Clock, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/src/lib/utils';
@@ -103,6 +103,13 @@ export function Admin() {
   const [rewardReport, setRewardReport] = useState<MysteryReport | null>(null);
   const [rewardForm, setRewardForm] = useState({ points: '', message: '' });
   const [rewardSaving, setRewardSaving] = useState(false);
+  // Invitaciones a cena (comp para clientes ocultos)
+  const [invitations, setInvitations] = useState<MysteryInvitation[]>([]);
+  const [mysteryShoppers, setMysteryShoppers] = useState<Profile[]>([]);
+  const [inviteForm, setInviteForm] = useState({ clientId: '', branch: '', date: '', title: 'Cena para 2 (cena + 2 bebidas)' });
+  const [creatingInvite, setCreatingInvite] = useState(false);
+  const [amountDrafts, setAmountDrafts] = useState<Record<string, string>>({});
+  const [savingAmount, setSavingAmount] = useState<string | null>(null);
   // Editor de las preguntas del formulario de supervisión
   const [showSupEditor, setShowSupEditor] = useState(false);
   const [supDraft, setSupDraft] = useState<SupervisionConfig>(DEFAULT_SUPERVISION);
@@ -767,6 +774,34 @@ export function Admin() {
             .order('created_at', { ascending: false });
           setMysteryReports((data || []) as MysteryReport[]);
         }
+
+        // Clientes ocultos designados (para asignarles invitaciones).
+        try {
+          const { data: shoppers } = await supabase
+            .from('profiles')
+            .select('id, full_name, email, dni')
+            .eq('is_mystery_shopper', true)
+            .order('full_name', { ascending: true });
+          setMysteryShoppers((shoppers || []) as Profile[]);
+        } catch (e) { /* opcional */ }
+
+        // Invitaciones a cena.
+        try {
+          const { data: invs, error: invErr } = await supabase
+            .from('mystery_invitations')
+            .select('*, profiles!client_id(full_name, email, dni)')
+            .order('valid_date', { ascending: false });
+          if (invErr) throw invErr;
+          setInvitations((invs || []) as MysteryInvitation[]);
+        } catch (e) {
+          try {
+            const { data: invs2 } = await supabase
+              .from('mystery_invitations')
+              .select('*')
+              .order('valid_date', { ascending: false });
+            setInvitations((invs2 || []) as MysteryInvitation[]);
+          } catch (e2) { setInvitations([]); }
+        }
       }
     } catch (e: any) {
       console.error("Fetch error in Admin:", e);
@@ -1291,6 +1326,69 @@ export function Admin() {
   const handleResetSupConfig = () => {
     if (!confirm('¿Restaurar todas las preguntas y opciones a los valores por defecto?')) return;
     setSupDraft(resolveSupervisionConfig(null));
+  };
+
+  // Crea una invitación a cena para un cliente oculto puntual.
+  const createInvitation = async () => {
+    if (!inviteForm.clientId) { alert('Elegí el cliente oculto.'); return; }
+    if (!inviteForm.branch) { alert('Elegí la sucursal.'); return; }
+    if (!inviteForm.date) { alert('Elegí el día de la invitación.'); return; }
+    setCreatingInvite(true);
+    try {
+      const { error } = await supabase.from('mystery_invitations').insert({
+        client_id: inviteForm.clientId,
+        branch: inviteForm.branch,
+        valid_date: inviteForm.date,
+        title: inviteForm.title.trim() || 'Cena para 2 (cena + 2 bebidas)',
+        status: 'pendiente',
+      });
+      if (error) throw error;
+
+      const shopper = mysteryShoppers.find((s) => s.id === inviteForm.clientId);
+      const fecha = new Date(inviteForm.date + 'T00:00:00').toLocaleDateString('es-AR');
+      await notifyClient({
+        clientId: inviteForm.clientId,
+        clientEmail: (shopper as any)?.email,
+        title: '🍽️ Tenés una invitación especial',
+        message: `Te espera una ${inviteForm.title || 'Cena para 2'} en ${inviteForm.branch} para el ${fecha}. Ese día vas a poder usarla desde la sección Premios de tu app.`,
+      });
+
+      setInviteForm({ clientId: '', branch: '', date: '', title: 'Cena para 2 (cena + 2 bebidas)' });
+      await fetchData();
+    } catch (err: any) {
+      alert('No se pudo crear la invitación: ' + (err?.message || err));
+    } finally {
+      setCreatingInvite(false);
+    }
+  };
+
+  // Guarda el monto real gastado (lo carga el admin al recibir el ticket).
+  const saveInviteAmount = async (inv: MysteryInvitation) => {
+    const raw = amountDrafts[inv.id];
+    if (raw === undefined) return;
+    const val = parseFloat(String(raw).replace(',', '.'));
+    if (isNaN(val) || val < 0) { alert('Ingresá un monto válido.'); return; }
+    setSavingAmount(inv.id);
+    try {
+      const { error } = await supabase.from('mystery_invitations').update({ amount_spent: val }).eq('id', inv.id);
+      if (error) throw error;
+      await fetchData();
+    } catch (err: any) {
+      alert('No se pudo guardar el monto: ' + (err?.message || err));
+    } finally {
+      setSavingAmount(null);
+    }
+  };
+
+  const deleteInvitation = async (inv: MysteryInvitation) => {
+    if (!confirm('¿Eliminar esta invitación?')) return;
+    try {
+      const { error } = await supabase.from('mystery_invitations').delete().eq('id', inv.id);
+      if (error) throw error;
+      await fetchData();
+    } catch (err: any) {
+      alert('No se pudo eliminar: ' + (err?.message || err));
+    }
   };
 
   // Abre el modal para leer un reporte y (opcionalmente) regalar puntos por completarlo.
@@ -5749,6 +5847,113 @@ export function Admin() {
                         Restaurar por defecto
                       </button>
                     </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Invitaciones a cena (comp para clientes ocultos) */}
+              <div className="bg-white rounded-[2rem] p-6 md:p-8 border border-slate-100 shadow-sm">
+                <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-ink/5 rounded-xl flex items-center justify-center text-ink">🍽️</div>
+                    <div>
+                      <h3 className="text-xl font-black uppercase tracking-tighter text-ink">Invitaciones a <span className="text-love">cena</span></h3>
+                      <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mt-1">Cena para 2 cubierta, asignada a un cliente oculto</p>
+                    </div>
+                  </div>
+                  {invitations.some((i) => i.amount_spent) && (
+                    <div className="text-right">
+                      <p className="text-[9px] uppercase font-black tracking-widest text-slate-400">Gasto del programa</p>
+                      <p className="text-2xl font-black text-love font-mono">
+                        ${invitations.reduce((a, i) => a + (Number(i.amount_spent) || 0), 0).toLocaleString('es-AR')}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Crear invitación */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3 p-4 rounded-2xl bg-slate-50 border border-slate-100 mb-5">
+                  <div>
+                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1 block">Cliente oculto</label>
+                    <select value={inviteForm.clientId} onChange={(e) => setInviteForm({ ...inviteForm, clientId: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg bg-white border border-slate-200 text-sm font-medium text-ink outline-none focus:border-love">
+                      <option value="">Elegí…</option>
+                      {mysteryShoppers.map((s) => <option key={s.id} value={s.id}>{s.full_name}</option>)}
+                    </select>
+                    {mysteryShoppers.length === 0 && <p className="text-[9px] text-slate-400 mt-1 italic">Designá clientes ocultos en la pestaña Clientes.</p>}
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1 block">Sucursal</label>
+                    <select value={inviteForm.branch} onChange={(e) => setInviteForm({ ...inviteForm, branch: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg bg-white border border-slate-200 text-sm font-medium text-ink outline-none focus:border-love">
+                      <option value="">Elegí…</option>
+                      {(branchNames.length ? branchNames : ['PRINCIPAL']).map((n) => <option key={n} value={n}>{n}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1 block">Día</label>
+                    <input type="date" value={inviteForm.date} onChange={(e) => setInviteForm({ ...inviteForm, date: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg bg-white border border-slate-200 text-sm font-medium text-ink outline-none focus:border-love" />
+                  </div>
+                  <div className="flex items-end">
+                    <button onClick={createInvitation} disabled={creatingInvite}
+                      className="w-full py-2.5 rounded-lg bg-love text-white text-[10px] font-black uppercase tracking-widest cursor-pointer border-none disabled:opacity-50 hover:bg-love/90 transition-all">
+                      {creatingInvite ? 'Creando…' : 'Crear invitación'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Lista de invitaciones */}
+                {invitations.length === 0 ? (
+                  <p className="py-6 text-center text-[10px] uppercase font-black tracking-widest text-slate-300">No hay invitaciones cargadas.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {invitations.map((inv) => {
+                      const today = new Date(); const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+                      const vencida = inv.status === 'pendiente' && inv.valid_date < todayStr;
+                      return (
+                        <div key={inv.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-extrabold text-sm text-ink">{inv.profiles?.full_name || 'Cliente'}</span>
+                              {inv.status === 'usada' ? (
+                                <span className="text-[9px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">Usada</span>
+                              ) : vencida ? (
+                                <span className="text-[9px] font-black uppercase tracking-widest text-slate-500 bg-slate-200 px-2 py-0.5 rounded-full">Vencida</span>
+                              ) : (
+                                <span className="text-[9px] font-black uppercase tracking-widest text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">Pendiente</span>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-slate-500 mt-0.5">
+                              {inv.branch} · {new Date(inv.valid_date + 'T00:00:00').toLocaleDateString('es-AR')}
+                              {inv.code ? ` · Código ${inv.code}` : ''}
+                              {inv.invoice_number ? ` · Comp: ${inv.invoice_number}` : ''}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <div className="flex items-center gap-1">
+                              <span className="text-slate-400 text-sm font-bold">$</span>
+                              <input
+                                type="text"
+                                inputMode="decimal"
+                                placeholder="Monto"
+                                value={amountDrafts[inv.id] ?? (inv.amount_spent != null ? String(inv.amount_spent) : '')}
+                                onChange={(e) => setAmountDrafts((p) => ({ ...p, [inv.id]: e.target.value }))}
+                                className="w-24 px-2 py-1.5 rounded-lg bg-white border border-slate-200 text-sm font-bold text-ink outline-none focus:border-love"
+                              />
+                              <button onClick={() => saveInviteAmount(inv)} disabled={savingAmount === inv.id || amountDrafts[inv.id] === undefined}
+                                className="px-2.5 py-1.5 rounded-lg bg-ink text-white text-[9px] font-black uppercase tracking-widest cursor-pointer border-none disabled:opacity-40 hover:bg-black transition-all">
+                                {savingAmount === inv.id ? '…' : 'Guardar'}
+                              </button>
+                            </div>
+                            <button onClick={() => deleteInvitation(inv)} title="Eliminar"
+                              className="p-2 text-slate-300 hover:text-love transition-colors bg-transparent border-none cursor-pointer">
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>

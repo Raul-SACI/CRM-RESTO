@@ -570,6 +570,17 @@ export function Waiter() {
         .update({ invoice_number: canjeInvoice.trim(), branch: selectedBranch || confirmingCanjeTx.branch || 'CAJA' })
         .eq('id', confirmingCanjeTx.id);
       if (error) throw error;
+
+      // Best-effort: si este canje era una invitación de cliente oculto, le
+      // dejamos el N° de comprobante a la invitación (para conciliar el ticket).
+      try {
+        if (confirmingCanjeTx.redemption_code) {
+          await supabase.from('mystery_invitations')
+            .update({ invoice_number: canjeInvoice.trim() })
+            .eq('code', confirmingCanjeTx.redemption_code);
+        }
+      } catch (e) { /* la tabla de invitaciones es opcional */ }
+
       setPendingCanjes(prev => prev.filter(t => t.id !== confirmingCanjeTx.id));
       setConfirmingCanjeTx(null);
       setCanjeInvoice('');

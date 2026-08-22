@@ -84,6 +84,24 @@ export interface Prize {
   is_active: boolean;
 }
 
+// Invitación a cena para un cliente oculto (comp de "cena para 2").
+// Solo la ven el propio cliente y el admin.
+export interface MysteryInvitation {
+  id: string;
+  client_id: string;
+  branch?: string | null;
+  valid_date: string;
+  title?: string | null;
+  code?: string | null;
+  status: 'pendiente' | 'usada' | 'vencida';
+  used_at?: string | null;
+  invoice_number?: string | null;
+  amount_spent?: number | null;
+  created_at: string;
+  // Relación opcional (cuando el admin trae el nombre del cliente)
+  profiles?: { full_name?: string; email?: string; dni?: string } | null;
+}
+
 export interface AppNotification {
   id: string;
   client_id: string | null; // null = para todos

@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from '@/src/lib/supabase';
 import { notifyClient } from '@/src/lib/notify';
 import { motion, AnimatePresence } from 'motion/react';
-import { Prize } from '@/src/types';
-import { Gift, Sparkles, ChevronRight, Star, X } from 'lucide-react';
+import { Prize, MysteryInvitation } from '@/src/types';
+import { Gift, Sparkles, ChevronRight, Star, X, UtensilsCrossed, Calendar, MapPin } from 'lucide-react';
 import { useAuth } from '@/src/App';
 import { cn } from '@/src/lib/utils';
 
@@ -18,6 +18,17 @@ export function Rewards() {
   const [lastPrize, setLastPrize] = useState<Prize | null>(null);
   const [generatedCode, setGeneratedCode] = useState<string | null>(null);
   const [redemptionTime, setRedemptionTime] = useState<Date | null>(null);
+
+  // Invitación a cena (comp para clientes ocultos)
+  const [invitation, setInvitation] = useState<MysteryInvitation | null>(null);
+  const [usingInvite, setUsingInvite] = useState(false);
+  const [inviteCode, setInviteCode] = useState<string | null>(null);
+
+  // Fecha de hoy en formato local YYYY-MM-DD (para comparar con valid_date)
+  const todayStr = (() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  })();
 
   // States for Program Feedback Rating
   const [showRating, setShowRating] = useState(false);
@@ -50,6 +61,71 @@ export function Rewards() {
 
     fetchPrizes();
   }, []);
+
+  // Trae la invitación a cena vigente del cliente (si tiene). Solo la ve él.
+  useEffect(() => {
+    if (!profile?.id) return;
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from('mystery_invitations')
+          .select('*')
+          .eq('client_id', profile.id)
+          .in('status', ['pendiente', 'usada'])
+          .order('valid_date', { ascending: false })
+          .limit(1);
+        if (data && data.length) {
+          setInvitation(data[0] as MysteryInvitation);
+          if (data[0].code) setInviteCode(data[0].code);
+        } else {
+          setInvitation(null);
+        }
+      } catch (e) {
+        // La tabla de invitaciones es opcional; si no existe, no mostramos nada.
+      }
+    })();
+  }, [profile?.id]);
+
+  // Usa la invitación: genera un código de canje "disfrazado" (para caja) y la
+  // marca como usada. No descuenta puntos.
+  const useInvitation = async () => {
+    if (!invitation || !profile) return;
+    if (!confirm('¿Usar tu invitación? Se generará un código para mostrar en caja.')) return;
+    setUsingInvite(true);
+    try {
+      const codeChars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let rnd = '';
+      for (let i = 0; i < 6; i++) rnd += codeChars[Math.floor(Math.random() * codeChars.length)];
+      const code = `CANJE-${rnd}`;
+
+      // 1) Transacción disfrazada de canje normal (así aparece en la caja como un premio común).
+      const { error: txErr } = await supabase.from('transactions').insert({
+        client_id: profile.id,
+        waiter_id: profile.id,
+        amount: 0,
+        points_earned: 0,
+        description: `CANJE: ${invitation.title || 'Cena para 2'}`,
+        branch: invitation.branch || 'Canje Online',
+        redemption_code: code,
+      });
+      if (txErr) throw txErr;
+
+      // 2) Marcar la invitación como usada (solo si seguía pendiente).
+      const { error: updErr } = await supabase
+        .from('mystery_invitations')
+        .update({ status: 'usada', used_at: new Date().toISOString(), code })
+        .eq('id', invitation.id)
+        .eq('status', 'pendiente');
+      if (updErr) throw updErr;
+
+      setInviteCode(code);
+      setInvitation({ ...invitation, status: 'usada', code });
+    } catch (e: any) {
+      alert('No se pudo usar la invitación: ' + (e?.message || e));
+    } finally {
+      setUsingInvite(false);
+    }
+  };
 
   const handleRedeem = async (prize: Prize) => {
     if (!profile) return;
@@ -418,6 +494,46 @@ export function Rewards() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Invitación a cena (solo la ve el cliente que la tiene asignada) */}
+      {invitation && (invitation.status === 'usada' || (invitation.status === 'pendiente' && invitation.valid_date >= todayStr)) && (() => {
+        const isToday = invitation.valid_date === todayStr;
+        const used = invitation.status === 'usada';
+        const fechaLinda = new Date(invitation.valid_date + 'T00:00:00').toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+        return (
+          <div className="mb-6 rounded-[2rem] p-6 md:p-7 bg-gradient-to-br from-ink to-slate-800 text-white relative overflow-hidden shadow-xl">
+            <div className="absolute -right-5 -top-5 opacity-10"><UtensilsCrossed size={130} /></div>
+            <div className="flex items-center gap-2 mb-1">
+              <UtensilsCrossed size={16} className="text-love" />
+              <p className="text-[10px] font-black uppercase tracking-[0.25em] text-love">Invitación especial</p>
+            </div>
+            <h3 className="text-2xl font-black uppercase tracking-tighter italic">{invitation.title || 'Cena para 2'}</h3>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-white/70 text-xs font-bold">
+              {invitation.branch && <span className="flex items-center gap-1"><MapPin size={12} className="text-love" /> {invitation.branch}</span>}
+              <span className="flex items-center gap-1 capitalize"><Calendar size={12} className="text-love" /> {fechaLinda}</span>
+            </div>
+
+            {used && inviteCode ? (
+              <div className="mt-5 bg-white/10 border border-white/15 rounded-2xl p-4 text-center">
+                <p className="text-[9px] uppercase font-black tracking-widest text-white/50 mb-1">Mostrá este código en caja</p>
+                <p className="text-3xl font-black font-mono tracking-widest text-white">{inviteCode}</p>
+              </div>
+            ) : isToday ? (
+              <button
+                onClick={useInvitation}
+                disabled={usingInvite}
+                className="mt-5 w-full py-3.5 bg-love text-white rounded-xl text-[12px] font-black uppercase tracking-widest cursor-pointer border-none disabled:opacity-50 hover:bg-love/90 transition-all shadow-lg shadow-love/30"
+              >
+                {usingInvite ? 'Generando código…' : 'Usar invitación'}
+              </button>
+            ) : (
+              <p className="mt-5 text-[11px] font-bold text-white/50 bg-white/5 border border-white/10 rounded-xl px-4 py-3">
+                Vas a poder usarla el día de tu visita. ¡Te esperamos!
+              </p>
+            )}
+          </div>
+        );
+      })()}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {loading ? (
