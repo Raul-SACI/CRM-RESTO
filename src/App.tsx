@@ -280,6 +280,12 @@ export default function App() {
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
   };
 
+  // Si la app montó bien, limpiamos la bandera de "recarga por chunk" para que
+  // un futuro deploy pueda volver a auto-recuperarse si hiciera falta.
+  useEffect(() => {
+    try { sessionStorage.removeItem('chunk_reloaded'); } catch (e) { /* noop */ }
+  }, []);
+
   // Verificación de configuración
   const isConfigured = !!(import.meta as any).env.VITE_SUPABASE_URL && !!(import.meta as any).env.VITE_SUPABASE_ANON_KEY;
 
