@@ -1778,7 +1778,11 @@ export function Admin() {
           {activeTab === 'dashboard' && (
             <div className="space-y-6">
               {/* Grid de Métricas Rápidas (arriba) */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-col items-center">
+                  <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Clientes Totales</p>
+                  <p className="text-lg font-black text-love mt-1 font-mono">{clients.length.toLocaleString('es-AR')}</p>
+                </div>
                 <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-col items-center">
                   <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Total Recaudado</p>
                   <p className="text-lg font-black text-ink mt-1 font-mono">
