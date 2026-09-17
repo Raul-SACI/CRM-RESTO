@@ -653,7 +653,7 @@ export function Admin() {
         const { data, error } = await supabase
           .from('profiles')
           .select('*')
-          .order('points', { ascending: false });
+          .order('created_at', { ascending: false });
         
         if (error) {
           if (error.message.includes('recursion')) {
@@ -2075,6 +2075,7 @@ export function Admin() {
                       <th className="px-6 py-4">Nombre</th>
                       <th className="px-6 py-4">DNI</th>
                       <th className="px-6 py-4">Cumpleaños</th>
+                      <th className="px-6 py-4">Alta</th>
                       <th className="px-6 py-4 text-right">Puntos</th>
                       <th className="px-6 py-4 text-right">Acciones</th>
                     </tr>
@@ -2082,7 +2083,7 @@ export function Admin() {
                   <tbody className="text-sm font-medium">
                     {clients.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="px-6 py-12 text-center text-slate-400 italic">
+                        <td colSpan={6} className="px-6 py-12 text-center text-slate-400 italic">
                           No se encontraron clientes registrados.
                         </td>
                       </tr>
@@ -2127,6 +2128,16 @@ export function Admin() {
                                 <span className="text-[10px] text-slate-300 italic">No cargada</span>
                               )}
                             </div>
+                          </td>
+                          <td className="px-6 py-4">
+                            {client.created_at ? (
+                              <div className="text-xs">
+                                <p className="font-bold text-ink">{new Date(client.created_at).toLocaleDateString('es-AR')}</p>
+                                <p className="text-[10px] text-slate-400 font-mono">{new Date(client.created_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} hs</p>
+                              </div>
+                            ) : (
+                              <span className="text-[10px] text-slate-300 italic">—</span>
+                            )}
                           </td>
                           <td className="px-6 py-4 text-right">
                             <span className="text-love font-black italic text-lg">{client.points}</span>
