@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase, createIsolatedClient } from '@/src/lib/supabase';
 import { Profile, Prize, Transaction, SystemSettings, MysteryReport, MysteryInvitation } from '@/src/types';
 import { motion, AnimatePresence } from 'motion/react';
-import { Users, Gift, Settings, Search, Plus, Trash2, Pencil, Calendar, Award, History, DollarSign, Upload, Image as ImageIcon, FileSpreadsheet, UserPlus, X, Palette, Home, User, Star, MessageSquare, FileText, HelpCircle, LogOut, MapPin, ChevronLeft, ChevronRight, Package, Bell, Send, Sun, Moon, ShieldCheck, Clock, CheckCircle2 } from 'lucide-react';
+import { Users, Gift, Settings, Search, Plus, Trash2, Pencil, Calendar, Award, History, DollarSign, Upload, Image as ImageIcon, FileSpreadsheet, UserPlus, X, Palette, Home, User, Star, MessageSquare, FileText, HelpCircle, LogOut, MapPin, ChevronLeft, ChevronRight, Package, Bell, Send, Sun, Moon, ShieldCheck, Clock, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { cn, normalizeDni } from '@/src/lib/utils';
 import * as XLSX from 'xlsx';
 import { useDesign, COLOR_PRESETS, CORNER_PRESETS, AVAILABLE_FONTS, type DesignConfig, type BannerConfig } from '@/src/components/DesignEngine';
@@ -131,6 +131,7 @@ export function Admin() {
   const [giftSaving, setGiftSaving] = useState(false);
   const [selectedClients, setSelectedClients] = useState<string[]>([]);
   const [clientSearch, setClientSearch] = useState('');
+  const [clientFilter, setClientFilter] = useState<'todos' | 'incompletos'>('todos');
   const [deleting, setDeleting] = useState(false);
   const [selectedBranchFilter, setSelectedBranchFilter] = useState<string>('Todas');
   const [dateStart, setDateStart] = useState<string>(() => {
@@ -584,15 +585,23 @@ export function Admin() {
 
   const dashboardData = getDashboardData();
 
-  // Filtro del buscador de clientes (por nombre, email o DNI).
+  // Un cliente está "incompleto" si le falta el DNI real (vacío o TEMP-) o el cumpleaños.
+  const isIncompleteClient = (c: Profile) =>
+    !c.dni || c.dni.startsWith('TEMP-') || !c.birth_date;
+  const incompleteCount = clients.filter(isIncompleteClient).length;
+
+  // Filtro del buscador de clientes (por nombre, email o DNI) + filtro de estado.
   const filteredClients = (() => {
     const q = clientSearch.trim().toLowerCase();
-    if (!q) return clients;
-    return clients.filter((c) =>
-      (c.full_name || '').toLowerCase().includes(q) ||
-      (c.email || '').toLowerCase().includes(q) ||
-      (c.dni || '').toLowerCase().includes(q)
-    );
+    return clients.filter((c) => {
+      if (clientFilter === 'incompletos' && !isIncompleteClient(c)) return false;
+      if (!q) return true;
+      return (
+        (c.full_name || '').toLowerCase().includes(q) ||
+        (c.email || '').toLowerCase().includes(q) ||
+        (c.dni || '').toLowerCase().includes(q)
+      );
+    });
   })();
 
   const fetchSettings = async () => {
@@ -2077,26 +2086,49 @@ export function Admin() {
               </div>
 
               <div className="bg-white rounded-xl border border-slate-100 overflow-hidden shadow-sm">
-                <div className="p-6 border-b border-slate-100 bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-ink">
-                    <Users size={16} className="text-love" />
-                    Base de Clientes
-                  </h3>
-                  <div className="relative w-full sm:w-72">
-                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                      type="text"
-                      value={clientSearch}
-                      onChange={(e) => setClientSearch(e.target.value)}
-                      placeholder="Buscar por nombre, email o DNI…"
-                      className="w-full pl-9 pr-8 py-2 rounded-lg bg-white border border-slate-200 text-sm text-ink outline-none focus:border-love"
-                    />
-                    {clientSearch && (
-                      <button onClick={() => setClientSearch('')} title="Limpiar"
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-300 hover:text-love bg-transparent border-none cursor-pointer p-1">
-                        <X size={14} />
-                      </button>
-                    )}
+                <div className="p-6 border-b border-slate-100 bg-slate-50 flex flex-col gap-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-ink">
+                      <Users size={16} className="text-love" />
+                      Base de Clientes
+                    </h3>
+                    <div className="relative w-full sm:w-72">
+                      <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="text"
+                        value={clientSearch}
+                        onChange={(e) => setClientSearch(e.target.value)}
+                        placeholder="Buscar por nombre, email o DNI…"
+                        className="w-full pl-9 pr-8 py-2 rounded-lg bg-white border border-slate-200 text-sm text-ink outline-none focus:border-love"
+                      />
+                      {clientSearch && (
+                        <button onClick={() => setClientSearch('')} title="Limpiar"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-300 hover:text-love bg-transparent border-none cursor-pointer p-1">
+                          <X size={14} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      onClick={() => setClientFilter('todos')}
+                      className={cn(
+                        "px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer border",
+                        clientFilter === 'todos' ? "bg-ink text-white border-ink" : "bg-white text-slate-500 border-slate-200 hover:border-slate-300"
+                      )}
+                    >
+                      Todos ({clients.length})
+                    </button>
+                    <button
+                      onClick={() => setClientFilter('incompletos')}
+                      className={cn(
+                        "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer border",
+                        clientFilter === 'incompletos' ? "bg-amber-500 text-white border-amber-500" : "bg-white text-amber-600 border-amber-200 hover:border-amber-300"
+                      )}
+                      title="Clientes sin DNI real (TEMP-) o sin cumpleaños cargado"
+                    >
+                      <AlertTriangle size={12} /> Perfil incompleto ({incompleteCount})
+                    </button>
                   </div>
                 </div>
                 
@@ -2148,7 +2180,11 @@ export function Admin() {
                     {filteredClients.length === 0 ? (
                       <tr>
                         <td colSpan={6} className="px-6 py-12 text-center text-slate-400 italic">
-                          {clientSearch ? `Sin resultados para "${clientSearch}".` : 'No se encontraron clientes registrados.'}
+                          {clientSearch
+                            ? `Sin resultados para "${clientSearch}".`
+                            : clientFilter === 'incompletos'
+                              ? '¡No hay perfiles incompletos! 🎉'
+                              : 'No se encontraron clientes registrados.'}
                         </td>
                       </tr>
                     ) : (
@@ -2177,6 +2213,11 @@ export function Admin() {
                               {client.is_mystery_shopper && (
                                 <span className="inline-flex items-center gap-1 text-[8px] font-black uppercase tracking-widest text-slate-900 bg-amber-300 px-2 py-0.5 rounded-full" title="Cliente oculto designado">
                                   <ShieldCheck size={10} /> Oculto
+                                </span>
+                              )}
+                              {isIncompleteClient(client) && (
+                                <span className="inline-flex items-center gap-1 text-[8px] font-black uppercase tracking-widest text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full" title="Perfil incompleto: falta DNI real o cumpleaños">
+                                  <AlertTriangle size={10} /> Incompleto
                                 </span>
                               )}
                             </div>
