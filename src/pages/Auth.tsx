@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { supabase } from '@/src/lib/supabase';
 import { motion } from 'motion/react';
 import { User, Mail, Lock, CreditCard, Calendar, Info, AlertTriangle, ExternalLink } from 'lucide-react';
-import { cn } from '@/src/lib/utils';
+import { cn, normalizeDni } from '@/src/lib/utils';
 
 export function Auth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -35,27 +35,48 @@ export function Auth() {
         if (error) throw error;
       } else {
         // Sign up
+        // Normalizamos el DNI a solo números para que el mismo documento no
+        // pueda entrar dos veces escrito distinto (con/sin puntos, etc.).
+        const cleanDni = normalizeDni(formData.dni);
+        if (!cleanDni || cleanDni.length < 6) {
+          setError('Ingresá un DNI válido (solo números).');
+          setLoading(false);
+          return;
+        }
+
+        // Chequeo previo: ¿ya existe una cuenta con ese DNI?
+        try {
+          const { data: yaExiste } = await supabase.rpc('dni_existe', { p_dni: cleanDni });
+          if (yaExiste === true) {
+            setError('Ese DNI ya está registrado. Si ya tenés cuenta, iniciá sesión.');
+            setLoading(false);
+            return;
+          }
+        } catch (e) {
+          // Si la función no está disponible, seguimos: la restricción de la base igual protege.
+        }
+
         const { data: { user }, error: signUpError } = await supabase.auth.signUp({
           email: formData.email,
           password: formData.password,
           options: {
             data: {
               full_name: formData.fullName,
-              dni: formData.dni,
+              dni: cleanDni,
               birth_date: formData.birthDate || null
             }
           }
         });
-        
+
         if (signUpError) throw signUpError;
         if (user) {
           // Wait a bit for the trigger to definitely finish
           await new Promise(resolve => setTimeout(resolve, 800));
-          
+
           // Update or Create profile (Upsert to handle trigger race condition)
           const profileData = {
             id: user.id,
-            dni: formData.dni,
+            dni: cleanDni,
             full_name: formData.fullName,
             email: formData.email,
             role: 'client',
@@ -67,9 +88,14 @@ export function Auth() {
           }
 
           const { error: profileError } = await supabase.from('profiles').upsert(profileData, { onConflict: 'id' });
-          
+
           if (profileError) {
             console.error("Manual profile upsert error:", profileError);
+            if ((profileError as any).code === '23505' || /duplicate|unique/i.test(profileError.message || '')) {
+              setError('Ese DNI ya está registrado en otra cuenta. Si ya tenés cuenta, iniciá sesión.');
+              setLoading(false);
+              return;
+            }
             // If it failed, try a simple update
             await supabase.from('profiles').update({ birth_date: formData.birthDate || null }).eq('id', user.id);
           }
