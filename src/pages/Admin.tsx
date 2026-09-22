@@ -3,7 +3,7 @@ import { supabase, createIsolatedClient } from '@/src/lib/supabase';
 import { Profile, Prize, Transaction, SystemSettings, MysteryReport, MysteryInvitation } from '@/src/types';
 import { motion, AnimatePresence } from 'motion/react';
 import { Users, Gift, Settings, Search, Plus, Trash2, Pencil, Calendar, Award, History, DollarSign, Upload, Image as ImageIcon, FileSpreadsheet, UserPlus, X, Palette, Home, User, Star, MessageSquare, FileText, HelpCircle, LogOut, MapPin, ChevronLeft, ChevronRight, Package, Bell, Send, Sun, Moon, ShieldCheck, Clock, CheckCircle2 } from 'lucide-react';
-import { cn } from '@/src/lib/utils';
+import { cn, normalizeDni } from '@/src/lib/utils';
 import * as XLSX from 'xlsx';
 import { useDesign, COLOR_PRESETS, CORNER_PRESETS, AVAILABLE_FONTS, type DesignConfig, type BannerConfig } from '@/src/components/DesignEngine';
 import { BirthdayCalendar } from '@/src/components/BirthdayCalendar';
@@ -357,7 +357,7 @@ export function Admin() {
         const clientsToInsert = data.map(row => ({
           full_name: row.Nombre || row['Nombre Completo'] || row.fullName || row.name,
           email: row.Email || row.email || row.Correo,
-          dni: String(row.DNI || row.dni),
+          dni: normalizeDni(String(row.DNI || row.dni || '')),
           birth_date: row.FechaNacimiento || row['Fecha de Nacimiento'] || row.birthDate || row.birth_date,
           role: 'client',
           points: parseInt(row.Puntos || row.points) || 0
@@ -391,9 +391,23 @@ export function Admin() {
 
     setLoading(true);
     try {
-      const trimmedDni = newClient.dni.trim();
+      const trimmedDni = normalizeDni(newClient.dni);
       const trimmedEmail = newClient.email.trim();
-      
+
+      if (!trimmedDni || trimmedDni.length < 6) {
+        alert('Ingresá un DNI válido (solo números).');
+        setLoading(false);
+        return;
+      }
+
+      // Chequeo previo: que no exista otro cliente con ese DNI.
+      const { data: dniDup } = await supabase.from('profiles').select('id').eq('dni', trimmedDni).maybeSingle();
+      if (dniDup) {
+        alert('Ese DNI ya está registrado en otra cuenta.');
+        setLoading(false);
+        return;
+      }
+
       // 1. Create Supabase Auth User
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: trimmedEmail,
@@ -1177,18 +1191,26 @@ export function Admin() {
 
     setLoading(true);
     try {
+      const cleanDni = normalizeDni(editClientForm.dni);
       const { error } = await supabase
         .from('profiles')
         .update({
           full_name: editClientForm.fullName,
           email: editClientForm.email,
-          dni: editClientForm.dni,
+          dni: cleanDni,
           birth_date: editClientForm.birthDate || null
         })
         .eq('id', editingClient.id);
 
-      if (error) throw error;
-      
+      if (error) {
+        if ((error as any).code === '23505' || /duplicate|unique/i.test(error.message || '')) {
+          alert('Ese DNI (o email) ya está registrado en otra cuenta.');
+          setLoading(false);
+          return;
+        }
+        throw error;
+      }
+
       alert('¡Cliente actualizado con éxito!');
       setShowEditModal(false);
       await fetchData(true);
