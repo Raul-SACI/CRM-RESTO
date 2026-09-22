@@ -555,7 +555,16 @@ export function Admin() {
       .map(([date, count]) => ({ date, count }))
       .sort((a, b) => a.date.localeCompare(b.date));
 
-    return { prizeData, clientData, filteredTransactions, newClients, registrationData };
+    // Solo transacciones de venta (con monto > 0), para el promedio de ticket real.
+    const salesTx = filteredTransactions.filter(tx => (tx.amount || 0) > 0);
+    const totalCargado = salesTx.reduce((acc, tx) => acc + (tx.amount || 0), 0);
+
+    // Ventas de combos por la app vía Mercado Pago (COMPRA_COMBO).
+    const comboMpTx = filteredTransactions.filter(tx => (tx.description || '').startsWith('COMPRA_COMBO:'));
+    const comboMpUnits = comboMpTx.length;
+    const comboMpAmount = comboMpTx.reduce((acc, tx) => acc + (tx.amount || 0), 0);
+
+    return { prizeData, clientData, filteredTransactions, newClients, registrationData, salesTx, totalCargado, comboMpUnits, comboMpAmount };
   };
 
   const dashboardData = getDashboardData();
@@ -1778,15 +1787,15 @@ export function Admin() {
           {activeTab === 'dashboard' && (
             <div className="space-y-6">
               {/* Grid de Métricas Rápidas (arriba) */}
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                 <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-col items-center">
                   <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Clientes Totales</p>
                   <p className="text-lg font-black text-love mt-1 font-mono">{clients.length.toLocaleString('es-AR')}</p>
                 </div>
                 <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-col items-center">
-                  <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Total Recaudado</p>
+                  <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Pesos Cargados</p>
                   <p className="text-lg font-black text-ink mt-1 font-mono">
-                    ${dashboardData.filteredTransactions.reduce((acc, tx) => acc + (tx.amount || 0), 0).toLocaleString('es-AR')}
+                    ${dashboardData.totalCargado.toLocaleString('es-AR')}
                   </p>
                 </div>
                 <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-col items-center">
@@ -1798,12 +1807,17 @@ export function Admin() {
                 <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-col items-center">
                   <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Prom Ticket</p>
                   <p className="text-lg font-black text-ink mt-1 font-mono">
-                    ${dashboardData.filteredTransactions.length > 0 ? (dashboardData.filteredTransactions.reduce((acc, tx) => acc + (tx.amount || 0), 0) / dashboardData.filteredTransactions.length).toLocaleString('es-AR', { maximumFractionDigits: 0 }) : '0'}
+                    ${dashboardData.salesTx.length > 0 ? Math.round(dashboardData.totalCargado / dashboardData.salesTx.length).toLocaleString('es-AR') : '0'}
                   </p>
                 </div>
                 <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-col items-center">
                    <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Transacciones</p>
                    <p className="text-lg font-black text-ink mt-1 font-mono">{dashboardData.filteredTransactions.length}</p>
+                </div>
+                <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-col items-center">
+                  <p className="text-[8px] font-black uppercase tracking-widest text-slate-400 text-center">Combos vendidos (MP)</p>
+                  <p className="text-lg font-black text-ink mt-1 font-mono">{dashboardData.comboMpUnits} u.</p>
+                  <p className="text-[10px] font-black text-emerald-600 font-mono">${dashboardData.comboMpAmount.toLocaleString('es-AR')}</p>
                 </div>
               </div>
 
