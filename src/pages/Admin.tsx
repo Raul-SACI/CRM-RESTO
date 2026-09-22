@@ -130,6 +130,7 @@ export function Admin() {
   const [giftForm, setGiftForm] = useState({ points: '', reason: '', message: '' });
   const [giftSaving, setGiftSaving] = useState(false);
   const [selectedClients, setSelectedClients] = useState<string[]>([]);
+  const [clientSearch, setClientSearch] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [selectedBranchFilter, setSelectedBranchFilter] = useState<string>('Todas');
   const [dateStart, setDateStart] = useState<string>(() => {
@@ -568,6 +569,17 @@ export function Admin() {
   };
 
   const dashboardData = getDashboardData();
+
+  // Filtro del buscador de clientes (por nombre, email o DNI).
+  const filteredClients = (() => {
+    const q = clientSearch.trim().toLowerCase();
+    if (!q) return clients;
+    return clients.filter((c) =>
+      (c.full_name || '').toLowerCase().includes(q) ||
+      (c.email || '').toLowerCase().includes(q) ||
+      (c.dni || '').toLowerCase().includes(q)
+    );
+  })();
 
   const fetchSettings = async () => {
     setLoading(true);
@@ -2043,11 +2055,27 @@ export function Admin() {
               </div>
 
               <div className="bg-white rounded-xl border border-slate-100 overflow-hidden shadow-sm">
-                <div className="p-6 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+                <div className="p-6 border-b border-slate-100 bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 text-ink">
                     <Users size={16} className="text-love" />
                     Base de Clientes
                   </h3>
+                  <div className="relative w-full sm:w-72">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      value={clientSearch}
+                      onChange={(e) => setClientSearch(e.target.value)}
+                      placeholder="Buscar por nombre, email o DNI…"
+                      className="w-full pl-9 pr-8 py-2 rounded-lg bg-white border border-slate-200 text-sm text-ink outline-none focus:border-love"
+                    />
+                    {clientSearch && (
+                      <button onClick={() => setClientSearch('')} title="Limpiar"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-300 hover:text-love bg-transparent border-none cursor-pointer p-1">
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
                 </div>
                 
                 {selectedClients.length > 0 && (
@@ -2076,10 +2104,10 @@ export function Admin() {
                         <input 
                           type="checkbox" 
                           className="rounded border-slate-300 text-love focus:ring-love"
-                          checked={clients.length > 0 && selectedClients.length === clients.length}
+                          checked={filteredClients.length > 0 && filteredClients.every(c => selectedClients.includes(c.id))}
                           onChange={(e) => {
                             if (e.target.checked) {
-                              setSelectedClients(clients.map(c => c.id));
+                              setSelectedClients(filteredClients.map(c => c.id));
                             } else {
                               setSelectedClients([]);
                             }
@@ -2095,14 +2123,14 @@ export function Admin() {
                     </tr>
                   </thead>
                   <tbody className="text-sm font-medium">
-                    {clients.length === 0 ? (
+                    {filteredClients.length === 0 ? (
                       <tr>
                         <td colSpan={6} className="px-6 py-12 text-center text-slate-400 italic">
-                          No se encontraron clientes registrados.
+                          {clientSearch ? `Sin resultados para "${clientSearch}".` : 'No se encontraron clientes registrados.'}
                         </td>
                       </tr>
                     ) : (
-                      clients.map(client => (
+                      filteredClients.map(client => (
                         <tr key={client.id} className={cn(
                           "border-b border-slate-100 hover:bg-slate-50 transition-colors text-ink",
                           selectedClients.includes(client.id) && "bg-love/5"
