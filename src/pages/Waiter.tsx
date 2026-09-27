@@ -194,21 +194,36 @@ export function Waiter() {
         .select('*')
         .eq('dni', searchDni)
         .maybeSingle();
-      
+
       clearTimeout(safetyTimeout);
       if (error) throw error;
 
-      // 2. Si no hay por DNI, probamos por ID (por si escanea el ID de Supabase)
+      // 2. Si no aparece, buscamos por DNI ignorando el formato (puntos/espacios),
+      //    por si quedó guardado distinto. (Función opcional en la base.)
       if (!data) {
-        console.log("Not found by DNI, trying by ID...");
-        const { data: dataById, error: errorById } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', searchDni)
-          .maybeSingle();
-        
-        if (errorById) throw errorById;
-        data = dataById;
+        try {
+          const { data: rpcRows } = await supabase.rpc('buscar_cliente_por_dni', { p_dni: searchDni });
+          if (Array.isArray(rpcRows) && rpcRows.length > 0) data = rpcRows[0];
+        } catch (e) {
+          // Si la función no está disponible, seguimos con los otros intentos.
+        }
+      }
+
+      // 3. Solo si el texto ES un ID de Supabase (UUID) buscamos por id.
+      //    (Evita el error "sintaxis no válida para UUID" al escribir un DNI.)
+      if (!data) {
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(searchDni);
+        if (isUuid) {
+          console.log("Trying by ID (UUID)...");
+          const { data: dataById, error: errorById } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', searchDni)
+            .maybeSingle();
+
+          if (errorById) throw errorById;
+          data = dataById;
+        }
       }
       
       if (data) {
