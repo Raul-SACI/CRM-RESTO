@@ -82,6 +82,7 @@ export interface Prize {
   points_cost: number;
   image_url: string;
   is_active: boolean;
+  sort_order?: number | null;
 }
 
 // Invitación a cena para un cliente oculto (comp de "cena para 2").

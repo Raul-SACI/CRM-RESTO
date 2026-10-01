@@ -50,7 +50,11 @@ export function Rewards() {
           .order('points_cost', { ascending: true });
         
         if (!error && data) {
-          setPrizes(data);
+          // Orden personalizado por el admin (sort_order); si falta, por costo.
+          const ordered = [...data].sort((a: any, b: any) =>
+            ((a.sort_order ?? Infinity) - (b.sort_order ?? Infinity)) || ((a.points_cost || 0) - (b.points_cost || 0))
+          );
+          setPrizes(ordered);
         }
       } catch (err) {
         console.error("Rewards fetch error:", err);
