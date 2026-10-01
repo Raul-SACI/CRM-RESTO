@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase, createIsolatedClient } from '@/src/lib/supabase';
 import { Profile, Prize, Transaction, SystemSettings, MysteryReport, MysteryInvitation } from '@/src/types';
 import { motion, AnimatePresence } from 'motion/react';
-import { Users, Gift, Settings, Search, Plus, Trash2, Pencil, Calendar, Award, History, DollarSign, Upload, Image as ImageIcon, FileSpreadsheet, UserPlus, X, Palette, Home, User, Star, MessageSquare, FileText, HelpCircle, LogOut, MapPin, ChevronLeft, ChevronRight, Package, Bell, Send, Sun, Moon, ShieldCheck, Clock, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Users, Gift, Settings, Search, Plus, Trash2, Pencil, Calendar, Award, History, DollarSign, Upload, Image as ImageIcon, FileSpreadsheet, UserPlus, X, Palette, Home, User, Star, MessageSquare, FileText, HelpCircle, LogOut, MapPin, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Package, Bell, Send, Sun, Moon, ShieldCheck, Clock, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { cn, normalizeDni } from '@/src/lib/utils';
 import * as XLSX from 'xlsx';
 import { useDesign, COLOR_PRESETS, CORNER_PRESETS, AVAILABLE_FONTS, type DesignConfig, type BannerConfig } from '@/src/components/DesignEngine';
@@ -724,6 +724,10 @@ export function Admin() {
         if (error) throw error;
         
         const soloPremios = (data || []).filter((p: any) => p.title !== '__DESIGN_SETTINGS__' && p.title !== '__DESIGN_SETTINGS_BACKUP__');
+        // Orden personalizado (sort_order); si falta, cae al costo de puntos.
+        soloPremios.sort((a: any, b: any) =>
+          ((a.sort_order ?? Infinity) - (b.sort_order ?? Infinity)) || ((a.points_cost || 0) - (b.points_cost || 0))
+        );
         setPrizes(soloPremios);
         safeSetItem(cacheKey, JSON.stringify(soloPremios));
       } else if (activeTab === 'staff') {
@@ -1073,7 +1077,7 @@ export function Admin() {
           alert('¡Premio actualizado!');
         }
       } else {
-        const { error } = await supabase.from('catalogo_premios').insert([{ ...newPrize, is_active: true }]);
+        const { error } = await supabase.from('catalogo_premios').insert([{ ...newPrize, is_active: true, sort_order: prizes.length }]);
         if (error) {
           console.error("Error Detail:", error);
           alert(`Error Supabase: ${error.message} (Código: ${error.code})`);
@@ -1102,6 +1106,34 @@ export function Admin() {
     const formElement = document.getElementById('prize-form');
     if (formElement) {
       formElement.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  // Mueve un premio hacia arriba/abajo y guarda el nuevo orden (sort_order).
+  const [reordering, setReordering] = useState(false);
+  const movePrize = async (index: number, dir: 'up' | 'down') => {
+    const j = dir === 'up' ? index - 1 : index + 1;
+    if (j < 0 || j >= prizes.length || reordering) return;
+
+    const arr = [...prizes];
+    [arr[index], arr[j]] = [arr[j], arr[index]];
+    setPrizes(arr); // feedback inmediato
+
+    setReordering(true);
+    try {
+      // Reasignamos el orden (0..n) y persistimos solo los que cambian.
+      for (let i = 0; i < arr.length; i++) {
+        if ((arr[i].sort_order ?? -1) !== i) {
+          const { error } = await supabase.from('catalogo_premios').update({ sort_order: i }).eq('id', arr[i].id);
+          if (error) throw error;
+        }
+      }
+      setPrizes(arr.map((p, i) => ({ ...p, sort_order: i })));
+    } catch (e: any) {
+      alert('No se pudo guardar el orden: ' + (e?.message || e) + '\n\nVerificá que la columna "sort_order" exista (correr supabase_premios_orden.sql).');
+      await fetchData(true);
+    } finally {
+      setReordering(false);
     }
   };
 
@@ -2380,13 +2412,32 @@ export function Admin() {
                     <p className="text-[10px] text-slate-300 max-w-xs mx-auto font-bold uppercase tracking-tight">Si no puedes agregar, consulta con soporte técnico de Supabase.</p>
                   </div>
                 )}
-                {prizes.map(prize => {
+                {prizes.map((prize, index) => {
                   const activo = prize.is_active !== false;
                   return (
                   <div key={prize.id} className={cn(
                     "bg-white p-4 rounded-2xl border border-slate-100 flex items-center gap-4 group transition-all shadow-sm",
                     !activo && "opacity-60"
                   )}>
+                    {/* Reordenar */}
+                    <div className="flex flex-col shrink-0">
+                      <button
+                        onClick={() => movePrize(index, 'up')}
+                        disabled={index === 0 || reordering}
+                        title="Subir"
+                        className="p-1 text-slate-300 hover:text-ink transition-colors disabled:opacity-20 disabled:cursor-not-allowed bg-transparent border-none cursor-pointer"
+                      >
+                        <ChevronUp size={18} />
+                      </button>
+                      <button
+                        onClick={() => movePrize(index, 'down')}
+                        disabled={index === prizes.length - 1 || reordering}
+                        title="Bajar"
+                        className="p-1 text-slate-300 hover:text-ink transition-colors disabled:opacity-20 disabled:cursor-not-allowed bg-transparent border-none cursor-pointer"
+                      >
+                        <ChevronDown size={18} />
+                      </button>
+                    </div>
                     <img src={prize.image_url} className="w-16 h-16 rounded-xl object-cover shrink-0" />
                     <div className="flex-1 min-w-0">
                       <h4 className="font-black text-sm uppercase tracking-tighter text-ink">{prize.title}</h4>
