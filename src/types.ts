@@ -83,6 +83,8 @@ export interface Prize {
   image_url: string;
   is_active: boolean;
   sort_order?: number | null;
+  active_from?: string | null;   // vigencia: activo desde (fecha, opcional)
+  active_until?: string | null;  // vigencia: activo hasta (fecha, opcional)
 }
 
 // Invitación a cena para un cliente oculto (comp de "cena para 2").

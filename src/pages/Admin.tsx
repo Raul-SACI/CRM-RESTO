@@ -115,7 +115,7 @@ export function Admin() {
   const [supDraft, setSupDraft] = useState<SupervisionConfig>(DEFAULT_SUPERVISION);
   const [savingSup, setSavingSup] = useState(false);
   const [settings, setSettings] = useState<SystemSettings | null>(null);
-  const [newPrize, setNewPrize] = useState({ title: '', description: '', points_cost: 0, image_url: '' });
+  const [newPrize, setNewPrize] = useState({ title: '', description: '', points_cost: 0, image_url: '', activeFrom: '', activeUntil: '' });
   const [editingPrizeId, setEditingPrizeId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [updatingSettings, setUpdatingSettings] = useState(false);
@@ -1064,25 +1064,36 @@ export function Admin() {
             title: newPrize.title,
             description: newPrize.description,
             points_cost: newPrize.points_cost,
-            image_url: newPrize.image_url
+            image_url: newPrize.image_url,
+            active_from: newPrize.activeFrom || null,
+            active_until: newPrize.activeUntil || null
           })
           .eq('id', editingPrizeId);
-        
+
         if (error) {
           alert(`Error al actualizar: ${error.message}`);
         } else {
           setEditingPrizeId(null);
-          setNewPrize({ title: '', description: '', points_cost: 0, image_url: '' });
+          setNewPrize({ title: '', description: '', points_cost: 0, image_url: '', activeFrom: '', activeUntil: '' });
           await fetchData(true);
           alert('¡Premio actualizado!');
         }
       } else {
-        const { error } = await supabase.from('catalogo_premios').insert([{ ...newPrize, is_active: true, sort_order: prizes.length }]);
+        const { error } = await supabase.from('catalogo_premios').insert([{
+          title: newPrize.title,
+          description: newPrize.description,
+          points_cost: newPrize.points_cost,
+          image_url: newPrize.image_url,
+          is_active: true,
+          sort_order: prizes.length,
+          active_from: newPrize.activeFrom || null,
+          active_until: newPrize.activeUntil || null
+        }]);
         if (error) {
           console.error("Error Detail:", error);
           alert(`Error Supabase: ${error.message} (Código: ${error.code})`);
         } else {
-          setNewPrize({ title: '', description: '', points_cost: 0, image_url: '' });
+          setNewPrize({ title: '', description: '', points_cost: 0, image_url: '', activeFrom: '', activeUntil: '' });
           await fetchData(true);
           alert('¡Premio publicado!');
         }
@@ -1100,7 +1111,9 @@ export function Admin() {
       title: prize.title,
       description: prize.description,
       points_cost: prize.points_cost,
-      image_url: prize.image_url
+      image_url: prize.image_url,
+      activeFrom: (prize as any).active_from || '',
+      activeUntil: (prize as any).active_until || ''
     });
     // Scroll to the form
     const formElement = document.getElementById('prize-form');
@@ -1135,6 +1148,20 @@ export function Admin() {
     } finally {
       setReordering(false);
     }
+  };
+
+  // Estado de vigencia programada de un premio (si tiene fechas configuradas).
+  const prizeScheduleStatus = (prize: any): { label: string; cls: string } | null => {
+    const from = prize.active_from;
+    const until = prize.active_until;
+    if (!from && !until) return null;
+    const d = new Date();
+    const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const fmt = (s: string) => new Date(s + 'T00:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' });
+    if (from && today < from) return { label: `Programado · desde ${fmt(from)}`, cls: 'bg-blue-100 text-blue-700' };
+    if (until && today > until) return { label: `Vencido · ${fmt(until)}`, cls: 'bg-slate-200 text-slate-500' };
+    const rango = `${from ? fmt(from) : '…'} → ${until ? fmt(until) : '…'}`;
+    return { label: `Vigente · ${rango}`, cls: 'bg-emerald-100 text-emerald-700' };
   };
 
   const handleDeletePrize = async (id: string) => {
@@ -2348,6 +2375,21 @@ export function Admin() {
                   <input placeholder="Título del premio" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs outline-none focus:border-love text-ink" value={newPrize.title} onChange={e => setNewPrize({...newPrize, title: e.target.value})} required />
                   <textarea placeholder="Descripción del beneficio" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs outline-none focus:border-love h-24 text-ink" value={newPrize.description} onChange={e => setNewPrize({...newPrize, description: e.target.value})} required />
                   <input type="number" placeholder="Costo en puntos" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs outline-none focus:border-love text-ink" value={newPrize.points_cost || ''} onChange={e => setNewPrize({...newPrize, points_cost: parseInt(e.target.value)})} required />
+                  {/* Vigencia automática (opcional): el premio se muestra solo dentro del rango */}
+                  <div>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1.5">Vigencia automática (opcional)</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-[8px] font-black uppercase tracking-widest text-slate-400 mb-1 block">Activo desde</label>
+                        <input type="date" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs outline-none focus:border-love text-ink" value={newPrize.activeFrom} onChange={e => setNewPrize({...newPrize, activeFrom: e.target.value})} />
+                      </div>
+                      <div>
+                        <label className="text-[8px] font-black uppercase tracking-widest text-slate-400 mb-1 block">Activo hasta</label>
+                        <input type="date" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs outline-none focus:border-love text-ink" value={newPrize.activeUntil} onChange={e => setNewPrize({...newPrize, activeUntil: e.target.value})} />
+                      </div>
+                    </div>
+                    <p className="text-[8px] text-slate-400 mt-1 italic">Dejá vacío para que esté siempre activo. El rango es inclusivo (se desactiva al terminar el último día).</p>
+                  </div>
                   
                   <div className="space-y-2">
                     <label className="block text-[9px] font-black uppercase tracking-widest text-slate-400 pl-1">Imagen del premio</label>
@@ -2442,12 +2484,22 @@ export function Admin() {
                     <div className="flex-1 min-w-0">
                       <h4 className="font-black text-sm uppercase tracking-tighter text-ink">{prize.title}</h4>
                       <p className="text-[10px] text-love font-black uppercase tracking-widest italic">{prize.points_cost} Puntos</p>
-                      <span className={cn(
-                        "inline-block mt-1 text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full",
-                        activo ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-500"
-                      )}>
-                        {activo ? 'Activo' : 'Inactivo'}
-                      </span>
+                      <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                        <span className={cn(
+                          "inline-block text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full",
+                          activo ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-500"
+                        )}>
+                          {activo ? 'Activo' : 'Inactivo'}
+                        </span>
+                        {(() => {
+                          const s = prizeScheduleStatus(prize);
+                          return s ? (
+                            <span className={cn("inline-block text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full", s.cls)}>
+                              {s.label}
+                            </span>
+                          ) : null;
+                        })()}
+                      </div>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                       <button
