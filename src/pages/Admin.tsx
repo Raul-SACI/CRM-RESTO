@@ -150,6 +150,8 @@ export function Admin() {
   const [pointsExpirationMonths, setPointsExpirationMonths] = useState<number>(3);
   const [categoryInactivityDays, setCategoryInactivityDays] = useState<number>(60);
   const [localLoyaltyTiers, setLocalLoyaltyTiers] = useState<any[]>([]);
+  // Días de puntos promocionales (ej. Día de la Madre x2)
+  const [pointsBoosts, setPointsBoosts] = useState<{ id: string; label: string; date: string; dateEnd?: string; multiplier: number }[]>([]);
   const [savingDesign, setSavingDesign] = useState(false);
   const [designSubSection, setDesignSubSection] = useState<'branding' | 'styling' | 'colors' | 'banners' | 'css'>('branding');
   const [activeBannerIndex, setActiveBannerIndex] = useState<number>(0);
@@ -233,6 +235,7 @@ export function Admin() {
       if (designConfig.loyaltyTiers) {
         setLocalLoyaltyTiers(JSON.parse(JSON.stringify(designConfig.loyaltyTiers)));
       }
+      setPointsBoosts(Array.isArray((designConfig as any).pointsBoosts) ? JSON.parse(JSON.stringify((designConfig as any).pointsBoosts)) : []);
     }
   }, [designConfig]);
 
@@ -662,7 +665,8 @@ export function Admin() {
           ...designConfig,
           pointsExpirationMonths,
           categoryInactivityDays,
-          loyaltyTiers: localLoyaltyTiers
+          loyaltyTiers: localLoyaltyTiers,
+          pointsBoosts: pointsBoosts.filter(b => b.label?.trim() && b.date && (Number(b.multiplier) || 0) > 1)
         };
         await saveDesignConfig(updatedDesign);
       }
@@ -678,6 +682,14 @@ export function Admin() {
   const safeSetItem = (_key: string, _value: string) => {
     // Caché de datos del admin desactivado: siempre se lee del servidor.
   };
+
+  // Días de puntos promocionales
+  const addPointsBoost = () => setPointsBoosts(prev => [...prev, {
+    id: (typeof crypto !== 'undefined' && (crypto as any).randomUUID) ? (crypto as any).randomUUID() : 'b_' + Date.now(),
+    label: '', date: '', dateEnd: '', multiplier: 2
+  }]);
+  const updatePointsBoost = (id: string, patch: any) => setPointsBoosts(prev => prev.map(b => b.id === id ? { ...b, ...patch } : b));
+  const removePointsBoost = (id: string) => setPointsBoosts(prev => prev.filter(b => b.id !== id));
 
   const fetchData = async (forceRefresh = false) => {
     // Siempre cargar fresco del servidor (sin caché local)
@@ -4087,8 +4099,64 @@ export function Admin() {
                           </div>
                         </div>
 
-                        <button 
-                          type="submit" 
+                        {/* Días de puntos dobles / promociones */}
+                        <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100 space-y-3">
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <div>
+                              <h4 className="text-xs font-black uppercase tracking-widest text-ink flex items-center gap-2">
+                                <Star size={14} className="text-love" /> Días de puntos promocionales
+                              </h4>
+                              <p className="text-[10px] text-slate-400 mt-0.5">Esos días, al cargar puntos se multiplican solos (ej. Día de la Madre ×2).</p>
+                            </div>
+                            <button type="button" onClick={addPointsBoost}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-ink text-white text-[9px] font-black uppercase tracking-widest cursor-pointer border-none hover:bg-black transition-all">
+                              <Plus size={12} /> Agregar día
+                            </button>
+                          </div>
+
+                          {pointsBoosts.length === 0 ? (
+                            <p className="text-[11px] text-slate-400 italic py-1">No hay promociones configuradas.</p>
+                          ) : (
+                            <div className="space-y-2">
+                              {pointsBoosts.map((b) => (
+                                <div key={b.id} className="bg-white rounded-xl border border-slate-200 p-3 grid grid-cols-1 md:grid-cols-12 gap-2 items-end">
+                                  <div className="md:col-span-4">
+                                    <label className="text-[8px] font-black uppercase tracking-widest text-slate-400 mb-1 block">Nombre</label>
+                                    <input type="text" value={b.label} onChange={(e) => updatePointsBoost(b.id, { label: e.target.value })}
+                                      placeholder="Ej. Día de la Madre"
+                                      className="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm text-ink outline-none focus:border-love" />
+                                  </div>
+                                  <div className="md:col-span-3">
+                                    <label className="text-[8px] font-black uppercase tracking-widest text-slate-400 mb-1 block">Desde</label>
+                                    <input type="date" value={b.date} onChange={(e) => updatePointsBoost(b.id, { date: e.target.value })}
+                                      className="w-full px-2 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm text-ink outline-none focus:border-love" />
+                                  </div>
+                                  <div className="md:col-span-3">
+                                    <label className="text-[8px] font-black uppercase tracking-widest text-slate-400 mb-1 block">Hasta (opcional)</label>
+                                    <input type="date" value={b.dateEnd || ''} onChange={(e) => updatePointsBoost(b.id, { dateEnd: e.target.value })}
+                                      className="w-full px-2 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm text-ink outline-none focus:border-love" />
+                                  </div>
+                                  <div className="md:col-span-1">
+                                    <label className="text-[8px] font-black uppercase tracking-widest text-slate-400 mb-1 block">×</label>
+                                    <input type="number" min={1.5} step={0.5} value={b.multiplier}
+                                      onChange={(e) => updatePointsBoost(b.id, { multiplier: parseFloat(e.target.value) || 2 })}
+                                      className="w-full px-2 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm font-bold text-ink outline-none focus:border-love text-center" />
+                                  </div>
+                                  <div className="md:col-span-1 flex md:justify-center">
+                                    <button type="button" onClick={() => removePointsBoost(b.id)} title="Eliminar"
+                                      className="p-2 text-slate-300 hover:text-love transition-colors bg-transparent border-none cursor-pointer">
+                                      <Trash2 size={16} />
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          <p className="text-[9px] text-slate-400 italic">El rango es inclusive. El multiplicador se aplica sobre los puntos (además del multiplicador de categoría del cliente). Acordate de tocar "Guardar" abajo.</p>
+                        </div>
+
+                        <button
+                          type="submit"
                           disabled={updatingSettings}
                           className="w-full bg-ink text-white dark:bg-love py-5 rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-sm hover:bg-black transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
                         >

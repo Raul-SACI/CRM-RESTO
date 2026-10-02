@@ -22,3 +22,30 @@ export function isPrizeActiveNow(prize: { is_active?: boolean; active_from?: str
   if (prize.active_until && today > prize.active_until) return false;
   return true;
 }
+
+// Promoción de puntos (ej. "Día de la Madre x2"). Un boost tiene fecha desde
+// (date), fecha hasta opcional (dateEnd) y un multiplicador (>1).
+export interface PointsBoost {
+  id: string;
+  label: string;
+  date: string;
+  dateEnd?: string;
+  multiplier: number;
+}
+
+// Devuelve la promo de puntos activa HOY (la de mayor multiplicador), o null.
+export function getActivePointsBoost(boosts?: any[]): { label: string; multiplier: number } | null {
+  if (!Array.isArray(boosts) || boosts.length === 0) return null;
+  const d = new Date();
+  const today = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  let best: { label: string; multiplier: number } | null = null;
+  for (const b of boosts) {
+    const from = b?.date;
+    const to = b?.dateEnd || b?.date;
+    const mult = Number(b?.multiplier) || 1;
+    if (from && today >= from && today <= to && mult > 1) {
+      if (!best || mult > best.multiplier) best = { label: b.label || 'Puntos promo', multiplier: mult };
+    }
+  }
+  return best;
+}
