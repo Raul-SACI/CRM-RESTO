@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Prize, MysteryInvitation } from '@/src/types';
 import { Gift, Sparkles, ChevronRight, Star, X, UtensilsCrossed, Calendar, MapPin } from 'lucide-react';
 import { useAuth } from '@/src/App';
-import { cn } from '@/src/lib/utils';
+import { cn, isPrizeActiveNow } from '@/src/lib/utils';
 
 export function Rewards() {
   const { profile, refreshProfile } = useAuth();
@@ -50,10 +50,13 @@ export function Rewards() {
           .order('points_cost', { ascending: true });
         
         if (!error && data) {
-          // Orden personalizado por el admin (sort_order); si falta, por costo.
-          const ordered = [...data].sort((a: any, b: any) =>
-            ((a.sort_order ?? Infinity) - (b.sort_order ?? Infinity)) || ((a.points_cost || 0) - (b.points_cost || 0))
-          );
+          // Solo premios vigentes hoy (switch manual + rango de fechas), y en el
+          // orden personalizado por el admin (sort_order); si falta, por costo.
+          const ordered = [...data]
+            .filter(isPrizeActiveNow)
+            .sort((a: any, b: any) =>
+              ((a.sort_order ?? Infinity) - (b.sort_order ?? Infinity)) || ((a.points_cost || 0) - (b.points_cost || 0))
+            );
           setPrizes(ordered);
         }
       } catch (err) {

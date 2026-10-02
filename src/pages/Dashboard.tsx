@@ -12,7 +12,7 @@ import {
 import { supabase } from '@/src/lib/supabase';
 import { notifyClient, checkLevelUp } from '@/src/lib/notify';
 import { Transaction, SystemSettings, Profile, Prize } from '@/src/types';
-import { cn } from '@/src/lib/utils';
+import { cn, isPrizeActiveNow } from '@/src/lib/utils';
 import { useDesign } from '@/src/components/DesignEngine';
 import { WelcomeGuide, CLIENT_GUIDE_STEPS } from '@/src/components/WelcomeGuide';
 
@@ -716,8 +716,9 @@ export function Dashboard() {
               if (titulo) counts[titulo] = (counts[titulo] || 0) + 1;
             });
 
-            // Ordenamos los premios por cantidad de canjes (desc); desempate por precio
-            const sorted = [...prizesData].sort((a: any, b: any) => {
+            // Ordenamos los premios por cantidad de canjes (desc); desempate por precio.
+            // Solo los vigentes hoy (switch manual + rango de fechas).
+            const sorted = [...prizesData].filter(isPrizeActiveNow).sort((a: any, b: any) => {
               const ca = counts[(a.title || '').toLowerCase()] || 0;
               const cb = counts[(b.title || '').toLowerCase()] || 0;
               if (cb !== ca) return cb - ca;
