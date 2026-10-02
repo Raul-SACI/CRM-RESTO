@@ -90,6 +90,9 @@ export interface DesignConfig {
   // Configuración editable del formulario de supervisión (clientes ocultos)
   supervision?: import('@/src/lib/supervision').SupervisionConfig;
 
+  // Días de puntos promocionales (ej. "Día de la Madre x2")
+  pointsBoosts?: { id: string; label: string; date: string; dateEnd?: string; multiplier: number }[];
+
   // Configuración de avisos automáticos (Grupo 2)
   autoNotif?: AutoNotifConfig;
   

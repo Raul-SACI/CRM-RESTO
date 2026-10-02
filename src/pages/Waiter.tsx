@@ -4,8 +4,8 @@ import { supabase } from '@/src/lib/supabase';
 import { notifyClient, checkLevelUp } from '@/src/lib/notify';
 import { useAuth } from '@/src/App';
 import { motion, AnimatePresence } from 'motion/react';
-import { Search, Receipt, PlusCircle, CheckCircle2, AlertCircle, QrCode, X, RefreshCw, Ticket } from 'lucide-react';
-import { cn } from '@/src/lib/utils';
+import { Search, Receipt, PlusCircle, CheckCircle2, AlertCircle, QrCode, X, RefreshCw, Ticket, Star } from 'lucide-react';
+import { cn, getActivePointsBoost } from '@/src/lib/utils';
 import { Profile, SystemSettings } from '@/src/types';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import { useDesign } from '@/src/components/DesignEngine';
@@ -382,8 +382,11 @@ export function Waiter() {
     }
 
     const activeTier = getClientActiveTier(client, clientTransactions);
-    const pointsToAdd = Math.floor((amountNum / conversionRate) * activeTier.multiplier);
-    const label = `${activeTier.name} (x${activeTier.multiplier})`;
+    // Promo de puntos del día (ej. Día de la Madre x2), si está configurada.
+    const boost = getActivePointsBoost((designConfig as any)?.pointsBoosts);
+    const eventMult = boost?.multiplier || 1;
+    const pointsToAdd = Math.floor((amountNum / conversionRate) * activeTier.multiplier * eventMult);
+    const label = `${activeTier.name} (x${activeTier.multiplier})${boost ? ` + ${boost.label} (x${boost.multiplier})` : ''}`;
 
     try {
       console.log("Starting transaction for client:", client.id, "by waiter:", waiterProfile.id);
@@ -769,6 +772,18 @@ export function Waiter() {
       </AnimatePresence>
 
       {cashierView === 'carga' && (<>
+      {(() => {
+        const boost = getActivePointsBoost((designConfig as any)?.pointsBoosts);
+        return boost ? (
+          <div className="p-4 rounded-xl mb-4 bg-gradient-to-r from-love to-love/80 text-white flex items-center gap-3 shadow-lg shadow-love/20">
+            <Star size={18} className="shrink-0" />
+            <div className="leading-tight">
+              <p className="text-[11px] font-black uppercase tracking-widest">¡Hoy {boost.label}! Puntos ×{boost.multiplier}</p>
+              <p className="text-[9px] font-bold text-white/80">Se aplica automáticamente al cargar puntos.</p>
+            </div>
+          </div>
+        ) : null;
+      })()}
       {status && (
         <motion.div 
           initial={{ y: -10, opacity: 0 }}
