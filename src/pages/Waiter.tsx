@@ -373,7 +373,7 @@ export function Waiter() {
     setStatus(null);
 
     const conversionRate = settings?.points_conversion_rate || 1000;
-    const amountNum = parseFloat(amount);
+    const amountNum = Number(amount);
     
     if (amountNum < conversionRate) {
       setStatus({ type: 'error', message: `El monto debe ser al menos $${conversionRate.toLocaleString('es-AR')}` });
@@ -922,19 +922,19 @@ export function Waiter() {
                         required
                         autoFocus
                         className="w-full bg-slate-100 border-none rounded-xl md:rounded-2xl py-4 md:py-8 pl-10 md:pl-12 pr-4 md:pr-6 text-3xl md:text-5xl font-black outline-none focus:ring-4 focus:ring-love/10 transition-all text-black text-center"
-                        value={amount ? parseFloat(amount).toLocaleString('es-AR') : ''}
+                        value={amount ? amount.replace(/\B(?=(\d{3})+(?!\d))/g, '.') : ''}
                         onChange={(e) => {
                           const val = e.target.value.replace(/\D/g, '');
                           setAmount(val);
                         }}
                       />
                     </div>
-                    {amount && !isNaN(parseFloat(amount)) && (
+                    {amount && Number(amount) > 0 && (
                       <div className="mt-2 text-center animate-in fade-in slide-in-from-top-1 duration-300">
                         <p className="text-[11px] md:text-sm font-black text-ink uppercase italic">
-                          ${parseFloat(amount).toLocaleString('es-AR')}
+                          ${Number(amount).toLocaleString('es-AR')}
                           <span className="text-love ml-2 font-bold tracking-tight">
-                            ({numberToWords(Math.floor(parseFloat(amount)))})
+                            ({numberToWords(Number(amount))})
                           </span>
                         </p>
                       </div>
@@ -957,7 +957,7 @@ export function Waiter() {
                       <p className="text-[9px] md:text-[10px] font-black uppercase tracking-widest opacity-60 mb-1">Puntos a Asignar</p>
                       {(() => {
                         const activeTier = getClientActiveTier(client, clientTransactions);
-                        const calculated = amount ? Math.floor((parseFloat(amount) / (settings?.points_conversion_rate || 1000)) * activeTier.multiplier) : 0;
+                        const calculated = amount ? Math.floor((Number(amount) / (settings?.points_conversion_rate || 1000)) * activeTier.multiplier) : 0;
                         return (
                           <>
                             <p className="text-4 shadow-sm font-black italic text-4xl md:text-5xl">
