@@ -10,6 +10,7 @@ import { BirthdayCalendar } from '@/src/components/BirthdayCalendar';
 import { notifyClient } from '@/src/lib/notify';
 import { resolveSupervisionConfig, SUP_TEXT_FIELDS, SUP_OPTION_LISTS, SUP_REQUIRED_FIELDS, DEFAULT_SUPERVISION, makeCustomQuestion, type SupervisionConfig, type CustomQuestion } from '@/src/lib/supervision';
 import { useAuth, useTheme } from '@/src/App';
+import QRCode from 'react-qr-code';
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Cell, PieChart, Pie } from 'recharts';
 import { 
@@ -98,6 +99,9 @@ export function Admin() {
   const [staff, setStaff] = useState<Profile[]>([]);
   // Ranking de socios registrados por cada mozo (vía su QR)
   const [referralStats, setReferralStats] = useState<{ id: string; name: string; total: number; month: number }[]>([]);
+  // Gestión de mozos (QR de registro) — no son usuarios de la app
+  const [newMozoName, setNewMozoName] = useState('');
+  const [qrMozo, setQrMozo] = useState<{ id: string; name: string } | null>(null);
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
   // Supervisiones de clientes ocultos (mystery shoppers)
@@ -693,6 +697,46 @@ export function Admin() {
   const updatePointsBoost = (id: string, patch: any) => setPointsBoosts(prev => prev.map(b => b.id === id ? { ...b, ...patch } : b));
   const removePointsBoost = (id: string) => setPointsBoosts(prev => prev.filter(b => b.id !== id));
 
+  // Mozos (QR de registro): se guardan en designConfig.mozos (no son usuarios de la app).
+  const addMozo = async () => {
+    const name = newMozoName.trim();
+    if (!name) return;
+    const id = (typeof crypto !== 'undefined' && (crypto as any).randomUUID) ? (crypto as any).randomUUID() : 'm_' + Date.now();
+    const list = [ ...(((designConfig as any)?.mozos) || []), { id, name } ];
+    try {
+      await saveDesignConfig({ ...designConfig, mozos: list });
+      setNewMozoName('');
+    } catch (e: any) {
+      alert('No se pudo guardar el mozo: ' + (e?.message || e));
+    }
+  };
+  const removeMozo = async (id: string) => {
+    if (!confirm('¿Eliminar este mozo? Su QR dejará de atribuir nuevos registros (los ya sumados se conservan).')) return;
+    const list = (((designConfig as any)?.mozos) || []).filter((m: any) => m.id !== id);
+    try {
+      await saveDesignConfig({ ...designConfig, mozos: list });
+    } catch (e: any) {
+      alert('No se pudo eliminar: ' + (e?.message || e));
+    }
+  };
+  // Descarga el QR (SVG) del mozo para imprimirlo en una tarjeta.
+  const downloadMozoQr = (mozo: { id: string; name: string }) => {
+    try {
+      const svg = document.getElementById('mozo-qr-svg');
+      if (!svg) return;
+      const str = new XMLSerializer().serializeToString(svg);
+      const blob = new Blob(['<?xml version="1.0" encoding="UTF-8"?>\n' + str], { type: 'image/svg+xml' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `QR-${mozo.name.replace(/\s+/g, '_')}.svg`;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      alert('No se pudo descargar: ' + (e?.message || e));
+    }
+  };
+
   const fetchData = async (forceRefresh = false) => {
     // Siempre cargar fresco del servidor (sin caché local)
     void forceRefresh;
@@ -761,15 +805,15 @@ export function Admin() {
         safeSetItem(cacheKey, JSON.stringify(filtered));
 
         // Ranking: socios registrados por cada mozo (vía su QR)
-        const nameMap: Record<string, string> = {};
-        (data || []).forEach((p: any) => { nameMap[p.id] = p.full_name || 'Sin nombre'; });
+        const mozoNames: Record<string, string> = {};
+        (((designConfig as any)?.mozos) || []).forEach((m: any) => { mozoNames[m.id] = m.name; });
         const now = new Date();
         const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
         const statsMap: Record<string, { id: string; name: string; total: number; month: number }> = {};
         (data || []).forEach((p: any) => {
           if (!p.registered_by) return;
           const k = p.registered_by;
-          if (!statsMap[k]) statsMap[k] = { id: k, name: nameMap[k] || 'Desconocido', total: 0, month: 0 };
+          if (!statsMap[k]) statsMap[k] = { id: k, name: mozoNames[k] || 'Desconocido', total: 0, month: 0 };
           statsMap[k].total++;
           if (String(p.created_at || '').slice(0, 10) >= monthStart) statsMap[k].month++;
         });
@@ -3067,6 +3111,74 @@ export function Admin() {
                     </div>
                   )}
                 </div>
+
+                {/* Gestión de mozos + sus QR de registro */}
+                <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 p-6 shadow-sm dark:shadow-none">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 bg-ink/5 rounded-xl flex items-center justify-center text-ink dark:text-white"><Users size={18} /></div>
+                    <div>
+                      <h3 className="text-lg font-black uppercase tracking-tighter text-ink dark:text-white">Mozos — QR de registro</h3>
+                      <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mt-0.5">Cargá a cada mozo e imprimí su QR. No necesitan usuario en la app.</p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 mb-4">
+                    <input
+                      type="text"
+                      value={newMozoName}
+                      onChange={(e) => setNewMozoName(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') addMozo(); }}
+                      placeholder="Nombre del mozo (ej. Sofía)"
+                      className="flex-1 px-4 py-2.5 rounded-lg bg-slate-50 border border-slate-200 text-sm text-ink outline-none focus:border-love"
+                    />
+                    <button onClick={addMozo}
+                      className="px-4 py-2.5 rounded-lg bg-love text-white text-[10px] font-black uppercase tracking-widest cursor-pointer border-none hover:bg-love/90 transition-all">
+                      Agregar mozo
+                    </button>
+                  </div>
+
+                  {(((designConfig as any)?.mozos) || []).length === 0 ? (
+                    <p className="text-[11px] text-slate-400 italic py-1">Todavía no cargaste mozos. Agregá el primero arriba.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {(((designConfig as any).mozos) as { id: string; name: string }[]).map((m) => (
+                        <div key={m.id} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-950/40 border border-slate-100 dark:border-slate-800">
+                          <span className="font-bold text-sm text-ink dark:text-white truncate">{m.name}</span>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <button onClick={() => setQrMozo(m)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-ink text-white text-[9px] font-black uppercase tracking-widest cursor-pointer border-none hover:bg-black transition-all">
+                              Ver / imprimir QR
+                            </button>
+                            <button onClick={() => removeMozo(m.id)} title="Eliminar"
+                              className="p-2 text-slate-300 hover:text-love transition-colors bg-transparent border-none cursor-pointer">
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* QR de un mozo (modal) */}
+                {qrMozo && (
+                  <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm" onClick={() => setQrMozo(null)}>
+                    <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-6 text-center relative" onClick={(e) => e.stopPropagation()}>
+                      <button onClick={() => setQrMozo(null)} className="absolute top-5 right-5 text-slate-400 hover:text-love bg-transparent border-none cursor-pointer"><X size={22} /></button>
+                      <h3 className="text-sm font-black uppercase tracking-wider text-slate-900 mb-1">QR de registro</h3>
+                      <p className="text-xs text-slate-500 mb-4">El cliente lo escanea con la cámara, se registra y queda a nombre de este mozo.</p>
+                      <div className="bg-white p-4 rounded-xl border border-slate-200 inline-block">
+                        <QRCode id="mozo-qr-svg" value={`${window.location.origin}/#/auth?ref=${qrMozo.id}`} size={200} style={{ height: 'auto', maxWidth: '100%', width: '200px' }} />
+                      </div>
+                      <p className="text-base font-black uppercase tracking-widest text-ink mt-4">{qrMozo.name}</p>
+                      <p className="text-[9px] text-slate-400 mt-1">Club CRAFT — escaneá y sumate</p>
+                      <button onClick={() => downloadMozoQr(qrMozo)}
+                        className="mt-5 w-full py-3 rounded-xl bg-love text-white text-[11px] font-black uppercase tracking-widest cursor-pointer border-none hover:bg-love/90 transition-all">
+                        Descargar QR (para imprimir)
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {/* Cabecera del Módulo con Sub-pestañas */}
                 <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 p-6 shadow-sm dark:shadow-none">

@@ -93,6 +93,9 @@ export interface DesignConfig {
   // Días de puntos promocionales (ej. "Día de la Madre x2")
   pointsBoosts?: { id: string; label: string; date: string; dateEnd?: string; multiplier: number }[];
 
+  // Mozos / vendedores (para atribuir registros vía su QR). No son usuarios de la app.
+  mozos?: { id: string; name: string }[];
+
   // Configuración de avisos automáticos (Grupo 2)
   autoNotif?: AutoNotifConfig;
   
