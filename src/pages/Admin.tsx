@@ -96,6 +96,8 @@ export function Admin() {
   const [clients, setClients] = useState<Profile[]>([]);
   const [prizes, setPrizes] = useState<Prize[]>([]);
   const [staff, setStaff] = useState<Profile[]>([]);
+  // Ranking de socios registrados por cada mozo (vía su QR)
+  const [referralStats, setReferralStats] = useState<{ id: string; name: string; total: number; month: number }[]>([]);
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
   // Supervisiones de clientes ocultos (mystery shoppers)
@@ -757,6 +759,21 @@ export function Admin() {
         });
         setStaff(filtered);
         safeSetItem(cacheKey, JSON.stringify(filtered));
+
+        // Ranking: socios registrados por cada mozo (vía su QR)
+        const nameMap: Record<string, string> = {};
+        (data || []).forEach((p: any) => { nameMap[p.id] = p.full_name || 'Sin nombre'; });
+        const now = new Date();
+        const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+        const statsMap: Record<string, { id: string; name: string; total: number; month: number }> = {};
+        (data || []).forEach((p: any) => {
+          if (!p.registered_by) return;
+          const k = p.registered_by;
+          if (!statsMap[k]) statsMap[k] = { id: k, name: nameMap[k] || 'Desconocido', total: 0, month: 0 };
+          statsMap[k].total++;
+          if (String(p.created_at || '').slice(0, 10) >= monthStart) statsMap[k].month++;
+        });
+        setReferralStats(Object.values(statsMap).sort((a, b) => (b.month - a.month) || (b.total - a.total)));
       } else if (activeTab === 'dashboard' || activeTab === 'history') {
         // Dashboard also needs clients for the registration chart
         if (activeTab === 'dashboard' || activeTab === 'history') {
@@ -3012,6 +3029,45 @@ export function Admin() {
 
             return (
               <div className="space-y-6">
+                {/* Ranking: socios registrados por cada mozo (vía su QR) */}
+                <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 p-6 shadow-sm dark:shadow-none">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-10 h-10 bg-love/10 rounded-xl flex items-center justify-center text-love"><Award size={20} /></div>
+                    <div>
+                      <h3 className="text-lg font-black uppercase tracking-tighter text-ink dark:text-white">Socios por <span className="text-love">mozo</span></h3>
+                      <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mt-0.5">Clientes registrados con el QR de cada mozo</p>
+                    </div>
+                  </div>
+                  {referralStats.length === 0 ? (
+                    <p className="text-[11px] text-slate-400 italic py-2">
+                      Todavía no hay registros atribuidos. Cada mozo encuentra su QR en la vista de <b>Caja</b> → "Mi QR para registrar clientes". Cuando un cliente lo escanea y se registra, suma acá.
+                    </p>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left">
+                        <thead>
+                          <tr className="text-[9px] uppercase tracking-widest text-slate-400 border-b border-slate-100 dark:border-slate-800">
+                            <th className="py-2 pr-4">#</th>
+                            <th className="py-2 pr-4">Mozo</th>
+                            <th className="py-2 pr-4 text-right">Este mes</th>
+                            <th className="py-2 text-right">Total</th>
+                          </tr>
+                        </thead>
+                        <tbody className="text-sm">
+                          {referralStats.map((r, i) => (
+                            <tr key={r.id} className="border-b border-slate-50 dark:border-slate-800/50">
+                              <td className="py-2.5 pr-4 font-black text-slate-300">{i + 1}</td>
+                              <td className="py-2.5 pr-4 font-bold text-ink dark:text-white">{r.name}</td>
+                              <td className="py-2.5 pr-4 text-right"><span className="font-black text-love text-lg italic">{r.month}</span></td>
+                              <td className="py-2.5 text-right font-bold text-slate-500">{r.total}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
                 {/* Cabecera del Módulo con Sub-pestañas */}
                 <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 p-6 shadow-sm dark:shadow-none">
                   <div className="flex flex-col md:flex-row items-center justify-between gap-4">

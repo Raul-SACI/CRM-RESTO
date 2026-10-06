@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '@/src/lib/supabase';
 import { motion } from 'motion/react';
 import { User, Mail, Lock, CreditCard, Calendar, Info, AlertTriangle, ExternalLink } from 'lucide-react';
-import { cn, normalizeDni } from '@/src/lib/utils';
+import { cn, normalizeDni, capturePendingRef, getPendingRef, clearPendingRef } from '@/src/lib/utils';
 
 export function Auth() {
   const [isLogin, setIsLogin] = useState(true);
@@ -17,6 +17,12 @@ export function Auth() {
     fullName: '',
     birthDate: '',
   });
+
+  // Si el cliente llegó por el QR de un mozo (...?ref=<id>), guardamos ese "ref"
+  // para atribuirle el registro al mozo (sobrevive al redirect de Google).
+  useEffect(() => {
+    capturePendingRef();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,6 +93,12 @@ export function Auth() {
             (profileData as any).birth_date = formData.birthDate;
           }
 
+          // Atribución por mozo (QR): si vino con ref, lo guardamos.
+          const pendingRef = getPendingRef();
+          if (pendingRef) {
+            (profileData as any).registered_by = pendingRef;
+          }
+
           const { error: profileError } = await supabase.from('profiles').upsert(profileData, { onConflict: 'id' });
 
           if (profileError) {
@@ -98,6 +110,8 @@ export function Auth() {
             }
             // If it failed, try a simple update
             await supabase.from('profiles').update({ birth_date: formData.birthDate || null }).eq('id', user.id);
+          } else {
+            clearPendingRef();
           }
         }
       }

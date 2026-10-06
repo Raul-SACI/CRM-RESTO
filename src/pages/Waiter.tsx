@@ -9,6 +9,7 @@ import { cn, getActivePointsBoost } from '@/src/lib/utils';
 import { Profile, SystemSettings } from '@/src/types';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import { useDesign } from '@/src/components/DesignEngine';
+import QRCode from 'react-qr-code';
 import { WelcomeGuide, CASHIER_GUIDE_STEPS } from '@/src/components/WelcomeGuide';
 
 import { numberToWords } from '@/src/lib/numberToWords';
@@ -41,6 +42,7 @@ export function Waiter() {
   const [loading, setLoading] = useState(false);
   const [searching, setSearching] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
+  const [showMyQr, setShowMyQr] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
   // Vista del cajero: 'carga' (cargar puntos) o 'movimientos' (lista con buscador)
@@ -784,6 +786,12 @@ export function Waiter() {
           </div>
         ) : null;
       })()}
+      <button
+        onClick={() => setShowMyQr(true)}
+        className="w-full mb-4 py-3 rounded-xl bg-ink text-white text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 cursor-pointer border-none hover:bg-black transition-all"
+      >
+        <QrCode size={16} /> Mi QR para registrar clientes
+      </button>
       {status && (
         <motion.div 
           initial={{ y: -10, opacity: 0 }}
@@ -1298,6 +1306,28 @@ export function Waiter() {
                 {savingCanje ? 'Guardando...' : 'Confirmar canje'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: QR personal del mozo para registrar clientes */}
+      {showMyQr && waiterProfile && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm" onClick={() => setShowMyQr(false)}>
+          <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-6 text-center" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setShowMyQr(false)} className="absolute top-6 right-6 text-slate-400 hover:text-love bg-transparent border-none cursor-pointer">
+              <X size={22} />
+            </button>
+            <h3 className="text-sm font-black uppercase tracking-wider !text-slate-900 mb-1">Registrar un cliente</h3>
+            <p className="text-xs !text-slate-500 mb-4">Pedile al cliente que escanee este código con la cámara de su celular. Se registra solo y queda a tu nombre.</p>
+            <div className="bg-white p-4 rounded-xl border border-slate-200 inline-block">
+              <QRCode
+                value={`${window.location.origin}/#/auth?ref=${waiterProfile.id}`}
+                size={200}
+                style={{ height: 'auto', maxWidth: '100%', width: '200px' }}
+              />
+            </div>
+            <p className="text-[11px] font-black uppercase tracking-widest text-ink mt-4">{waiterProfile.full_name}</p>
+            <p className="text-[9px] !text-slate-400 mt-1">Tu QR personal — los clientes que registres suman a tu ranking.</p>
           </div>
         </div>
       )}

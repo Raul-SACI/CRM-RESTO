@@ -23,7 +23,25 @@ export function isPrizeActiveNow(prize: { is_active?: boolean; active_from?: str
   return true;
 }
 
-// Promoción de puntos (ej. "Día de la Madre x2"). Un boost tiene fecha desde
+// Atribución por mozo (QR de registro): guardamos el "ref" del mozo que trae
+// al cliente, para persistirlo en su perfil al registrarse (sirve aunque el
+// registro pase por Google y vuelva de un redirect).
+export function capturePendingRef(): void {
+  try {
+    const hash = window.location.hash || '';
+    const qIndex = hash.indexOf('?');
+    if (qIndex === -1) return;
+    const params = new URLSearchParams(hash.slice(qIndex + 1));
+    const ref = params.get('ref');
+    if (ref) localStorage.setItem('ref_waiter', ref);
+  } catch (e) { /* noop */ }
+}
+export function getPendingRef(): string | null {
+  try { return localStorage.getItem('ref_waiter'); } catch { return null; }
+}
+export function clearPendingRef(): void {
+  try { localStorage.removeItem('ref_waiter'); } catch { /* noop */ }
+}
 // (date), fecha hasta opcional (dateEnd) y un multiplicador (>1).
 export interface PointsBoost {
   id: string;
