@@ -8,6 +8,7 @@ export interface Profile {
   role: 'client' | 'waiter' | 'admin';
   branch?: string | null;
   is_mystery_shopper?: boolean;
+  registered_by?: string | null; // id del mozo que lo registró (vía su QR)
   created_at: string;
 }
 

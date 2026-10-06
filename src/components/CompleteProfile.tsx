@@ -3,6 +3,7 @@ import { motion } from 'motion/react';
 import { Cake, Loader2 } from 'lucide-react';
 import { supabase } from '@/src/lib/supabase';
 import { Profile } from '@/src/types';
+import { getPendingRef, clearPendingRef } from '@/src/lib/utils';
 
 interface CompleteProfileProps {
   profile: Profile;
@@ -58,10 +59,17 @@ export function CompleteProfile({ profile, refreshProfile }: CompleteProfileProp
 
     setSaving(true);
     try {
+      // Si vino por el QR de un mozo y todavía no tiene atribución, la guardamos.
+      const pendingRef = getPendingRef();
+      const updatePayload: any = { dni: cleanDni, birth_date: birthDate };
+      if (pendingRef && !profile.registered_by) {
+        updatePayload.registered_by = pendingRef;
+      }
+
       // Guardamos el string 'YYYY-MM-DD' tal cual (día local, sin toISOString)
       const { error: upErr } = await supabase
         .from('profiles')
-        .update({ dni: cleanDni, birth_date: birthDate })
+        .update(updatePayload)
         .eq('id', profile.id);
 
       if (upErr) {
@@ -74,6 +82,7 @@ export function CompleteProfile({ profile, refreshProfile }: CompleteProfileProp
         throw upErr;
       }
 
+      clearPendingRef();
       await refreshProfile();
       // Al refrescar el perfil, la app deja de mostrar este paso y entra normal.
     } catch (err: any) {
