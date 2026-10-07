@@ -719,17 +719,34 @@ export function Admin() {
       alert('No se pudo eliminar: ' + (e?.message || e));
     }
   };
-  // Descarga el QR (SVG) del mozo para imprimirlo en una tarjeta.
+  // Descarga el QR como una tarjeta (SVG) con "CLUB CRAFT" arriba y "MOZO: NOMBRE"
+  // abajo, lista para imprimir.
   const downloadMozoQr = (mozo: { id: string; name: string }) => {
     try {
       const svg = document.getElementById('mozo-qr-svg');
       if (!svg) return;
-      const str = new XMLSerializer().serializeToString(svg);
-      const blob = new Blob(['<?xml version="1.0" encoding="UTF-8"?>\n' + str], { type: 'image/svg+xml' });
+      const qr = svg.cloneNode(true) as any;
+      qr.removeAttribute('style');
+      qr.setAttribute('x', '50');
+      qr.setAttribute('y', '80');
+      qr.setAttribute('width', '300');
+      qr.setAttribute('height', '300');
+      const qrStr = new XMLSerializer().serializeToString(qr);
+      const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      const name = esc((mozo.name || '').toUpperCase());
+      const W = 400, H = 460;
+      const outer =
+        `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">` +
+        `<rect width="${W}" height="${H}" rx="24" fill="#ffffff" stroke="#e2e8f0" stroke-width="2"/>` +
+        `<text x="${W/2}" y="52" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="800" font-size="34" fill="#0f172a">CLUB <tspan fill="#D90015">CRAFT</tspan></text>` +
+        qrStr +
+        `<text x="${W/2}" y="420" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="800" font-size="22" letter-spacing="1" fill="#0f172a">MOZO: ${name}</text>` +
+        `</svg>`;
+      const blob = new Blob(['<?xml version="1.0" encoding="UTF-8"?>\n' + outer], { type: 'image/svg+xml' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `QR-${mozo.name.replace(/\s+/g, '_')}.svg`;
+      a.download = `QR-${(mozo.name || 'mozo').replace(/\s+/g, '_')}.svg`;
       document.body.appendChild(a); a.click(); a.remove();
       URL.revokeObjectURL(url);
     } catch (e: any) {
@@ -3165,13 +3182,13 @@ export function Admin() {
                   <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm" onClick={() => setQrMozo(null)}>
                     <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-6 text-center relative" onClick={(e) => e.stopPropagation()}>
                       <button onClick={() => setQrMozo(null)} className="absolute top-5 right-5 text-slate-400 hover:text-love bg-transparent border-none cursor-pointer"><X size={22} /></button>
-                      <h3 className="text-sm font-black uppercase tracking-wider text-slate-900 mb-1">QR de registro</h3>
-                      <p className="text-xs text-slate-500 mb-4">El cliente lo escanea con la cámara, se registra y queda a nombre de este mozo.</p>
-                      <div className="bg-white p-4 rounded-xl border border-slate-200 inline-block">
+                      <p className="text-[10px] text-slate-500 mb-4">El cliente lo escanea con la cámara, se registra y queda a nombre de este mozo.</p>
+                      {/* Tarjeta: igual a la que se descarga para imprimir */}
+                      <div className="bg-white px-6 pt-6 pb-5 rounded-2xl border-2 border-slate-200 inline-block">
+                        <p className="text-2xl font-black tracking-tight text-slate-900 mb-4">CLUB <span className="text-love">CRAFT</span></p>
                         <QRCode id="mozo-qr-svg" value={`${window.location.origin}/#/auth?ref=${qrMozo.id}`} size={200} style={{ height: 'auto', maxWidth: '100%', width: '200px' }} />
+                        <p className="text-lg font-black uppercase tracking-widest text-slate-900 mt-4">MOZO: {qrMozo.name}</p>
                       </div>
-                      <p className="text-base font-black uppercase tracking-widest text-ink mt-4">{qrMozo.name}</p>
-                      <p className="text-[9px] text-slate-400 mt-1">Club CRAFT — escaneá y sumate</p>
                       <button onClick={() => downloadMozoQr(qrMozo)}
                         className="mt-5 w-full py-3 rounded-xl bg-love text-white text-[11px] font-black uppercase tracking-widest cursor-pointer border-none hover:bg-love/90 transition-all">
                         Descargar QR (para imprimir)
