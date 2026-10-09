@@ -1240,6 +1240,23 @@ export function Admin() {
     }
   };
 
+  // Reordenar combos: cambia la posición en el array y persiste en designConfig.
+  // El orden del array es el orden en que se muestran en la app (MyCombos).
+  const moveCombo = async (index: number, dir: 'up' | 'down') => {
+    const list = [...(((designConfig as any).combos) || [])];
+    const j = dir === 'up' ? index - 1 : index + 1;
+    if (j < 0 || j >= list.length || savingCombo) return;
+    [list[index], list[j]] = [list[j], list[index]];
+    setSavingCombo(true);
+    try {
+      await saveDesignConfig({ ...designConfig, combos: list });
+    } catch (e: any) {
+      alert('No se pudo guardar el orden: ' + (e?.message || e));
+    } finally {
+      setSavingCombo(false);
+    }
+  };
+
   // Estado de vigencia programada de un premio (si tiene fechas configuradas).
   const prizeScheduleStatus = (prize: any): { label: string; cls: string } | null => {
     const from = prize.active_from;
@@ -2636,9 +2653,31 @@ export function Admin() {
 
                   {/* Combos Grid */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {((designConfig as any).combos || []).map((combo: any) => (
+                    {((designConfig as any).combos || []).map((combo: any, comboIndex: number) => (
                       <div key={combo.id} className="bg-slate-50 dark:bg-slate-950 p-4 rounded-xl border border-slate-100 dark:border-slate-800 flex flex-col justify-between gap-4">
                         <div className="flex gap-4">
+                          {/* Reordenar: define el orden en que se ven los combos en la app */}
+                          <div className="flex flex-col items-center justify-center gap-1 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => moveCombo(comboIndex, 'up')}
+                              disabled={comboIndex === 0 || savingCombo}
+                              title="Subir"
+                              className="p-1 text-slate-300 hover:text-ink dark:hover:text-white transition-colors disabled:opacity-20 disabled:cursor-not-allowed bg-transparent border-none cursor-pointer"
+                            >
+                              <ChevronUp size={18} />
+                            </button>
+                            <span className="text-[9px] font-black text-slate-400">{comboIndex + 1}</span>
+                            <button
+                              type="button"
+                              onClick={() => moveCombo(comboIndex, 'down')}
+                              disabled={comboIndex === (((designConfig as any).combos || []).length - 1) || savingCombo}
+                              title="Bajar"
+                              className="p-1 text-slate-300 hover:text-ink dark:hover:text-white transition-colors disabled:opacity-20 disabled:cursor-not-allowed bg-transparent border-none cursor-pointer"
+                            >
+                              <ChevronDown size={18} />
+                            </button>
+                          </div>
                           {combo.imageUrl ? (
                             <img src={combo.imageUrl} alt={combo.title} className="w-20 h-20 rounded-2xl object-cover shrink-0 animate-in fade-in zoom-in-50" />
                           ) : (
