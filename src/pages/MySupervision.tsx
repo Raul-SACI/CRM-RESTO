@@ -484,6 +484,16 @@ export function MySupervision() {
           </div>
         )}
 
+        {/* Secciones nuevas creadas por el admin (con sus preguntas) */}
+        {cfg.customSections.map((s) => (
+          hasCustom(s.id) ? (
+            <React.Fragment key={s.id}>
+              <SectionTitle>{s.label}</SectionTitle>
+              {renderCustom(s.id)}
+            </React.Fragment>
+          ) : null
+        ))}
+
         {/* Preguntas adicionales sin sección específica (van al final) */}
         {hasCustom('adicionales') && (
           <>

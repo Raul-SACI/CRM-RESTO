@@ -28,6 +28,22 @@ export const SUP_SECTIONS: { key: SupervisionSectionKey; label: string }[] = [
 
 const SUP_SECTION_KEYS: SupervisionSectionKey[] = SUP_SECTIONS.map((s) => s.key);
 
+// Sección creada por el admin (se agrega al final, después de las fijas).
+export interface CustomSection {
+  id: string;
+  label: string;
+}
+
+function makeId(prefix: string): string {
+  return (typeof crypto !== 'undefined' && (crypto as any).randomUUID)
+    ? (crypto as any).randomUUID()
+    : `${prefix}_${Date.now()}_${Math.floor(Math.random() * 1e6)}`;
+}
+
+export function makeCustomSection(): CustomSection {
+  return { id: makeId('sec'), label: '' };
+}
+
 // Pregunta agregada por el admin (además de las fijas del formulario).
 export type CustomQuestionType = 'stars' | 'options' | 'text';
 export interface CustomQuestion {
@@ -36,15 +52,13 @@ export interface CustomQuestion {
   label: string;
   hint?: string;
   options?: string[]; // solo para type 'options'
-  section?: SupervisionSectionKey; // sección del formulario donde aparece
+  // Sección donde aparece: una clave fija (SupervisionSectionKey) o el id de
+  // una sección creada por el admin (CustomSection.id).
+  section?: string;
 }
 
 export function makeCustomQuestion(): CustomQuestion {
-  const id =
-    (typeof crypto !== 'undefined' && (crypto as any).randomUUID)
-      ? (crypto as any).randomUUID()
-      : `q_${Date.now()}_${Math.floor(Math.random() * 1e6)}`;
-  return { id, type: 'stars', label: '', hint: '', options: [], section: 'adicionales' };
+  return { id: makeId('q'), type: 'stars', label: '', hint: '', options: [], section: 'adicionales' };
 }
 
 export interface SupervisionConfig {
@@ -77,6 +91,8 @@ export interface SupervisionConfig {
   disabledFields: string[];
   // Preguntas extra agregadas por el admin.
   customQuestions: CustomQuestion[];
+  // Secciones nuevas creadas por el admin (se muestran después de las fijas).
+  customSections: CustomSection[];
 }
 
 // Campos fijos que NO se pueden ocultar (anclas del formulario).
@@ -118,16 +134,27 @@ export const DEFAULT_SUPERVISION: SupervisionConfig = {
   deliverFoodOptions: ['7-12 minutos', '12-15 minutos', 'Más de 15 minutos'],
   disabledFields: [],
   customQuestions: [],
+  customSections: [],
 };
 
+// Sanitiza las secciones creadas por el admin (con id y texto no vacío).
+function sanitizeCustomSections(list: any): CustomSection[] {
+  if (!Array.isArray(list)) return [];
+  return list
+    .filter((s) => s && typeof s.id === 'string')
+    .map((s) => ({ id: s.id, label: String(s.label || '').trim() }))
+    .filter((s) => s.label);
+}
+
 // Sanitiza la lista de preguntas personalizadas guardada.
-function sanitizeCustomQuestions(list: any): CustomQuestion[] {
+// validSections: claves fijas + ids de secciones creadas por el admin.
+function sanitizeCustomQuestions(list: any, validSections: Set<string>): CustomQuestion[] {
   if (!Array.isArray(list)) return [];
   return list
     .filter((q) => q && typeof q.id === 'string')
     .map((q) => {
       const type: CustomQuestionType = q.type === 'options' || q.type === 'text' ? q.type : 'stars';
-      const section: SupervisionSectionKey = SUP_SECTION_KEYS.includes(q.section) ? q.section : 'adicionales';
+      const section: string = typeof q.section === 'string' && validSections.has(q.section) ? q.section : 'adicionales';
       return {
         id: q.id,
         type,
@@ -161,6 +188,7 @@ export function resolveSupervisionConfig(sc?: Partial<SupervisionConfig> | null)
       hint: sv.hint !== undefined ? sv.hint : dv.hint,
     };
   });
+  const customSections = sanitizeCustomSections(sc.customSections);
   return {
     fields,
     orderTypeDrinkLabel: (sc.orderTypeDrinkLabel || '').trim() || d.orderTypeDrinkLabel,
@@ -173,7 +201,11 @@ export function resolveSupervisionConfig(sc?: Partial<SupervisionConfig> | null)
     disabledFields: Array.isArray(sc.disabledFields)
       ? sc.disabledFields.filter((k) => typeof k === 'string' && !SUP_REQUIRED_FIELDS.includes(k))
       : [],
-    customQuestions: sanitizeCustomQuestions(sc.customQuestions),
+    customSections,
+    customQuestions: sanitizeCustomQuestions(
+      sc.customQuestions,
+      new Set<string>([...SUP_SECTION_KEYS, ...customSections.map((s) => s.id)]),
+    ),
   };
 }
 
