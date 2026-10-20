@@ -1513,8 +1513,8 @@ export function Admin() {
   };
 
   // Preguntas personalizadas
-  const addCustomQuestion = () => {
-    setSupDraft((prev) => ({ ...prev, customQuestions: [...(prev.customQuestions || []), makeCustomQuestion()] }));
+  const addCustomQuestion = (section: string = 'adicionales') => {
+    setSupDraft((prev) => ({ ...prev, customQuestions: [...(prev.customQuestions || []), { ...makeCustomQuestion(), section }] }));
   };
   const updateCustomQuestion = (id: string, patch: Partial<CustomQuestion>) => {
     setSupDraft((prev) => ({
@@ -6490,74 +6490,92 @@ export function Admin() {
                       )}
                     </div>
 
-                    {/* Preguntas personalizadas: agregar / eliminar */}
+                    {/* Preguntas personalizadas: agrupadas por la sección elegida */}
                     <div className="pt-2">
-                      <div className="flex items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center justify-between gap-2 mb-1">
                         <p className="text-[11px] font-black uppercase tracking-[0.2em] text-love">Preguntas adicionales</p>
-                        <button onClick={addCustomQuestion}
+                        <button onClick={() => addCustomQuestion('adicionales')}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-ink text-white text-[9px] font-black uppercase tracking-widest cursor-pointer border-none hover:bg-black transition-all">
                           <Plus size={12} /> Agregar pregunta
                         </button>
                       </div>
+                      <p className="text-[10px] text-slate-400 mb-3 italic">Cada pregunta aparece debajo de la sección elegida. Cambiá la sección y la pregunta se mueve al toque.</p>
 
                       {(supDraft.customQuestions || []).length === 0 ? (
                         <p className="text-[11px] text-slate-400 italic py-2">No hay preguntas adicionales. Agregá las que quieras (estrellas, opciones o texto libre).</p>
                       ) : (
-                        <div className="space-y-3">
-                          {(supDraft.customQuestions || []).map((q) => (
-                            <div key={q.id} className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-                              <div className="flex items-center gap-2">
-                                <select
-                                  value={q.type}
-                                  onChange={(e) => updateCustomQuestion(q.id, { type: e.target.value as CustomQuestion['type'] })}
-                                  className="px-2.5 py-2 rounded-lg bg-white border border-slate-200 text-[11px] font-black uppercase tracking-wide text-ink outline-none focus:border-love cursor-pointer"
-                                >
-                                  <option value="stars">Estrellas</option>
-                                  <option value="options">Opciones</option>
-                                  <option value="text">Texto libre</option>
-                                </select>
-                                <input
-                                  type="text"
-                                  value={q.label}
-                                  onChange={(e) => updateCustomQuestion(q.id, { label: e.target.value })}
-                                  placeholder="Escribí la pregunta…"
-                                  className="flex-1 px-3 py-2 rounded-lg bg-white border border-slate-200 text-sm font-medium text-ink outline-none focus:border-love"
-                                />
-                                <button onClick={() => removeCustomQuestion(q.id)} title="Eliminar pregunta"
-                                  className="shrink-0 p-2 rounded-lg text-slate-300 hover:text-love hover:bg-love/10 transition-colors bg-transparent border-none cursor-pointer">
-                                  <Trash2 size={16} />
-                                </button>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 shrink-0">Sección</span>
-                                <select
-                                  value={q.section || 'adicionales'}
-                                  onChange={(e) => updateCustomQuestion(q.id, { section: e.target.value })}
-                                  className="px-2.5 py-2 rounded-lg bg-white border border-slate-200 text-[11px] font-bold text-ink outline-none focus:border-love cursor-pointer"
-                                >
-                                  {sectionOptions().map((s) => (
-                                    <option key={s.key} value={s.key}>{s.label}</option>
+                        <div className="space-y-4">
+                          {sectionOptions().map((sec) => {
+                            const qs = (supDraft.customQuestions || []).filter((q) => (q.section || 'adicionales') === sec.key);
+                            if (qs.length === 0) return null;
+                            return (
+                              <div key={sec.key} className="rounded-xl border border-slate-200 overflow-hidden">
+                                <div className="flex items-center justify-between gap-2 px-3 py-2 bg-slate-100">
+                                  <p className="text-[10px] font-black uppercase tracking-[0.15em] text-ink">{sec.label}<span className="text-slate-400 ml-1.5">({qs.length})</span></p>
+                                  <button onClick={() => addCustomQuestion(sec.key)} title={`Agregar pregunta a ${sec.label}`}
+                                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white text-ink text-[8px] font-black uppercase tracking-widest cursor-pointer border border-slate-200 hover:bg-ink hover:text-white transition-all">
+                                    <Plus size={10} /> Agregar acá
+                                  </button>
+                                </div>
+                                <div className="p-3 space-y-3">
+                                  {qs.map((q) => (
+                                    <div key={q.id} className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                                      <div className="flex items-center gap-2">
+                                        <select
+                                          value={q.type}
+                                          onChange={(e) => updateCustomQuestion(q.id, { type: e.target.value as CustomQuestion['type'] })}
+                                          className="px-2.5 py-2 rounded-lg bg-white border border-slate-200 text-[11px] font-black uppercase tracking-wide text-ink outline-none focus:border-love cursor-pointer"
+                                        >
+                                          <option value="stars">Estrellas</option>
+                                          <option value="options">Opciones</option>
+                                          <option value="text">Texto libre</option>
+                                        </select>
+                                        <input
+                                          type="text"
+                                          value={q.label}
+                                          onChange={(e) => updateCustomQuestion(q.id, { label: e.target.value })}
+                                          placeholder="Escribí la pregunta…"
+                                          className="flex-1 px-3 py-2 rounded-lg bg-white border border-slate-200 text-sm font-medium text-ink outline-none focus:border-love"
+                                        />
+                                        <button onClick={() => removeCustomQuestion(q.id)} title="Eliminar pregunta"
+                                          className="shrink-0 p-2 rounded-lg text-slate-300 hover:text-love hover:bg-love/10 transition-colors bg-transparent border-none cursor-pointer">
+                                          <Trash2 size={16} />
+                                        </button>
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 shrink-0">Sección</span>
+                                        <select
+                                          value={q.section || 'adicionales'}
+                                          onChange={(e) => updateCustomQuestion(q.id, { section: e.target.value })}
+                                          className="px-2.5 py-2 rounded-lg bg-white border border-slate-200 text-[11px] font-bold text-ink outline-none focus:border-love cursor-pointer"
+                                        >
+                                          {sectionOptions().map((s) => (
+                                            <option key={s.key} value={s.key}>{s.label}</option>
+                                          ))}
+                                        </select>
+                                      </div>
+                                      <input
+                                        type="text"
+                                        value={q.hint || ''}
+                                        onChange={(e) => updateCustomQuestion(q.id, { hint: e.target.value })}
+                                        placeholder="Aclaración (opcional)"
+                                        className="w-full px-3 py-2 rounded-lg bg-white border border-slate-200 text-sm font-medium text-slate-600 outline-none focus:border-love"
+                                      />
+                                      {q.type === 'options' && (
+                                        <textarea
+                                          rows={3}
+                                          value={(q.options || []).join('\n')}
+                                          onChange={(e) => updateCustomQuestion(q.id, { options: e.target.value.split('\n') })}
+                                          placeholder="Una opción por línea"
+                                          className="w-full px-3 py-2 rounded-lg bg-white border border-slate-200 text-xs font-mono text-ink outline-none focus:border-love resize-none"
+                                        />
+                                      )}
+                                    </div>
                                   ))}
-                                </select>
+                                </div>
                               </div>
-                              <input
-                                type="text"
-                                value={q.hint || ''}
-                                onChange={(e) => updateCustomQuestion(q.id, { hint: e.target.value })}
-                                placeholder="Aclaración (opcional)"
-                                className="w-full px-3 py-2 rounded-lg bg-white border border-slate-200 text-sm font-medium text-slate-600 outline-none focus:border-love"
-                              />
-                              {q.type === 'options' && (
-                                <textarea
-                                  rows={3}
-                                  value={(q.options || []).join('\n')}
-                                  onChange={(e) => updateCustomQuestion(q.id, { options: e.target.value.split('\n') })}
-                                  placeholder="Una opción por línea"
-                                  className="w-full px-3 py-2 rounded-lg bg-white border border-slate-200 text-xs font-mono text-ink outline-none focus:border-love resize-none"
-                                />
-                              )}
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       )}
                     </div>
