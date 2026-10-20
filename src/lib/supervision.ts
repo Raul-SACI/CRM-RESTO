@@ -8,6 +8,26 @@ export interface SupervisionField {
   hint?: string;
 }
 
+// Secciones del formulario donde puede ubicarse una pregunta adicional.
+export type SupervisionSectionKey =
+  | 'limpieza'
+  | 'atencion'
+  | 'pedido'
+  | 'plato'
+  | 'cierre'
+  | 'adicionales';
+
+export const SUP_SECTIONS: { key: SupervisionSectionKey; label: string }[] = [
+  { key: 'limpieza', label: 'Limpieza e higiene' },
+  { key: 'atencion', label: 'Atención' },
+  { key: 'pedido', label: 'El pedido' },
+  { key: 'plato', label: 'El plato / bebida' },
+  { key: 'cierre', label: 'Cierre' },
+  { key: 'adicionales', label: 'Preguntas adicionales' },
+];
+
+const SUP_SECTION_KEYS: SupervisionSectionKey[] = SUP_SECTIONS.map((s) => s.key);
+
 // Pregunta agregada por el admin (además de las fijas del formulario).
 export type CustomQuestionType = 'stars' | 'options' | 'text';
 export interface CustomQuestion {
@@ -16,6 +36,7 @@ export interface CustomQuestion {
   label: string;
   hint?: string;
   options?: string[]; // solo para type 'options'
+  section?: SupervisionSectionKey; // sección del formulario donde aparece
 }
 
 export function makeCustomQuestion(): CustomQuestion {
@@ -23,7 +44,7 @@ export function makeCustomQuestion(): CustomQuestion {
     (typeof crypto !== 'undefined' && (crypto as any).randomUUID)
       ? (crypto as any).randomUUID()
       : `q_${Date.now()}_${Math.floor(Math.random() * 1e6)}`;
-  return { id, type: 'stars', label: '', hint: '', options: [] };
+  return { id, type: 'stars', label: '', hint: '', options: [], section: 'adicionales' };
 }
 
 export interface SupervisionConfig {
@@ -106,6 +127,7 @@ function sanitizeCustomQuestions(list: any): CustomQuestion[] {
     .filter((q) => q && typeof q.id === 'string')
     .map((q) => {
       const type: CustomQuestionType = q.type === 'options' || q.type === 'text' ? q.type : 'stars';
+      const section: SupervisionSectionKey = SUP_SECTION_KEYS.includes(q.section) ? q.section : 'adicionales';
       return {
         id: q.id,
         type,
@@ -114,6 +136,7 @@ function sanitizeCustomQuestions(list: any): CustomQuestion[] {
         options: type === 'options'
           ? (Array.isArray(q.options) ? q.options.map((o: any) => String(o)).filter((o: string) => o.trim()) : [])
           : [],
+        section,
       };
     })
     .filter((q) => q.label); // descartamos las preguntas sin texto
