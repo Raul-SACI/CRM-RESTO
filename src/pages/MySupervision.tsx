@@ -134,6 +134,26 @@ export function MySupervision() {
   const disabled = new Set(cfg.disabledFields || []);
   const show = (k: string) => !disabled.has(k);
 
+  // Preguntas adicionales agrupadas por la sección que eligió el admin.
+  const customBySection = (sectionKey: string) =>
+    cfg.customQuestions.filter((q) => (q.section || 'adicionales') === sectionKey);
+  const hasCustom = (sectionKey: string) => customBySection(sectionKey).length > 0;
+  const renderCustom = (sectionKey: string) =>
+    customBySection(sectionKey).map((q) => {
+      let control: React.ReactNode;
+      if (q.type === 'stars') {
+        control = <StarRating value={Number(customAnswers[q.id]) || 0} onChange={(v) => setCustom(q.id, v)} />;
+      } else if (q.type === 'options') {
+        control = <OptionGroup options={q.options || []} value={customAnswers[q.id] || ''} onChange={(v) => setCustom(q.id, v)} />;
+      } else {
+        control = (
+          <input type="text" value={customAnswers[q.id] || ''} onChange={(e) => setCustom(q.id, e.target.value)}
+            className="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-sm font-medium text-ink outline-none focus:border-love" />
+        );
+      }
+      return <Field key={q.id} label={q.label} hint={q.hint || undefined}>{control}</Field>;
+    });
+
   const [saving, setSaving] = useState(false);
   const [justSent, setJustSent] = useState(false);
 
@@ -321,7 +341,7 @@ export function MySupervision() {
           </div>
         </div>
 
-        {(show('cleanlinessVenue') || show('cleanlinessBathroom')) && <SectionTitle>Limpieza e higiene</SectionTitle>}
+        {(show('cleanlinessVenue') || show('cleanlinessBathroom') || hasCustom('limpieza')) && <SectionTitle>Limpieza e higiene</SectionTitle>}
         {show('cleanlinessVenue') && (
           <Field label={F.cleanlinessVenue.label} hint={F.cleanlinessVenue.hint}>
             <StarRating value={ratings.cleanlinessVenue} onChange={(v) => setR('cleanlinessVenue', v)} />
@@ -332,8 +352,9 @@ export function MySupervision() {
             <StarRating value={ratings.cleanlinessBathroom} onChange={(v) => setR('cleanlinessBathroom', v)} />
           </Field>
         )}
+        {renderCustom('limpieza')}
 
-        {(show('disposition') || show('waiterName') || show('waitGreeting') || show('waitOrderTaken')) && <SectionTitle>Atención</SectionTitle>}
+        {(show('disposition') || show('waiterName') || show('waitGreeting') || show('waitOrderTaken') || hasCustom('atencion')) && <SectionTitle>Atención</SectionTitle>}
         {show('disposition') && (
           <Field label={F.disposition.label} hint={F.disposition.hint}>
             <StarRating value={ratings.disposition} onChange={(v) => setR('disposition', v)} />
@@ -356,8 +377,9 @@ export function MySupervision() {
             <OptionGroup options={cfg.waitOrderTakenOptions} value={waitOrderTaken} onChange={setWaitOrderTaken} />
           </Field>
         )}
+        {renderCustom('atencion')}
 
-        {(show('orderType') || show('waitOrderDelivered')) && <SectionTitle>El pedido</SectionTitle>}
+        {(show('orderType') || show('waitOrderDelivered') || hasCustom('pedido')) && <SectionTitle>El pedido</SectionTitle>}
         {show('orderType') && (
           <Field label={F.orderType.label} hint={F.orderType.hint}>
             <OptionGroup
@@ -372,8 +394,9 @@ export function MySupervision() {
             <OptionGroup options={deliverOptions} value={waitOrderDelivered} onChange={setWaitOrderDelivered} />
           </Field>
         )}
+        {renderCustom('pedido')}
 
-        {(show('photo') || show('aestheticsFood') || show('qualityFood') || show('aestheticsDrink') || show('qualityDrink')) && <SectionTitle>El plato / bebida</SectionTitle>}
+        {(show('photo') || show('aestheticsFood') || show('qualityFood') || show('aestheticsDrink') || show('qualityDrink') || hasCustom('plato')) && <SectionTitle>El plato / bebida</SectionTitle>}
         {show('photo') && (
           <Field label={F.photo.label} hint={F.photo.hint}>
             {photoUrl ? (
@@ -436,6 +459,8 @@ export function MySupervision() {
           </>
         )}
 
+        {renderCustom('plato')}
+
         <SectionTitle>Cierre</SectionTitle>
         {show('waitBill') && (
           <Field label={F.waitBill.label} hint={F.waitBill.hint}>
@@ -449,6 +474,7 @@ export function MySupervision() {
           </div>
           <StarRating value={ratings.overall} onChange={(v) => setR('overall', v)} />
         </div>
+        {renderCustom('cierre')}
         {show('comment') && (
           <div>
             <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2 block">{F.comment.label}</label>
@@ -458,28 +484,11 @@ export function MySupervision() {
           </div>
         )}
 
-        {/* Preguntas personalizadas agregadas por el admin */}
-        {cfg.customQuestions.length > 0 && (
+        {/* Preguntas adicionales sin sección específica (van al final) */}
+        {hasCustom('adicionales') && (
           <>
             <SectionTitle>Preguntas adicionales</SectionTitle>
-            {cfg.customQuestions.map((q) => {
-              let control: React.ReactNode = null;
-              if (q.type === 'stars') {
-                control = <StarRating value={Number(customAnswers[q.id]) || 0} onChange={(v) => setCustom(q.id, v)} />;
-              } else if (q.type === 'options') {
-                control = <OptionGroup options={q.options || []} value={customAnswers[q.id] || ''} onChange={(v) => setCustom(q.id, v)} />;
-              } else {
-                control = (
-                  <input type="text" value={customAnswers[q.id] || ''} onChange={(e) => setCustom(q.id, e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl bg-white border border-slate-200 text-sm font-medium text-ink outline-none focus:border-love" />
-                );
-              }
-              return (
-                <React.Fragment key={q.id}>
-                  <Field label={q.label} hint={q.hint || undefined}>{control}</Field>
-                </React.Fragment>
-              );
-            })}
+            {renderCustom('adicionales')}
           </>
         )}
 

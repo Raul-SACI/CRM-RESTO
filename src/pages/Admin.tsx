@@ -8,7 +8,7 @@ import * as XLSX from 'xlsx';
 import { useDesign, COLOR_PRESETS, CORNER_PRESETS, AVAILABLE_FONTS, type DesignConfig, type BannerConfig } from '@/src/components/DesignEngine';
 import { BirthdayCalendar } from '@/src/components/BirthdayCalendar';
 import { notifyClient } from '@/src/lib/notify';
-import { resolveSupervisionConfig, SUP_TEXT_FIELDS, SUP_OPTION_LISTS, SUP_REQUIRED_FIELDS, DEFAULT_SUPERVISION, makeCustomQuestion, type SupervisionConfig, type CustomQuestion } from '@/src/lib/supervision';
+import { resolveSupervisionConfig, SUP_TEXT_FIELDS, SUP_OPTION_LISTS, SUP_REQUIRED_FIELDS, SUP_SECTIONS, DEFAULT_SUPERVISION, makeCustomQuestion, type SupervisionConfig, type CustomQuestion } from '@/src/lib/supervision';
 import { useAuth, useTheme } from '@/src/App';
 import QRCode from 'react-qr-code';
 
@@ -6325,6 +6325,18 @@ export function Admin() {
                                   className="shrink-0 p-2 rounded-lg text-slate-300 hover:text-love hover:bg-love/10 transition-colors bg-transparent border-none cursor-pointer">
                                   <Trash2 size={16} />
                                 </button>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 shrink-0">Sección</span>
+                                <select
+                                  value={q.section || 'adicionales'}
+                                  onChange={(e) => updateCustomQuestion(q.id, { section: e.target.value as CustomQuestion['section'] })}
+                                  className="px-2.5 py-2 rounded-lg bg-white border border-slate-200 text-[11px] font-bold text-ink outline-none focus:border-love cursor-pointer"
+                                >
+                                  {SUP_SECTIONS.map((s) => (
+                                    <option key={s.key} value={s.key}>{s.label}</option>
+                                  ))}
+                                </select>
                               </div>
                               <input
                                 type="text"
