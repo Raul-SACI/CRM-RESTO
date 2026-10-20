@@ -210,24 +210,29 @@ export function resolveSupervisionConfig(sc?: Partial<SupervisionConfig> | null)
 }
 
 // Orden y agrupación de los campos de texto para el editor del admin.
-export const SUP_TEXT_FIELDS: { key: SupervisionFieldKey; section: string; hasHint: boolean }[] = [
-  { key: 'cleanlinessVenue', section: 'Limpieza', hasHint: true },
-  { key: 'cleanlinessBathroom', section: 'Limpieza', hasHint: true },
-  { key: 'disposition', section: 'Atención', hasHint: true },
-  { key: 'waiterName', section: 'Atención', hasHint: true },
-  { key: 'waitGreeting', section: 'Atención', hasHint: true },
-  { key: 'waitOrderTaken', section: 'Atención', hasHint: true },
-  { key: 'orderType', section: 'El pedido', hasHint: true },
-  { key: 'waitOrderDelivered', section: 'El pedido', hasHint: true },
-  { key: 'photo', section: 'El plato', hasHint: true },
-  { key: 'aestheticsFood', section: 'El plato', hasHint: true },
-  { key: 'qualityFood', section: 'El plato', hasHint: true },
-  { key: 'aestheticsDrink', section: 'El plato', hasHint: true },
-  { key: 'qualityDrink', section: 'El plato', hasHint: true },
-  { key: 'waitBill', section: 'Cierre', hasHint: true },
-  { key: 'overall', section: 'Cierre', hasHint: true },
-  { key: 'comment', section: 'Cierre', hasHint: false },
+// sectionKey enlaza cada campo fijo con la sección (misma clave que usan las
+// preguntas personalizadas), para poder mostrarlas juntas en el editor.
+export const SUP_TEXT_FIELDS: { key: SupervisionFieldKey; section: string; sectionKey: SupervisionSectionKey; hasHint: boolean }[] = [
+  { key: 'cleanlinessVenue', section: 'Limpieza', sectionKey: 'limpieza', hasHint: true },
+  { key: 'cleanlinessBathroom', section: 'Limpieza', sectionKey: 'limpieza', hasHint: true },
+  { key: 'disposition', section: 'Atención', sectionKey: 'atencion', hasHint: true },
+  { key: 'waiterName', section: 'Atención', sectionKey: 'atencion', hasHint: true },
+  { key: 'waitGreeting', section: 'Atención', sectionKey: 'atencion', hasHint: true },
+  { key: 'waitOrderTaken', section: 'Atención', sectionKey: 'atencion', hasHint: true },
+  { key: 'orderType', section: 'El pedido', sectionKey: 'pedido', hasHint: true },
+  { key: 'waitOrderDelivered', section: 'El pedido', sectionKey: 'pedido', hasHint: true },
+  { key: 'photo', section: 'El plato', sectionKey: 'plato', hasHint: true },
+  { key: 'aestheticsFood', section: 'El plato', sectionKey: 'plato', hasHint: true },
+  { key: 'qualityFood', section: 'El plato', sectionKey: 'plato', hasHint: true },
+  { key: 'aestheticsDrink', section: 'El plato', sectionKey: 'plato', hasHint: true },
+  { key: 'qualityDrink', section: 'El plato', sectionKey: 'plato', hasHint: true },
+  { key: 'waitBill', section: 'Cierre', sectionKey: 'cierre', hasHint: true },
+  { key: 'overall', section: 'Cierre', sectionKey: 'cierre', hasHint: true },
+  { key: 'comment', section: 'Cierre', sectionKey: 'cierre', hasHint: false },
 ];
+
+// Claves de las secciones fijas (las que tienen campos fijos en el editor).
+export const SUP_FIXED_SECTION_KEYS: SupervisionSectionKey[] = ['limpieza', 'atencion', 'pedido', 'plato', 'cierre'];
 
 // Listas de opciones editables (una opción por línea en el editor).
 export const SUP_OPTION_LISTS: { key: SupervisionOptionKey; label: string }[] = [

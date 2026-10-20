@@ -8,7 +8,7 @@ import * as XLSX from 'xlsx';
 import { useDesign, COLOR_PRESETS, CORNER_PRESETS, AVAILABLE_FONTS, type DesignConfig, type BannerConfig } from '@/src/components/DesignEngine';
 import { BirthdayCalendar } from '@/src/components/BirthdayCalendar';
 import { notifyClient } from '@/src/lib/notify';
-import { resolveSupervisionConfig, SUP_TEXT_FIELDS, SUP_OPTION_LISTS, SUP_REQUIRED_FIELDS, SUP_SECTIONS, DEFAULT_SUPERVISION, makeCustomQuestion, makeCustomSection, type SupervisionConfig, type CustomQuestion } from '@/src/lib/supervision';
+import { resolveSupervisionConfig, SUP_TEXT_FIELDS, SUP_OPTION_LISTS, SUP_REQUIRED_FIELDS, SUP_SECTIONS, SUP_FIXED_SECTION_KEYS, DEFAULT_SUPERVISION, makeCustomQuestion, makeCustomSection, type SupervisionConfig, type CustomQuestion } from '@/src/lib/supervision';
 import { useAuth, useTheme } from '@/src/App';
 import QRCode from 'react-qr-code';
 
@@ -1552,6 +1552,71 @@ export function Admin() {
     ...(supDraft.customSections || []).map((s) => ({ key: s.id, label: s.label || 'Sección sin nombre' })),
     { key: 'adicionales', label: 'Preguntas adicionales' },
   ];
+
+  // Tarjeta editable de una pregunta personalizada (se usa en cada sección).
+  const renderQuestionCard = (q: CustomQuestion) => (
+    <div key={q.id} className="p-4 rounded-xl bg-white border border-love/30 space-y-2">
+      <div className="flex items-center gap-2">
+        <span className="text-[8px] font-black uppercase tracking-widest text-love bg-love/10 px-2 py-1 rounded shrink-0">Agregada</span>
+        <select
+          value={q.type}
+          onChange={(e) => updateCustomQuestion(q.id, { type: e.target.value as CustomQuestion['type'] })}
+          className="px-2.5 py-2 rounded-lg bg-slate-50 border border-slate-200 text-[11px] font-black uppercase tracking-wide text-ink outline-none focus:border-love cursor-pointer"
+        >
+          <option value="stars">Estrellas</option>
+          <option value="options">Opciones</option>
+          <option value="text">Texto libre</option>
+        </select>
+        <input
+          type="text"
+          value={q.label}
+          onChange={(e) => updateCustomQuestion(q.id, { label: e.target.value })}
+          placeholder="Escribí la pregunta…"
+          className="flex-1 px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm font-medium text-ink outline-none focus:border-love"
+        />
+        <button onClick={() => removeCustomQuestion(q.id)} title="Eliminar pregunta"
+          className="shrink-0 p-2 rounded-lg text-slate-300 hover:text-love hover:bg-love/10 transition-colors bg-transparent border-none cursor-pointer">
+          <Trash2 size={16} />
+        </button>
+      </div>
+      <div className="flex items-center gap-2">
+        <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 shrink-0">Sección</span>
+        <select
+          value={q.section || 'adicionales'}
+          onChange={(e) => updateCustomQuestion(q.id, { section: e.target.value })}
+          className="px-2.5 py-2 rounded-lg bg-slate-50 border border-slate-200 text-[11px] font-bold text-ink outline-none focus:border-love cursor-pointer"
+        >
+          {sectionOptions().map((s) => (
+            <option key={s.key} value={s.key}>{s.label}</option>
+          ))}
+        </select>
+      </div>
+      <input
+        type="text"
+        value={q.hint || ''}
+        onChange={(e) => updateCustomQuestion(q.id, { hint: e.target.value })}
+        placeholder="Aclaración (opcional)"
+        className="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm font-medium text-slate-600 outline-none focus:border-love"
+      />
+      {q.type === 'options' && (
+        <textarea
+          rows={3}
+          value={(q.options || []).join('\n')}
+          onChange={(e) => updateCustomQuestion(q.id, { options: e.target.value.split('\n') })}
+          placeholder="Una opción por línea"
+          className="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-xs font-mono text-ink outline-none focus:border-love resize-none"
+        />
+      )}
+    </div>
+  );
+
+  // Botón para agregar una pregunta directamente a una sección.
+  const addQuestionBtn = (sectionKey: string, label: string) => (
+    <button onClick={() => addCustomQuestion(sectionKey)}
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-ink/90 text-white text-[9px] font-black uppercase tracking-widest cursor-pointer border-none hover:bg-black transition-all">
+      <Plus size={12} /> {label}
+    </button>
+  );
 
   // Genera una guía imprimible (PDF) con membrete del club, todas las preguntas
   // del formulario de supervisión y sus respuestas posibles, para enviar a los
@@ -6365,17 +6430,20 @@ export function Admin() {
                 {showSupEditor && (
                   <div className="px-6 md:px-8 pb-8 space-y-5 border-t border-slate-100 pt-6">
                     {(() => {
-                      let lastSection = '';
-                      return SUP_TEXT_FIELDS.map((f) => {
-                        const showHeader = f.section !== lastSection;
-                        lastSection = f.section;
+                      // Agrupamos los campos fijos por sección (en orden) para poder
+                      // mostrar, dentro de cada sección, las preguntas agregadas.
+                      const groups: { section: string; sectionKey: string; fields: typeof SUP_TEXT_FIELDS }[] = [];
+                      SUP_TEXT_FIELDS.forEach((f) => {
+                        const g = groups.find((x) => x.sectionKey === f.sectionKey);
+                        if (g) g.fields.push(f);
+                        else groups.push({ section: f.section, sectionKey: f.sectionKey, fields: [f] });
+                      });
+
+                      const renderFixedField = (f: typeof SUP_TEXT_FIELDS[number]) => {
                         const excluded = (supDraft.disabledFields || []).includes(f.key);
                         const required = SUP_REQUIRED_FIELDS.includes(f.key);
                         return (
                           <div key={f.key}>
-                            {showHeader && (
-                              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-love mb-2 mt-2">{f.section}</p>
-                            )}
                             <div className="flex items-center justify-between gap-2 mb-1">
                               <label className={cn("flex items-center gap-2 cursor-pointer select-none", required && "cursor-default")}>
                                 <input
@@ -6430,6 +6498,20 @@ export function Admin() {
                                 </div>
                               </div>
                             )}
+                          </div>
+                        );
+                      };
+
+                      return groups.map((g) => {
+                        const extraQs = (supDraft.customQuestions || []).filter((q) => (q.section || 'adicionales') === g.sectionKey);
+                        return (
+                          <div key={g.sectionKey} className="space-y-3">
+                            <div className="flex items-center justify-between gap-2 mt-2">
+                              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-love">{g.section}</p>
+                              {addQuestionBtn(g.sectionKey, 'Agregar pregunta')}
+                            </div>
+                            {g.fields.map(renderFixedField)}
+                            {extraQs.length > 0 && extraQs.map(renderQuestionCard)}
                           </div>
                         );
                       });
@@ -6490,94 +6572,47 @@ export function Admin() {
                       )}
                     </div>
 
-                    {/* Preguntas personalizadas: agrupadas por la sección elegida */}
+                    {/* Preguntas de secciones nuevas + preguntas sueltas (las de
+                        secciones fijas se editan arriba, dentro de cada sección). */}
                     <div className="pt-2">
                       <div className="flex items-center justify-between gap-2 mb-1">
-                        <p className="text-[11px] font-black uppercase tracking-[0.2em] text-love">Preguntas adicionales</p>
+                        <p className="text-[11px] font-black uppercase tracking-[0.2em] text-love">Otras preguntas</p>
                         <button onClick={() => addCustomQuestion('adicionales')}
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-ink text-white text-[9px] font-black uppercase tracking-widest cursor-pointer border-none hover:bg-black transition-all">
                           <Plus size={12} /> Agregar pregunta
                         </button>
                       </div>
-                      <p className="text-[10px] text-slate-400 mb-3 italic">Cada pregunta aparece debajo de la sección elegida. Cambiá la sección y la pregunta se mueve al toque.</p>
+                      <p className="text-[10px] text-slate-400 mb-3 italic">Preguntas de secciones nuevas o sueltas. Las de secciones fijas (Limpieza, Atención, El pedido, El plato/bebida, Cierre) se editan arriba, dentro de cada sección.</p>
 
-                      {(supDraft.customQuestions || []).length === 0 ? (
-                        <p className="text-[11px] text-slate-400 italic py-2">No hay preguntas adicionales. Agregá las que quieras (estrellas, opciones o texto libre).</p>
-                      ) : (
-                        <div className="space-y-4">
-                          {sectionOptions().map((sec) => {
-                            const qs = (supDraft.customQuestions || []).filter((q) => (q.section || 'adicionales') === sec.key);
-                            if (qs.length === 0) return null;
-                            return (
-                              <div key={sec.key} className="rounded-xl border border-slate-200 overflow-hidden">
-                                <div className="flex items-center justify-between gap-2 px-3 py-2 bg-slate-100">
-                                  <p className="text-[10px] font-black uppercase tracking-[0.15em] text-ink">{sec.label}<span className="text-slate-400 ml-1.5">({qs.length})</span></p>
-                                  <button onClick={() => addCustomQuestion(sec.key)} title={`Agregar pregunta a ${sec.label}`}
-                                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white text-ink text-[8px] font-black uppercase tracking-widest cursor-pointer border border-slate-200 hover:bg-ink hover:text-white transition-all">
-                                    <Plus size={10} /> Agregar acá
-                                  </button>
+                      {(() => {
+                        const nonFixed = sectionOptions().filter((s) => !(SUP_FIXED_SECTION_KEYS as string[]).includes(s.key));
+                        const hasAny = nonFixed.some((sec) => (supDraft.customQuestions || []).some((q) => (q.section || 'adicionales') === sec.key));
+                        if (!hasAny) {
+                          return <p className="text-[11px] text-slate-400 italic py-2">No hay preguntas en estas secciones todavía.</p>;
+                        }
+                        return (
+                          <div className="space-y-4">
+                            {nonFixed.map((sec) => {
+                              const qs = (supDraft.customQuestions || []).filter((q) => (q.section || 'adicionales') === sec.key);
+                              if (qs.length === 0) return null;
+                              return (
+                                <div key={sec.key} className="rounded-xl border border-slate-200 overflow-hidden">
+                                  <div className="flex items-center justify-between gap-2 px-3 py-2 bg-slate-100">
+                                    <p className="text-[10px] font-black uppercase tracking-[0.15em] text-ink">{sec.label}<span className="text-slate-400 ml-1.5">({qs.length})</span></p>
+                                    <button onClick={() => addCustomQuestion(sec.key)} title={`Agregar pregunta a ${sec.label}`}
+                                      className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-white text-ink text-[8px] font-black uppercase tracking-widest cursor-pointer border border-slate-200 hover:bg-ink hover:text-white transition-all">
+                                      <Plus size={10} /> Agregar acá
+                                    </button>
+                                  </div>
+                                  <div className="p-3 space-y-3">
+                                    {qs.map((q) => renderQuestionCard(q))}
+                                  </div>
                                 </div>
-                                <div className="p-3 space-y-3">
-                                  {qs.map((q) => (
-                                    <div key={q.id} className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-                                      <div className="flex items-center gap-2">
-                                        <select
-                                          value={q.type}
-                                          onChange={(e) => updateCustomQuestion(q.id, { type: e.target.value as CustomQuestion['type'] })}
-                                          className="px-2.5 py-2 rounded-lg bg-white border border-slate-200 text-[11px] font-black uppercase tracking-wide text-ink outline-none focus:border-love cursor-pointer"
-                                        >
-                                          <option value="stars">Estrellas</option>
-                                          <option value="options">Opciones</option>
-                                          <option value="text">Texto libre</option>
-                                        </select>
-                                        <input
-                                          type="text"
-                                          value={q.label}
-                                          onChange={(e) => updateCustomQuestion(q.id, { label: e.target.value })}
-                                          placeholder="Escribí la pregunta…"
-                                          className="flex-1 px-3 py-2 rounded-lg bg-white border border-slate-200 text-sm font-medium text-ink outline-none focus:border-love"
-                                        />
-                                        <button onClick={() => removeCustomQuestion(q.id)} title="Eliminar pregunta"
-                                          className="shrink-0 p-2 rounded-lg text-slate-300 hover:text-love hover:bg-love/10 transition-colors bg-transparent border-none cursor-pointer">
-                                          <Trash2 size={16} />
-                                        </button>
-                                      </div>
-                                      <div className="flex items-center gap-2">
-                                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 shrink-0">Sección</span>
-                                        <select
-                                          value={q.section || 'adicionales'}
-                                          onChange={(e) => updateCustomQuestion(q.id, { section: e.target.value })}
-                                          className="px-2.5 py-2 rounded-lg bg-white border border-slate-200 text-[11px] font-bold text-ink outline-none focus:border-love cursor-pointer"
-                                        >
-                                          {sectionOptions().map((s) => (
-                                            <option key={s.key} value={s.key}>{s.label}</option>
-                                          ))}
-                                        </select>
-                                      </div>
-                                      <input
-                                        type="text"
-                                        value={q.hint || ''}
-                                        onChange={(e) => updateCustomQuestion(q.id, { hint: e.target.value })}
-                                        placeholder="Aclaración (opcional)"
-                                        className="w-full px-3 py-2 rounded-lg bg-white border border-slate-200 text-sm font-medium text-slate-600 outline-none focus:border-love"
-                                      />
-                                      {q.type === 'options' && (
-                                        <textarea
-                                          rows={3}
-                                          value={(q.options || []).join('\n')}
-                                          onChange={(e) => updateCustomQuestion(q.id, { options: e.target.value.split('\n') })}
-                                          placeholder="Una opción por línea"
-                                          className="w-full px-3 py-2 rounded-lg bg-white border border-slate-200 text-xs font-mono text-ink outline-none focus:border-love resize-none"
-                                        />
-                                      )}
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
+                              );
+                            })}
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2 pt-2">
