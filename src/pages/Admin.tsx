@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase, createIsolatedClient } from '@/src/lib/supabase';
 import { Profile, Prize, Transaction, SystemSettings, MysteryReport, MysteryInvitation } from '@/src/types';
 import { motion, AnimatePresence } from 'motion/react';
-import { Users, Gift, Settings, Search, Plus, Trash2, Pencil, Calendar, Award, History, DollarSign, Upload, Image as ImageIcon, FileSpreadsheet, UserPlus, X, Palette, Home, User, Star, MessageSquare, FileText, HelpCircle, LogOut, MapPin, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Package, Bell, Send, Sun, Moon, ShieldCheck, Clock, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Users, Gift, Settings, Search, Plus, Trash2, Pencil, Calendar, Award, History, DollarSign, Upload, Image as ImageIcon, FileSpreadsheet, UserPlus, X, Palette, Home, User, Star, MessageSquare, FileText, HelpCircle, LogOut, MapPin, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Package, Bell, Send, Sun, Moon, ShieldCheck, Clock, CheckCircle2, AlertTriangle, Download } from 'lucide-react';
 import { cn, normalizeDni } from '@/src/lib/utils';
 import * as XLSX from 'xlsx';
 import { useDesign, COLOR_PRESETS, CORNER_PRESETS, AVAILABLE_FONTS, type DesignConfig, type BannerConfig } from '@/src/components/DesignEngine';
@@ -1552,6 +1552,137 @@ export function Admin() {
     ...(supDraft.customSections || []).map((s) => ({ key: s.id, label: s.label || 'Sección sin nombre' })),
     { key: 'adicionales', label: 'Preguntas adicionales' },
   ];
+
+  // Genera una guía imprimible (PDF) con membrete del club, todas las preguntas
+  // del formulario de supervisión y sus respuestas posibles, para enviar a los
+  // clientes ocultos y que la vayan estudiando.
+  const downloadSupervisionPdf = () => {
+    const cfg = resolveSupervisionConfig(showSupEditor ? supDraft : designConfig?.supervision);
+    const F = cfg.fields;
+    const show = (k: string) => !(cfg.disabledFields || []).includes(k);
+    const esc = (s: string) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    const starsAns = `<p class="ans">Se responde con estrellas: del 1 al 5 ★ (1 = muy malo · 5 = excelente).</p>`;
+    const textAns = `<p class="ans">Se responde con texto libre.</p>`;
+    const photoAns = `<p class="ans">Acción: tomar o subir una foto del plato / bebida.</p>`;
+    const optsAns = (list: string[]) =>
+      list.length
+        ? `<p class="ans">Opciones:</p><ul class="opts">${list.map((o) => `<li>${esc(o)}</li>`).join('')}</ul>`
+        : '';
+    const q = (label: string, hint: string | undefined, answerHtml: string) =>
+      `<div class="q"><p class="qt">${esc(label)}</p>${hint ? `<p class="qh">${esc(hint)}</p>` : ''}${answerHtml}</div>`;
+    const customAns = (cq: CustomQuestion) =>
+      cq.type === 'stars' ? starsAns : cq.type === 'options' ? optsAns(cq.options || []) : textAns;
+    const customFor = (sectionKey: string) =>
+      cfg.customQuestions.filter((cq) => (cq.section || 'adicionales') === sectionKey).map((cq) => q(cq.label, cq.hint, customAns(cq)));
+
+    // Entrega del pedido: opciones condicionales según lo pedido.
+    const deliverAns =
+      `<p class="ans">Opciones (según lo que hayas pedido):</p>` +
+      `<p class="qh" style="margin-top:4px">Si pediste solo bebida:</p><ul class="opts">${cfg.deliverDrinkOptions.map((o) => `<li>${esc(o)}</li>`).join('')}</ul>` +
+      `<p class="qh">Si pediste bebida y comida:</p><ul class="opts">${cfg.deliverFoodOptions.map((o) => `<li>${esc(o)}</li>`).join('')}</ul>`;
+
+    const sections: { title: string; items: string[] }[] = [];
+
+    sections.push({
+      title: 'Datos de la visita',
+      items: [`<div class="q"><p class="qt">Al iniciar el reporte vas a completar:</p><ul class="opts"><li>Sucursal visitada</li><li>Fecha de la visita</li><li>Horario de la visita</li></ul></div>`],
+    });
+
+    const limpieza = [
+      show('cleanlinessVenue') && q(F.cleanlinessVenue.label, F.cleanlinessVenue.hint, starsAns),
+      show('cleanlinessBathroom') && q(F.cleanlinessBathroom.label, F.cleanlinessBathroom.hint, starsAns),
+      ...customFor('limpieza'),
+    ].filter(Boolean) as string[];
+    if (limpieza.length) sections.push({ title: 'Limpieza e higiene', items: limpieza });
+
+    const atencion = [
+      show('disposition') && q(F.disposition.label, F.disposition.hint, starsAns),
+      show('waiterName') && q(F.waiterName.label, F.waiterName.hint, textAns),
+      show('waitGreeting') && q(F.waitGreeting.label, F.waitGreeting.hint, optsAns(cfg.waitGreetingOptions)),
+      show('waitOrderTaken') && q(F.waitOrderTaken.label, F.waitOrderTaken.hint, optsAns(cfg.waitOrderTakenOptions)),
+      ...customFor('atencion'),
+    ].filter(Boolean) as string[];
+    if (atencion.length) sections.push({ title: 'Atención', items: atencion });
+
+    const pedido = [
+      show('orderType') && q(F.orderType.label, F.orderType.hint, optsAns([cfg.orderTypeDrinkLabel, cfg.orderTypeFoodLabel])),
+      show('waitOrderDelivered') && q(F.waitOrderDelivered.label, F.waitOrderDelivered.hint, deliverAns),
+      ...customFor('pedido'),
+    ].filter(Boolean) as string[];
+    if (pedido.length) sections.push({ title: 'El pedido', items: pedido });
+
+    const plato = [
+      show('photo') && q(F.photo.label, F.photo.hint, photoAns),
+      show('aestheticsFood') && q(F.aestheticsFood.label, F.aestheticsFood.hint, starsAns),
+      show('qualityFood') && q(F.qualityFood.label, F.qualityFood.hint, starsAns),
+      show('aestheticsDrink') && q(F.aestheticsDrink.label, F.aestheticsDrink.hint, starsAns),
+      show('qualityDrink') && q(F.qualityDrink.label, F.qualityDrink.hint, starsAns),
+      ...customFor('plato'),
+    ].filter(Boolean) as string[];
+    if (plato.length) sections.push({ title: 'El plato / bebida', items: plato });
+
+    const cierre = [
+      show('waitBill') && q(F.waitBill.label, F.waitBill.hint, optsAns(cfg.waitBillOptions)),
+      q(F.overall.label, F.overall.hint, starsAns),
+      show('comment') && q(F.comment.label, F.comment.hint, textAns),
+      ...customFor('cierre'),
+    ].filter(Boolean) as string[];
+    if (cierre.length) sections.push({ title: 'Cierre', items: cierre });
+
+    (cfg.customSections || []).forEach((s) => {
+      const items = customFor(s.id);
+      if (items.length) sections.push({ title: s.label, items });
+    });
+
+    const adicionales = customFor('adicionales');
+    if (adicionales.length) sections.push({ title: 'Preguntas adicionales', items: adicionales });
+
+    const sectionsHtml = sections
+      .map((s) => `<section><h2>${esc(s.title)}</h2>${s.items.join('')}</section>`)
+      .join('');
+
+    const today = new Date().toLocaleDateString('es-AR');
+    const html =
+      `<!doctype html><html lang="es"><head><meta charset="utf-8">` +
+      `<title>Guia-Supervision-Club-CRAFT</title>` +
+      `<style>
+        * { box-sizing: border-box; }
+        body { font-family: Arial, Helvetica, sans-serif; color: #0f172a; margin: 0; padding: 32px 36px; }
+        .head { border-bottom: 3px solid #D90015; padding-bottom: 14px; margin-bottom: 22px; }
+        .brand { font-size: 30px; font-weight: 800; letter-spacing: -0.5px; }
+        .brand .r { color: #D90015; }
+        .subtitle { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: #64748b; margin-top: 4px; }
+        .intro { font-size: 12.5px; color: #475569; margin: 0 0 20px; line-height: 1.5; }
+        section { margin-bottom: 18px; break-inside: avoid; }
+        h2 { font-size: 15px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #D90015; border-left: 4px solid #D90015; padding-left: 10px; margin: 0 0 10px; }
+        .q { padding: 8px 0 8px 12px; border-bottom: 1px solid #eef2f7; break-inside: avoid; }
+        .qt { font-size: 13.5px; font-weight: 700; margin: 0; }
+        .qh { font-size: 11.5px; color: #94a3b8; font-style: italic; margin: 2px 0 0; }
+        .ans { font-size: 12px; color: #334155; margin: 5px 0 0; }
+        ul.opts { margin: 4px 0 2px; padding-left: 22px; }
+        ul.opts li { font-size: 12px; color: #334155; margin: 1px 0; }
+        .foot { margin-top: 26px; padding-top: 12px; border-top: 1px solid #e2e8f0; font-size: 10.5px; color: #94a3b8; }
+        @media print { body { padding: 0; } @page { margin: 16mm 14mm; } }
+      </style></head><body>` +
+      `<div class="head"><div class="brand">CLUB <span class="r">CRAFT</span></div>` +
+      `<div class="subtitle">Guía de Supervisión — Cliente Oculto</div></div>` +
+      `<p class="intro">Esta guía resume todas las preguntas del formulario de supervisión y las respuestas posibles, para que puedas estudiarla antes de tu visita. Durante la visita observá con atención cada punto y luego completá el reporte desde la app. ¡Gracias por tu colaboración!</p>` +
+      sectionsHtml +
+      `<div class="foot">Documento generado el ${today} · CLUB CRAFT · Uso interno para clientes ocultos.</div>` +
+      `</body></html>`;
+
+    const w = window.open('', '_blank');
+    if (!w) {
+      alert('El navegador bloqueó la ventana. Permití las ventanas emergentes para descargar el PDF.');
+      return;
+    }
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+    // Esperamos a que renderice y abrimos el diálogo (Guardar como PDF).
+    setTimeout(() => { try { w.focus(); w.print(); } catch { /* el usuario puede imprimir manualmente */ } }, 400);
+  };
 
   const handleSaveSupConfig = async () => {
     setSavingSup(true);
@@ -6214,12 +6345,21 @@ export function Admin() {
                       <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mt-0.5">Cambiá los textos de las preguntas y las opciones</p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => (showSupEditor ? setShowSupEditor(false) : openSupEditor())}
-                    className="shrink-0 px-4 py-2 rounded-xl bg-ink text-white text-[10px] font-black uppercase tracking-widest cursor-pointer border-none hover:bg-black transition-all"
-                  >
-                    {showSupEditor ? 'Cerrar' : 'Editar preguntas'}
-                  </button>
+                  <div className="shrink-0 flex items-center gap-2">
+                    <button
+                      onClick={downloadSupervisionPdf}
+                      title="Descargar PDF con las preguntas y respuestas para enviar a los clientes ocultos"
+                      className="px-4 py-2 rounded-xl bg-love/10 text-love text-[10px] font-black uppercase tracking-widest cursor-pointer border-none hover:bg-love hover:text-white transition-all inline-flex items-center gap-1.5"
+                    >
+                      <Download size={14} /> Descargar PDF
+                    </button>
+                    <button
+                      onClick={() => (showSupEditor ? setShowSupEditor(false) : openSupEditor())}
+                      className="px-4 py-2 rounded-xl bg-ink text-white text-[10px] font-black uppercase tracking-widest cursor-pointer border-none hover:bg-black transition-all"
+                    >
+                      {showSupEditor ? 'Cerrar' : 'Editar preguntas'}
+                    </button>
+                  </div>
                 </div>
 
                 {showSupEditor && (
