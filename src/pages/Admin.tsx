@@ -8,7 +8,7 @@ import * as XLSX from 'xlsx';
 import { useDesign, COLOR_PRESETS, CORNER_PRESETS, AVAILABLE_FONTS, type DesignConfig, type BannerConfig } from '@/src/components/DesignEngine';
 import { BirthdayCalendar } from '@/src/components/BirthdayCalendar';
 import { notifyClient } from '@/src/lib/notify';
-import { resolveSupervisionConfig, SUP_TEXT_FIELDS, SUP_OPTION_LISTS, SUP_REQUIRED_FIELDS, SUP_SECTIONS, DEFAULT_SUPERVISION, makeCustomQuestion, type SupervisionConfig, type CustomQuestion } from '@/src/lib/supervision';
+import { resolveSupervisionConfig, SUP_TEXT_FIELDS, SUP_OPTION_LISTS, SUP_REQUIRED_FIELDS, SUP_SECTIONS, DEFAULT_SUPERVISION, makeCustomQuestion, makeCustomSection, type SupervisionConfig, type CustomQuestion } from '@/src/lib/supervision';
 import { useAuth, useTheme } from '@/src/App';
 import QRCode from 'react-qr-code';
 
@@ -1525,6 +1525,33 @@ export function Admin() {
   const removeCustomQuestion = (id: string) => {
     setSupDraft((prev) => ({ ...prev, customQuestions: (prev.customQuestions || []).filter((q) => q.id !== id) }));
   };
+
+  // Secciones nuevas creadas por el admin
+  const addCustomSection = () => {
+    setSupDraft((prev) => ({ ...prev, customSections: [...(prev.customSections || []), makeCustomSection()] }));
+  };
+  const updateCustomSection = (id: string, label: string) => {
+    setSupDraft((prev) => ({
+      ...prev,
+      customSections: (prev.customSections || []).map((s) => (s.id === id ? { ...s, label } : s)),
+    }));
+  };
+  const removeCustomSection = (id: string) => {
+    // Al borrar una sección, las preguntas que la usaban vuelven a "Preguntas adicionales".
+    setSupDraft((prev) => ({
+      ...prev,
+      customSections: (prev.customSections || []).filter((s) => s.id !== id),
+      customQuestions: (prev.customQuestions || []).map((q) => (q.section === id ? { ...q, section: 'adicionales' } : q)),
+    }));
+  };
+
+  // Lista de secciones para el selector de cada pregunta: fijas (menos la de
+  // "adicionales"), luego las creadas por el admin, y "adicionales" al final.
+  const sectionOptions = (): { key: string; label: string }[] => [
+    ...SUP_SECTIONS.filter((s) => s.key !== 'adicionales').map((s) => ({ key: s.key as string, label: s.label })),
+    ...(supDraft.customSections || []).map((s) => ({ key: s.id, label: s.label || 'Sección sin nombre' })),
+    { key: 'adicionales', label: 'Preguntas adicionales' },
+  ];
 
   const handleSaveSupConfig = async () => {
     setSavingSup(true);
@@ -6288,6 +6315,41 @@ export function Admin() {
                       <p className="text-[10px] text-slate-400 mt-2 italic">Escribí una opción por línea. Cambiar estas opciones no afecta los reportes ya enviados.</p>
                     </div>
 
+                    {/* Secciones nuevas creadas por el admin */}
+                    <div className="pt-2 border-t border-slate-100">
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <p className="text-[11px] font-black uppercase tracking-[0.2em] text-love">Secciones del formulario</p>
+                        <button onClick={addCustomSection}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-ink text-white text-[9px] font-black uppercase tracking-widest cursor-pointer border-none hover:bg-black transition-all">
+                          <Plus size={12} /> Agregar sección
+                        </button>
+                      </div>
+                      <p className="text-[10px] text-slate-400 mb-2 italic">
+                        Las secciones fijas (Limpieza, Atención, El pedido, El plato/bebida, Cierre) siempre están. Acá podés crear secciones nuevas y después elegirlas en cada pregunta.
+                      </p>
+                      {(supDraft.customSections || []).length === 0 ? (
+                        <p className="text-[11px] text-slate-400 italic py-1">No creaste secciones nuevas todavía.</p>
+                      ) : (
+                        <div className="space-y-2">
+                          {(supDraft.customSections || []).map((s) => (
+                            <div key={s.id} className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                value={s.label}
+                                onChange={(e) => updateCustomSection(s.id, e.target.value)}
+                                placeholder="Nombre de la sección (ej. Postres, Barra, Delivery)"
+                                className="flex-1 px-3 py-2 rounded-lg bg-white border border-slate-200 text-sm font-medium text-ink outline-none focus:border-love"
+                              />
+                              <button onClick={() => removeCustomSection(s.id)} title="Eliminar sección"
+                                className="shrink-0 p-2 rounded-lg text-slate-300 hover:text-love hover:bg-love/10 transition-colors bg-transparent border-none cursor-pointer">
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
                     {/* Preguntas personalizadas: agregar / eliminar */}
                     <div className="pt-2">
                       <div className="flex items-center justify-between gap-2 mb-2">
@@ -6330,10 +6392,10 @@ export function Admin() {
                                 <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 shrink-0">Sección</span>
                                 <select
                                   value={q.section || 'adicionales'}
-                                  onChange={(e) => updateCustomQuestion(q.id, { section: e.target.value as CustomQuestion['section'] })}
+                                  onChange={(e) => updateCustomQuestion(q.id, { section: e.target.value })}
                                   className="px-2.5 py-2 rounded-lg bg-white border border-slate-200 text-[11px] font-bold text-ink outline-none focus:border-love cursor-pointer"
                                 >
-                                  {SUP_SECTIONS.map((s) => (
+                                  {sectionOptions().map((s) => (
                                     <option key={s.key} value={s.key}>{s.label}</option>
                                   ))}
                                 </select>
