@@ -44,7 +44,16 @@ export function Waiter() {
   const [status, setStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
   // Vista del cajero: 'carga' (cargar puntos) o 'movimientos' (lista con buscador)
-  const [cashierView, setCashierView] = useState<'carga' | 'movimientos' | 'usos'>('carga');
+  const [cashierView, setCashierView] = useState<'carga' | 'movimientos' | 'usos' | 'giftcards'>('carga');
+
+  // Canje de Gift Cards en la caja (el cajero teclea el código)
+  const [gcCode, setGcCode] = useState('');
+  const [gcLoading, setGcLoading] = useState(false);
+  const [gcCard, setGcCard] = useState<any | null>(null);
+  const [gcError, setGcError] = useState<string | null>(null);
+  const [gcInvoice, setGcInvoice] = useState('');
+  const [gcRedeeming, setGcRedeeming] = useState(false);
+  const [gcDone, setGcDone] = useState<any | null>(null);
   const [allMovements, setAllMovements] = useState<any[]>([]);
   const [movSearch, setMovSearch] = useState('');
   const [movLoading, setMovLoading] = useState(false);
@@ -674,6 +683,53 @@ export function Waiter() {
     }
   };
 
+  // ───────── Gift Cards: buscar por código y canjear ─────────
+  const gcIsExpired = (c: any) => c && new Date(c.expires_at) < new Date();
+  const lookupGiftCard = async () => {
+    const code = gcCode.trim().toUpperCase();
+    if (!code) { setGcError('Ingresá el código de la gift card.'); return; }
+    setGcLoading(true);
+    setGcError(null);
+    setGcCard(null);
+    setGcDone(null);
+    try {
+      const { data, error } = await supabase.rpc('gift_card_lookup', { p_code: code });
+      if (error) throw error;
+      const card = Array.isArray(data) ? data[0] : data;
+      if (!card) { setGcError('No existe una gift card con ese código.'); return; }
+      setGcCard(card);
+    } catch (e: any) {
+      setGcError(e?.message || 'No se pudo buscar la gift card.');
+    } finally {
+      setGcLoading(false);
+    }
+  };
+  const redeemGiftCard = async () => {
+    if (!gcCard) return;
+    if (!gcInvoice.trim()) { alert('Ingresá el N° de comprobante emitido en caja.'); return; }
+    setGcRedeeming(true);
+    try {
+      const { data, error } = await supabase.rpc('redeem_gift_card', {
+        p_code: gcCard.code,
+        p_invoice: gcInvoice.trim(),
+        p_consumed: null,
+      });
+      if (error) throw error;
+      const card = Array.isArray(data) ? data[0] : data;
+      setGcDone(card || gcCard);
+      setGcCard(null);
+      setGcCode('');
+      setGcInvoice('');
+    } catch (e: any) {
+      alert(e?.message || 'No se pudo canjear la gift card.');
+    } finally {
+      setGcRedeeming(false);
+    }
+  };
+  const resetGiftCard = () => {
+    setGcCode(''); setGcCard(null); setGcError(null); setGcInvoice(''); setGcDone(null);
+  };
+
   const filteredMovements = allMovements.filter((m) => {
     const q = movSearch.toLowerCase().trim();
     if (!q) return true;
@@ -745,6 +801,15 @@ export function Waiter() {
           {(useRequests.length + pendingCanjes.length) > 0 && cashierView !== 'usos' && (
             <span className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-500 text-white text-[9px] rounded-full flex items-center justify-center font-black">{useRequests.length + pendingCanjes.length}</span>
           )}
+        </button>
+        <button
+          onClick={() => setCashierView('giftcards')}
+          className={cn(
+            "flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer border-none",
+            cashierView === 'giftcards' ? "bg-love text-white shadow-md shadow-love/25" : "bg-transparent text-slate-400 hover:text-ink"
+          )}
+        >
+          Gift Cards
         </button>
         <button
           onClick={() => setCashierView('movimientos')}
@@ -1015,6 +1080,120 @@ export function Waiter() {
         </div>
       </div>
       </>)}
+
+      {/* Vista: Canjear Gift Card (el cajero teclea el código) */}
+      {cashierView === 'giftcards' && (
+        <div className="bg-white rounded-[2rem] p-6 md:p-8 shadow-xl shadow-slate-200/50 border border-slate-100 space-y-5">
+          <h2 className="text-[8px] md:text-[9px] font-black uppercase tracking-[0.3em] text-slate-400 flex items-center gap-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-love" />
+            Canjear Gift Card
+          </h2>
+
+          {/* Éxito */}
+          {gcDone ? (
+            <div className="text-center py-6">
+              <div className="w-14 h-14 mx-auto rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center mb-3">
+                <CheckCircle2 size={28} />
+              </div>
+              <p className="text-sm font-black uppercase tracking-tight text-ink">Gift card canjeada</p>
+              <p className="text-3xl font-black text-emerald-600 leading-none mt-2">${(Number(gcDone.value) || 0).toLocaleString('es-AR')}</p>
+              <p className="text-[11px] text-slate-400 font-mono tracking-widest mt-1">{gcDone.code}</p>
+              {gcDone.invoice_number && <p className="text-[10px] text-slate-400 mt-1">Comprobante: {gcDone.invoice_number}</p>}
+              <button onClick={resetGiftCard}
+                className="mt-5 px-6 py-3 rounded-xl bg-love text-white text-[10px] font-black uppercase tracking-widest cursor-pointer border-none hover:bg-love/90 transition-all">
+                Canjear otra
+              </button>
+            </div>
+          ) : (
+            <>
+              {/* Buscar por código */}
+              <div>
+                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1.5">Código de la gift card</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={gcCode}
+                    onChange={(e) => { setGcCode(e.target.value.toUpperCase()); setGcError(null); }}
+                    onKeyDown={(e) => { if (e.key === 'Enter') lookupGiftCard(); }}
+                    placeholder="Ej: GC-4F7K2P"
+                    autoFocus
+                    className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-base font-black tracking-widest uppercase text-ink outline-none focus:border-love font-mono"
+                  />
+                  <button onClick={lookupGiftCard} disabled={gcLoading}
+                    className="px-5 py-3 rounded-xl bg-ink text-white text-[10px] font-black uppercase tracking-widest cursor-pointer border-none hover:bg-black transition-all disabled:opacity-50">
+                    {gcLoading ? '...' : 'Buscar'}
+                  </button>
+                </div>
+                {gcError && (
+                  <p className="mt-2 text-[11px] font-bold text-love flex items-center gap-1.5"><AlertCircle size={13} /> {gcError}</p>
+                )}
+              </div>
+
+              {/* Resultado */}
+              {gcCard && (() => {
+                const expired = gcIsExpired(gcCard);
+                const used = gcCard.status === 'usada';
+                const canRedeem = gcCard.status === 'activa' && !expired;
+                return (
+                  <div className="rounded-2xl border border-slate-200 p-5 bg-slate-50 space-y-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Saldo a descontar</p>
+                        <p className="text-3xl font-black text-love leading-none mt-0.5">${(Number(gcCard.value) || 0).toLocaleString('es-AR')}</p>
+                      </div>
+                      <span className={cn("text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full",
+                        canRedeem ? "bg-emerald-500/10 text-emerald-600" : used ? "bg-slate-200 text-slate-500" : "bg-amber-100 text-amber-700")}>
+                        {used ? 'Ya usada' : expired ? 'Vencida' : 'Activa'}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 font-semibold">
+                      {used
+                        ? `Usada el ${gcCard.used_at ? new Date(gcCard.used_at).toLocaleDateString('es-AR') : ''}${gcCard.invoice_number ? ` · Comp: ${gcCard.invoice_number}` : ''}`
+                        : `Válida hasta el ${new Date(gcCard.expires_at).toLocaleDateString('es-AR')}`}
+                    </p>
+
+                    {canRedeem ? (
+                      <>
+                        <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-[11px] font-bold text-amber-800">
+                          Uso único: se descuenta el total. Si la cuenta es menor, la diferencia no se acumula.
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 block mb-1.5">N° de comprobante emitido en caja</label>
+                          <input
+                            type="text"
+                            value={gcInvoice}
+                            onChange={(e) => setGcInvoice(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') redeemGiftCard(); }}
+                            placeholder="Ej: 2525268"
+                            className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm font-semibold text-ink outline-none focus:border-love"
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <button onClick={resetGiftCard}
+                            className="px-4 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 text-[10px] font-black uppercase tracking-widest cursor-pointer border-none">
+                            Cancelar
+                          </button>
+                          <button onClick={redeemGiftCard} disabled={gcRedeeming}
+                            className="flex-1 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest cursor-pointer border-none disabled:opacity-50 flex items-center justify-center gap-2">
+                            {gcRedeeming ? 'Canjeando…' : <><CheckCircle2 size={15} /> Confirmar canje</>}
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <button onClick={resetGiftCard}
+                        className="w-full py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 text-[10px] font-black uppercase tracking-widest cursor-pointer border-none">
+                        Buscar otra
+                      </button>
+                    )}
+                  </div>
+                );
+              })()}
+
+              <p className="text-[10px] text-slate-400 italic">El cliente te muestra el código (en el PDF o su celular). Escribilo tal cual y confirmá con el comprobante.</p>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Vista de Movimientos con buscador */}
       {cashierView === 'movimientos' && (
