@@ -464,6 +464,25 @@ export function Dashboard() {
     }
   };
 
+  // Guarda "Para/De/Mensaje" en la tarjeta y luego descarga el PDF.
+  const saveAndDownloadGiftCard = async () => {
+    if (!justBoughtGiftCard) return;
+    let card = justBoughtGiftCard;
+    try {
+      const { data } = await supabase.rpc('gift_card_set_dedication', {
+        p_id: card.id,
+        p_recipient: gcPersonalize.recipient || null,
+        p_sender: gcPersonalize.sender || null,
+        p_message: gcPersonalize.message || null,
+      });
+      const updated = Array.isArray(data) ? data[0] : data;
+      if (updated) { card = updated; setJustBoughtGiftCard(updated); }
+    } catch {
+      /* Si falla el guardado (p. ej. SQL sin correr), igual descargamos con lo tipeado. */
+    }
+    downloadGiftCardPdf(card, gcPersonalize);
+  };
+
   const handlePayWithMockCard = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!profile || !selectedComboForPurchase) return;
@@ -1253,7 +1272,7 @@ export function Dashboard() {
             <p className="text-[11px] text-slate-400 font-semibold mb-4">Descargá el PDF y mandáselo a quien quieras regalar.</p>
 
             <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4 mb-4">
-              <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Saldo</p>
+              <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Regalás</p>
               <p className="text-3xl font-black text-love leading-none">${(Number(justBoughtGiftCard.value) || 0).toLocaleString('es-AR')}</p>
               <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mt-3">Código</p>
               <p className="text-2xl font-black tracking-widest text-ink font-mono">{justBoughtGiftCard.code}</p>
@@ -1272,7 +1291,7 @@ export function Dashboard() {
                 className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm text-ink outline-none focus:border-love" />
             </div>
 
-            <button onClick={() => downloadGiftCardPdf(justBoughtGiftCard, gcPersonalize)}
+            <button onClick={saveAndDownloadGiftCard}
               className="w-full py-3 rounded-xl bg-love text-white text-[11px] font-black uppercase tracking-widest cursor-pointer border-none hover:bg-love/90 transition-all">
               Descargar PDF
             </button>
@@ -1632,9 +1651,11 @@ export function Dashboard() {
                         )}
                       </div>
                       <div className="mt-2 rounded-2xl bg-love/5 border border-love/15 p-3 text-center">
-                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Saldo</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Pagás</p>
+                        <p className="text-xl font-black text-slate-500 leading-none mt-0.5">${(Number(gc.price) || 0).toLocaleString('es-AR')}</p>
+                        <div className="my-1.5 h-px bg-love/15" />
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Regalás</p>
                         <p className="text-3xl font-black text-love leading-none mt-0.5">${(Number(gc.value) || 0).toLocaleString('es-AR')}</p>
-                        <p className="text-[11px] font-bold text-slate-500 mt-1">Pagás ${(Number(gc.price) || 0).toLocaleString('es-AR')}</p>
                       </div>
                       <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-2 text-center">Uso único · vence a los 30 días</p>
                     </div>
