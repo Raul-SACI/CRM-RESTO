@@ -94,6 +94,10 @@ export function Admin() {
     description: ''
   });
   const [loading, setLoading] = useState(true);
+  // Carga inicial: mostramos SOLO "Cargando datos" hasta terminar la primera
+  // carga, para que el admin no vea contenido a medias. Después no se vuelve a
+  // mostrar (los guardados usan sus propios indicadores).
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [clients, setClients] = useState<Profile[]>([]);
   const [prizes, setPrizes] = useState<Prize[]>([]);
   const [staff, setStaff] = useState<Profile[]>([]);
@@ -148,7 +152,7 @@ export function Admin() {
   const [dateEnd, setDateEnd] = useState<string>(() => new Date().toISOString().split('T')[0]);
 
   // Design editing module states
-  const { designConfig, saveDesignConfig, setIsEditingDesign } = useDesign();
+  const { designConfig, saveDesignConfig, setIsEditingDesign, loading: designLoading } = useDesign();
   // Nombres de sucursales para los filtros de reportes (todas, activas e inactivas,
   // para poder filtrar historiales de sucursales ya cerradas).
   const branchNames = (designConfig.branches || []).map(b => b.name);
@@ -485,6 +489,12 @@ export function Admin() {
     };
     reader.readAsDataURL(file);
   };
+
+  // En cuanto termina la primera carga (datos + diseño), ya no volvemos a
+  // bloquear la pantalla completa.
+  useEffect(() => {
+    if (!loading && !designLoading) setHasLoadedOnce(true);
+  }, [loading, designLoading]);
 
   useEffect(() => {
     setSelectedClients([]);
@@ -2023,6 +2033,16 @@ export function Admin() {
       }
     }
   };
+
+  // Pantalla de carga inicial: nada de contenido a medias, solo el mensaje.
+  if (!hasLoadedOnce && (loading || designLoading)) {
+    return (
+      <div className="w-full min-h-[60vh] flex flex-col items-center justify-center gap-4 py-20">
+        <div className="w-10 h-10 border-[3px] border-love/20 border-t-love rounded-full animate-spin" />
+        <p className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-400">Cargando datos…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 md:gap-8 items-start w-full">
