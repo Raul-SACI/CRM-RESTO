@@ -106,6 +106,25 @@ export interface MysteryInvitation {
   profiles?: { full_name?: string; email?: string; dni?: string } | null;
 }
 
+// Gift card vendida (una fila por tarjeta, en la tabla gift_cards).
+export interface GiftCard {
+  id: string;
+  code: string;
+  buyer_id?: string | null;
+  price_paid: number;
+  value: number;
+  recipient_name?: string | null;
+  sender_name?: string | null;
+  message?: string | null;
+  status: 'activa' | 'usada' | 'vencida';
+  used_at?: string | null;
+  used_by?: string | null;
+  invoice_number?: string | null;
+  consumed_amount?: number | null;
+  created_at: string;
+  expires_at: string;
+}
+
 export interface AppNotification {
   id: string;
   client_id: string | null; // null = para todos

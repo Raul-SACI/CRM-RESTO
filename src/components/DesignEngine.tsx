@@ -49,6 +49,14 @@ export interface ComboConfig {
   expirationDays?: number;
 }
 
+// Tramo de Gift Card: el cliente paga `price` y recibe `value` de saldo.
+export interface GiftCardConfig {
+  id: string;
+  price: number;        // lo que paga
+  value: number;        // saldo que recibe (con el extra, ej. +10%)
+  isActive: boolean;
+}
+
 export interface AutoNotifConfig {
   birthday: { enabled: boolean; message: string; giftPoints: number };
   comboExpiring: { enabled: boolean; message: string; daysBefore: number };
@@ -86,6 +94,9 @@ export interface DesignConfig {
 
   // Custom combos prepago added by user
   combos?: ComboConfig[];
+
+  // Tramos de Gift Card que se venden en "Descuentos Exclusivos"
+  giftCards?: GiftCardConfig[];
 
   // Configuración editable del formulario de supervisión (clientes ocultos)
   supervision?: import('@/src/lib/supervision').SupervisionConfig;
@@ -207,6 +218,7 @@ export const DEFAULT_DESIGN: DesignConfig = {
   terms: "El programa de beneficios 'Club CRAFT' es operado exclusivamente por la administración de la marca CRAFT. Al registrarse en la plataforma, el usuario declara haber leído, comprendido e implicado su pleno consentimiento sobre cada cláusula de este reglamento de uso activo.\n\nLos puntos son individuales, estrictamente intransferibles y no son intercambiables por dinero físico. El usuario está obligado a corroborar su identidad mediante DNI original ante el personal de sucursal para validar cualquier carga o canje de puntos dentro del local.\n\nLos puntos acumulados no vencen siempre y cuando se asocie al menos 1 visita o consumo en el término de 12 meses. Sin embargo, los cupones redimidos de premios solo tienen validez estricta para el día natural de su fecha de emisión (vencen a las 23:59 hs). Pasado ese límite, el premio se extingue sin derecho a reintegro de puntos.\n\nCRAFT se guarda el derecho soberano de dar por finalizado el programa, alterar la tasa de equivalencia de puntos ($1000 = 1 PTS) o remover premios de la tienda informando con al menos 15 días corridos de antelación en sus canales públicos.",
   branches: [],
   combos: [],
+  giftCards: [],
   autoNotif: {
     birthday: {
       enabled: true,
@@ -566,7 +578,7 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
       if (existing?.description) {
         try {
           const current = JSON.parse(existing.description);
-          const arraysProtegidos = ['branches', 'combos'] as const;
+          const arraysProtegidos = ['branches', 'combos', 'giftCards'] as const;
           arraysProtegidos.forEach((key) => {
             const nuevo = (safeConfig as any)[key];
             const actual = current[key];
