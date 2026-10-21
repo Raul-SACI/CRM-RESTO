@@ -5,8 +5,9 @@ import { supabase } from '@/src/lib/supabase';
 import { motion, AnimatePresence } from 'motion/react';
 import { CreditCard, Check, ArrowRight, Sparkles, X, QrCode, Ticket, ArrowLeft, Loader2, DollarSign, ShoppingCart } from 'lucide-react';
 import QRCode from 'react-qr-code';
-import { Transaction } from '@/src/types';
+import { Transaction, GiftCard } from '@/src/types';
 import { cn } from '@/src/lib/utils';
+import { giftCardPdfHtml, printGiftCard, serializeQr } from '@/src/lib/giftcard';
 
 export function MyCombos() {
   const { profile, refreshProfile, isSimulatingClient } = useAuth();
@@ -28,6 +29,36 @@ export function MyCombos() {
   // Generación de código de uso (para que el cajero lo confirme)
   const [generatingCode, setGeneratingCode] = useState<string | null>(null);
   const [activeUseCode, setActiveUseCode] = useState<{ code: string; combo: any } | null>(null);
+
+  // Mis Gift Cards (compradas por este cliente)
+  const [myGiftCards, setMyGiftCards] = useState<GiftCard[]>([]);
+  const [pdfGiftCard, setPdfGiftCard] = useState<GiftCard | null>(null);
+
+  useEffect(() => {
+    if (!profile) return;
+    let active = true;
+    supabase.from('gift_cards').select('*').eq('buyer_id', profile.id).order('created_at', { ascending: false })
+      .then(({ data }) => { if (active && data) setMyGiftCards(data as any); });
+    return () => { active = false; };
+  }, [profile]);
+
+  const giftCardStatus = (c: GiftCard) => {
+    if (c.status === 'usada') return { label: 'Usada', cls: 'bg-slate-200 text-slate-500' };
+    if (new Date(c.expires_at) < new Date()) return { label: 'Vencida', cls: 'bg-amber-100 text-amber-700' };
+    return { label: 'Activa', cls: 'bg-emerald-500/10 text-emerald-600' };
+  };
+
+  const downloadMyGiftCard = (card: GiftCard) => {
+    setPdfGiftCard(card);
+    setTimeout(() => {
+      const qr = serializeQr('gc-my-pdf-qr');
+      const html = giftCardPdfHtml(
+        { code: card.code, value: card.value, expires_at: card.expires_at, recipient_name: card.recipient_name, sender_name: card.sender_name, message: card.message },
+        qr
+      );
+      if (!printGiftCard(html)) alert('El navegador bloqueó la ventana. Permití las ventanas emergentes para descargar el PDF.');
+    }, 150);
+  };
 
   const generateUseCode = async (combo: any) => {
     if (!profile) return;
@@ -489,6 +520,48 @@ export function MyCombos() {
           </div>
         )}
       </div>
+
+      {/* QR oculto para serializar dentro del PDF de la gift card */}
+      <div style={{ position: 'absolute', left: -9999, top: -9999 }} aria-hidden>
+        <QRCode id="gc-my-pdf-qr" value={pdfGiftCard?.code || 'x'} size={96} />
+      </div>
+
+      {/* Mis Gift Cards */}
+      {myGiftCards.length > 0 && (
+        <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none space-y-5">
+          <div className="flex items-center gap-2">
+            <div className="w-2.5 h-2.5 rounded-full bg-love" />
+            <h3 className="text-xs font-black uppercase tracking-wider !text-slate-900">Mis Gift Cards</h3>
+          </div>
+          <div className="space-y-3">
+            {myGiftCards.map((card) => {
+              const st = giftCardStatus(card);
+              return (
+                <div key={card.id} className="bg-slate-50 dark:bg-slate-950 p-4 rounded-3xl border border-slate-100 dark:border-slate-800 flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-lg font-black text-love leading-none">${(Number(card.value) || 0).toLocaleString('es-AR')}</span>
+                      <span className={cn("text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full", st.cls)}>{st.label}</span>
+                    </div>
+                    <p className="text-sm font-black tracking-widest text-ink font-mono mt-1">{card.code}</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">
+                      {card.status === 'usada'
+                        ? `Usada el ${card.used_at ? new Date(card.used_at).toLocaleDateString('es-AR') : ''}`
+                        : `Válida hasta el ${new Date(card.expires_at).toLocaleDateString('es-AR')}`}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => downloadMyGiftCard(card)}
+                    className="shrink-0 px-3 py-2 rounded-xl bg-ink text-white text-[9px] font-black uppercase tracking-widest cursor-pointer border-none hover:bg-black transition-all"
+                  >
+                    Descargar PDF
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Ofertas de Combos / Pases Prepago */}
       <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none space-y-5">

@@ -11,8 +11,9 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/src/lib/supabase';
 import { notifyClient, checkLevelUp } from '@/src/lib/notify';
-import { Transaction, SystemSettings, Profile, Prize } from '@/src/types';
+import { Transaction, SystemSettings, Profile, Prize, GiftCard } from '@/src/types';
 import { cn, isPrizeActiveNow } from '@/src/lib/utils';
+import { giftCardPdfHtml, printGiftCard, serializeQr } from '@/src/lib/giftcard';
 import { useDesign } from '@/src/components/DesignEngine';
 import { WelcomeGuide, CLIENT_GUIDE_STEPS } from '@/src/components/WelcomeGuide';
 
@@ -28,7 +29,13 @@ export function Dashboard() {
   // Candado para que el retorno de pago de Mercado Pago se procese UNA sola vez
   // por carga de pagina, aunque el efecto se vuelva a disparar.
   const mpProcessingRef = useRef(false);
+  const gcProcessingRef = useRef(false);
   const ofertasScrollRef = useRef<HTMLDivElement>(null);
+
+  // Gift cards
+  const [isBuyingGiftCard, setIsBuyingGiftCard] = useState(false);
+  const [justBoughtGiftCard, setJustBoughtGiftCard] = useState<GiftCard | null>(null);
+  const [gcPersonalize, setGcPersonalize] = useState({ recipient: '', sender: '', message: '' });
 
   const scrollOfertas = (dir: 'left' | 'right') => {
     if (ofertasScrollRef.current) {
@@ -410,6 +417,53 @@ export function Dashboard() {
     }
   };
 
+  // Comprar una Gift Card: crea la preferencia de MP y redirige al checkout.
+  const handleBuyGiftCard = async (gc: { id: string; price: number; value: number }) => {
+    if (!profile) return;
+    setIsBuyingGiftCard(true);
+    try {
+      const response = await fetch('/api/mercadopago/preference', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ giftcard: gc, client_id: profile.id, app_url: window.location.origin }),
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorText || 'No se pudo iniciar el pago.'}`);
+      }
+      const data = await response.json();
+      if (data.init_point) {
+        window.location.href = data.init_point;
+      } else {
+        alert('Ocurrió un error: no se generó el inicio de pago.');
+      }
+    } catch (e: any) {
+      console.error(e);
+      alert('Error al conectar con Mercado Pago: ' + e.message);
+    } finally {
+      setIsBuyingGiftCard(false);
+    }
+  };
+
+  // Genera y descarga el PDF de una gift card (con el QR ya renderizado en #gc-pdf-qr).
+  const downloadGiftCardPdf = (card: GiftCard, extra?: { recipient?: string; sender?: string; message?: string }) => {
+    const qr = serializeQr('gc-pdf-qr');
+    const html = giftCardPdfHtml(
+      {
+        code: card.code,
+        value: card.value,
+        expires_at: card.expires_at,
+        recipient_name: extra?.recipient ?? card.recipient_name,
+        sender_name: extra?.sender ?? card.sender_name,
+        message: extra?.message ?? card.message,
+      },
+      qr
+    );
+    if (!printGiftCard(html)) {
+      alert('El navegador bloqueó la ventana. Permití las ventanas emergentes para descargar el PDF.');
+    }
+  };
+
   const handlePayWithMockCard = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!profile || !selectedComboForPurchase) return;
@@ -605,6 +659,90 @@ export function Dashboard() {
         executeLogging();
       }
     }
+  }, [profile, settings, refreshProfile]);
+
+  // Retorno de Mercado Pago para una GIFT CARD: crea la tarjeta (con código),
+  // suma los puntos al comprador y abre el modal para descargar el PDF.
+  useEffect(() => {
+    if (!profile) return;
+    const hashPart = window.location.hash.includes('?') ? window.location.hash.split('?')[1] : '';
+    const params = new URLSearchParams(hashPart || window.location.search);
+    const paymentStatus = params.get('payment_status') || params.get('collection_status') || params.get('status');
+    const giftcardId = params.get('giftcard_id');
+    if (!((paymentStatus === 'success' || paymentStatus === 'approved') && giftcardId)) return;
+
+    const gcPrice = parseFloat(params.get('gc_price') || '0') || 0;
+    const gcValue = parseFloat(params.get('gc_value') || '0') || 0;
+    const paymentId = params.get('payment_id') || params.get('preference_id') || ('gc_' + giftcardId);
+
+    if (gcProcessingRef.current) return;
+    const processedKey = `processed_mp_gc_${paymentId}_${giftcardId}`;
+    if (localStorage.getItem(processedKey)) return;
+    gcProcessingRef.current = true;
+    localStorage.setItem(processedKey, 'true');
+
+    const conversionRate = settings?.points_conversion_rate || 1000;
+    const bonusPoints = Math.floor(gcPrice / conversionRate);
+    const cleanUrl = () => {
+      const cleanHash = window.location.hash.split('?')[0];
+      window.history.replaceState(null, '', window.location.pathname + cleanHash);
+    };
+
+    (async () => {
+      try {
+        // Anti-duplicado: ¿ya registramos esta compra en los últimos 10 min?
+        const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+        const { data: recentDup } = await supabase
+          .from('transactions')
+          .select('id')
+          .eq('client_id', profile.id)
+          .gte('created_at', tenMinAgo)
+          .ilike('description', `COMPRA_GIFTCARD: ${giftcardId}%`)
+          .limit(1);
+        if (recentDup && recentDup.length > 0) { cleanUrl(); return; }
+
+        // 1) Crear la gift card (genera el código único en la base).
+        const { data: created, error: gcErr } = await supabase.rpc('create_gift_card', {
+          p_price: gcPrice,
+          p_value: gcValue,
+          p_recipient: null,
+          p_sender: null,
+          p_message: null,
+          p_expires_days: 30,
+        });
+        if (gcErr) throw gcErr;
+        const card: GiftCard = Array.isArray(created) ? created[0] : created;
+
+        // 2) Registrar la compra + sumar puntos al comprador.
+        await supabase.from('transactions').insert({
+          client_id: profile.id,
+          waiter_id: profile.id,
+          amount: gcPrice,
+          points_earned: bonusPoints,
+          branch: 'VENTA MERCADO PAGO',
+          invoice_number: 'PAGO_MP_' + String(paymentId).slice(-6),
+          description: `COMPRA_GIFTCARD: ${giftcardId}|$${gcValue}`,
+        });
+        await supabase.from('profiles').update({ points: (profile.points || 0) + bonusPoints }).eq('id', profile.id);
+
+        notifyClient({
+          clientId: profile.id,
+          clientEmail: (profile as any).email,
+          title: '¡Compraste una Gift Card en CRAFT!',
+          message: `Tu Gift Card de $${gcValue.toLocaleString('es-AR')} está lista (código ${card?.code}). Descargá el PDF y regalala. ¡Además sumaste ${bonusPoints} puntos!`,
+        });
+
+        if (refreshProfile) await refreshProfile();
+        fetchClientData();
+        cleanUrl();
+
+        if (card) setJustBoughtGiftCard(card);
+        else alert('El pago se acreditó pero no pudimos mostrar la tarjeta. Revisá "Mis Gift Cards".');
+      } catch (err: any) {
+        console.error('Error al generar la gift card:', err);
+        alert('El pago se procesó pero hubo un problema al generar la Gift Card. Sacá una captura y escribinos: ' + (err?.message || err));
+      }
+    })();
   }, [profile, settings, refreshProfile]);
 
   useEffect(() => {
@@ -1090,6 +1228,65 @@ export function Dashboard() {
     </AnimatePresence>
   );
 
+  // Modal de éxito al comprar una Gift Card: muestra el código y permite
+  // personalizar (Para/De/Mensaje) y descargar el PDF.
+  const giftCardSuccessModal = (
+    <AnimatePresence>
+      {justBoughtGiftCard && (
+        <motion.div
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-ink/80 backdrop-blur-sm z-[200] flex items-center justify-center p-5"
+          onClick={() => { setJustBoughtGiftCard(null); setGcPersonalize({ recipient: '', sender: '', message: '' }); }}
+        >
+          <motion.div
+            initial={{ scale: 0.95, y: 10 }} animate={{ scale: 1, y: 0 }}
+            className="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-6 text-center relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* QR oculto que se serializa dentro del PDF */}
+            <div style={{ position: 'absolute', left: -9999, top: -9999 }} aria-hidden>
+              <QRCode id="gc-pdf-qr" value={justBoughtGiftCard.code} size={96} />
+            </div>
+
+            <div className="w-12 h-12 mx-auto rounded-2xl bg-love/10 text-love flex items-center justify-center mb-2"><Gift size={22} /></div>
+            <h3 className="text-base font-black uppercase tracking-tight text-ink">¡Gift Card lista!</h3>
+            <p className="text-[11px] text-slate-400 font-semibold mb-4">Descargá el PDF y mandáselo a quien quieras regalar.</p>
+
+            <div className="rounded-2xl bg-slate-50 border border-slate-200 p-4 mb-4">
+              <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Saldo</p>
+              <p className="text-3xl font-black text-love leading-none">${(Number(justBoughtGiftCard.value) || 0).toLocaleString('es-AR')}</p>
+              <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mt-3">Código</p>
+              <p className="text-2xl font-black tracking-widest text-ink font-mono">{justBoughtGiftCard.code}</p>
+              <p className="text-[10px] text-slate-400 mt-1">Válida hasta el {new Date(justBoughtGiftCard.expires_at).toLocaleDateString('es-AR')}</p>
+            </div>
+
+            <div className="space-y-2 text-left mb-4">
+              <input value={gcPersonalize.recipient} onChange={(e) => setGcPersonalize((p) => ({ ...p, recipient: e.target.value }))}
+                placeholder="Para (nombre del agasajado) — opcional"
+                className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm text-ink outline-none focus:border-love" />
+              <input value={gcPersonalize.sender} onChange={(e) => setGcPersonalize((p) => ({ ...p, sender: e.target.value }))}
+                placeholder="De (tu nombre) — opcional"
+                className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm text-ink outline-none focus:border-love" />
+              <input value={gcPersonalize.message} onChange={(e) => setGcPersonalize((p) => ({ ...p, message: e.target.value }))}
+                placeholder="Mensaje (opcional)"
+                className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm text-ink outline-none focus:border-love" />
+            </div>
+
+            <button onClick={() => downloadGiftCardPdf(justBoughtGiftCard, gcPersonalize)}
+              className="w-full py-3 rounded-xl bg-love text-white text-[11px] font-black uppercase tracking-widest cursor-pointer border-none hover:bg-love/90 transition-all">
+              Descargar PDF
+            </button>
+            <button onClick={() => { setJustBoughtGiftCard(null); setGcPersonalize({ recipient: '', sender: '', message: '' }); }}
+              className="w-full mt-2 py-2.5 rounded-xl bg-transparent text-slate-400 text-[10px] font-black uppercase tracking-widest cursor-pointer border-none hover:text-ink transition-all">
+              Listo
+            </button>
+            <p className="text-[9px] text-slate-400 mt-2">También la encontrás en Mis Combos → Mis Gift Cards.</p>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+
   if (isMobileView && profile) {
     const nextTierPoints = clientTier.id.includes('black') 
       ? null 
@@ -1103,6 +1300,8 @@ export function Dashboard() {
 
     const avCombos = (designConfig as any)?.combos || [];
     const activeCombosForSale = avCombos.filter((c: any) => c.isActive);
+
+    const activeGiftCards = ((designConfig as any)?.giftCards || []).filter((g: any) => g.isActive && Number(g.value) > 0);
 
     const branchesList = designConfig?.branches || [];
 
@@ -1410,6 +1609,49 @@ export function Dashboard() {
           )}
         </div>
 
+        {/* 5b. Gift Cards */}
+        {activeGiftCards.length > 0 && (
+          <div className="space-y-3">
+            <div className="flex justify-between items-center px-1">
+              <div className="flex items-center gap-1.5">
+                <Gift size={16} className="text-love" />
+                <h3 className="text-sm font-black uppercase tracking-wider !text-slate-900" style={{ fontFamily: designConfig?.fontHeadings || 'inherit' }}>Gift Cards</h3>
+              </div>
+              <span className="text-[8px] bg-love/15 text-love px-2 py-0.5 rounded-full font-black uppercase tracking-wider">Para regalar</span>
+            </div>
+            <div className="flex gap-4 overflow-x-auto no-scrollbar pb-1 px-0.5 scroll-smooth">
+              {activeGiftCards.map((gc: any) => {
+                const extra = (Number(gc.value) || 0) - (Number(gc.price) || 0);
+                return (
+                  <div key={gc.id} className="shrink-0 w-[240px] bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 p-4 shadow-sm flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[8px] font-black uppercase tracking-[0.18em] text-slate-400">Gift Card</span>
+                        {extra > 0 && (
+                          <span className="text-[8px] bg-green-500/10 text-green-600 px-2 py-0.5 rounded-full font-black uppercase tracking-wider">+${extra.toLocaleString('es-AR')}</span>
+                        )}
+                      </div>
+                      <div className="mt-2 rounded-2xl bg-love/5 border border-love/15 p-3 text-center">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Saldo</p>
+                        <p className="text-3xl font-black text-love leading-none mt-0.5">${(Number(gc.value) || 0).toLocaleString('es-AR')}</p>
+                        <p className="text-[11px] font-bold text-slate-500 mt-1">Pagás ${(Number(gc.price) || 0).toLocaleString('es-AR')}</p>
+                      </div>
+                      <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-2 text-center">Uso único · vence a los 30 días</p>
+                    </div>
+                    <button
+                      onClick={() => handleBuyGiftCard(gc)}
+                      disabled={isBuyingGiftCard}
+                      className="mt-3 w-full py-2.5 bg-love hover:bg-love/90 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer border-none flex items-center justify-center gap-1.5 disabled:opacity-50"
+                    >
+                      {isBuyingGiftCard ? <><Loader2 size={14} className="animate-spin" /> Procesando…</> : <><Gift size={14} /> Regalar</>}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* 6. Recomendados para canje */}
         <div className="space-y-3">
           <div className="flex justify-between items-center px-1">
@@ -1622,6 +1864,7 @@ export function Dashboard() {
 
         {/* Modal de detalle de combo (reutilizable) */}
         {comboDetailModal}
+        {giftCardSuccessModal}
       </motion.div>
     );
   }
@@ -2843,7 +3086,14 @@ export function Dashboard() {
                   </div>
 
                   <p className="text-xs font-black uppercase text-ink dark:text-white line-clamp-2 tracking-tight leading-snug mb-1">
-                    {tx.description}
+                    {(() => {
+                      const d = tx.description || '';
+                      if (d.startsWith('COMPRA_GIFTCARD:')) {
+                        const digits = (d.split('|')[1] || '').replace(/\D/g, '');
+                        return digits ? `Compra Gift Card $${Number(digits).toLocaleString('es-AR')}` : 'Compra Gift Card';
+                      }
+                      return d;
+                    })()}
                   </p>
                   
                   <p className="text-[10px] text-slate-605 dark:text-slate-350 font-semibold flex items-center gap-1 mb-3">
@@ -3112,6 +3362,7 @@ export function Dashboard() {
 
       {/* Modal de detalle de combo (reutilizable) */}
       {comboDetailModal}
+      {giftCardSuccessModal}
 
       {/* Modal: código de uso para mostrar al cajero */}
       <AnimatePresence>

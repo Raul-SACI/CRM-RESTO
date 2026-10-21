@@ -17,10 +17,10 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    const { combo, client_id, app_url } = req.body;
+    const { combo, giftcard, client_id, app_url } = req.body;
 
-    if (!combo || !client_id) {
-      return res.status(400).json({ error: "Faltan parámetros requeridos combo o client_id" });
+    if ((!combo && !giftcard) || !client_id) {
+      return res.status(400).json({ error: "Faltan parámetros requeridos (combo/giftcard o client_id)" });
     }
 
     let accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
@@ -30,6 +30,59 @@ export default async function handler(req: any, res: any) {
 
     const baseUrl = app_url || process.env.APP_URL || "https://crm-resto.vercel.app";
     const currencyId = process.env.MERCADO_PAGO_CURRENCY || "ARS";
+
+    // ───────── Gift Card ─────────
+    if (giftcard) {
+      const gcPrice = Number(giftcard.price) || 0;
+      const gcValue = Number(giftcard.value) || 0;
+      const gcQuery = `giftcard_id=${encodeURIComponent(giftcard.id)}&gc_price=${gcPrice}&gc_value=${gcValue}`;
+
+      if (!accessToken || accessToken === "your-access-token" || accessToken.trim() === "") {
+        return res.status(200).json({
+          isSandboxDemo: true,
+          init_point: `${baseUrl}/?payment_status=success&${gcQuery}&demo=true`,
+          message: "Credenciales de Mercado Pago no configuradas. Redirigiendo a Pasarela Demo.",
+        });
+      }
+
+      const gcResp = await fetch("https://api.mercadopago.com/checkout/preferences", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: [{
+            id: giftcard.id,
+            title: `Gift Card CLUB CRAFT - $${gcValue.toLocaleString("es-AR")} de saldo`,
+            quantity: 1,
+            unit_price: gcPrice,
+            currency_id: currencyId,
+            description: `Gift Card CLUB CRAFT (saldo $${gcValue})`,
+            category_id: "hospitality",
+          }],
+          back_urls: {
+            success: `${baseUrl}/?payment_status=success&${gcQuery}`,
+            failure: `${baseUrl}/?payment_status=failure`,
+            pending: `${baseUrl}/?payment_status=pending`,
+          },
+          auto_return: "approved",
+          external_reference: `CLIENT:${client_id}|GIFTCARD:${giftcard.id}|VALUE:${gcValue}`,
+          statement_descriptor: "Gift Card Club CRAFT",
+          binary_mode: true,
+        }),
+      });
+
+      if (!gcResp.ok) {
+        const errText = await gcResp.text();
+        console.error("Mercado Pago API Error (giftcard):", errText);
+        return res.status(500).json({ error: "Error de Mercado Pago", details: errText });
+      }
+      const gcData = await gcResp.json();
+      return res.status(200).json({
+        isSandboxDemo: false,
+        id: gcData.id,
+        init_point: gcData.init_point,
+        sandbox_init_point: gcData.sandbox_init_point,
+      });
+    }
 
     // If no Mercado Pago Access Token is configured, return Sandbox Mode with Demo values
     if (!accessToken || accessToken === "your-access-token" || accessToken === "" || accessToken.trim() === "") {

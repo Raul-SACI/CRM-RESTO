@@ -208,6 +208,10 @@ export function Admin() {
     expirationDays: 30
   });
 
+  // Gift Cards (tramos de venta)
+  const [savingGiftCard, setSavingGiftCard] = useState(false);
+  const [newGiftCard, setNewGiftCard] = useState({ price: 30000, value: 33000 });
+
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
 
   // Sincronizar bases y condiciones y reglas de lealtad cuando la configuración cargue
@@ -1255,6 +1259,36 @@ export function Admin() {
     } finally {
       setSavingCombo(false);
     }
+  };
+
+  // Gift Cards: alta/edición/baja de los tramos de venta (en designConfig).
+  const saveGiftCards = async (list: any[]) => {
+    setSavingGiftCard(true);
+    try {
+      await saveDesignConfig({ ...designConfig, giftCards: list });
+    } catch (e: any) {
+      alert('No se pudo guardar: ' + (e?.message || e));
+    } finally {
+      setSavingGiftCard(false);
+    }
+  };
+  const addGiftCard = async () => {
+    const price = Number(newGiftCard.price) || 0;
+    const value = Number(newGiftCard.value) || 0;
+    if (price <= 0 || value <= 0) { alert('Completá el precio y el saldo (ambos mayores a 0).'); return; }
+    const id = (typeof crypto !== 'undefined' && (crypto as any).randomUUID) ? (crypto as any).randomUUID() : `gc_${Date.now()}`;
+    const list = [...(((designConfig as any).giftCards) || []), { id, price, value, isActive: true }];
+    await saveGiftCards(list);
+    setNewGiftCard({ price: 30000, value: 33000 });
+  };
+  const updateGiftCard = async (id: string, patch: any) => {
+    const list = (((designConfig as any).giftCards) || []).map((g: any) => (g.id === id ? { ...g, ...patch } : g));
+    await saveGiftCards(list);
+  };
+  const removeGiftCard = async (id: string) => {
+    if (!confirm('¿Eliminar este tramo de gift card?')) return;
+    const list = (((designConfig as any).giftCards) || []).filter((g: any) => g.id !== id);
+    await saveGiftCards(list);
   };
 
   // Estado de vigencia programada de un premio (si tiene fechas configuradas).
@@ -3167,6 +3201,90 @@ export function Admin() {
                         )}
                       </div>
                     </form>
+                  </div>
+                </div>
+
+                {/* ───────── Gift Cards (Descuentos Exclusivos) ───────── */}
+                <div className="bg-white dark:bg-slate-900 rounded-xl p-6 md:p-8 border border-slate-100 dark:border-slate-800 shadow-sm dark:shadow-none space-y-6">
+                  <h4 className="text-sm font-black uppercase tracking-wider text-ink dark:text-white flex items-center gap-2">
+                    <div className="w-2.5 h-2.5 rounded-full bg-love" />
+                    Gift Cards
+                  </h4>
+                  <p className="text-xs text-slate-400 font-medium">
+                    Tarjetas de regalo que el cliente compra por la app. Define el precio que paga y el saldo que recibe (ej. paga $30.000 y recibe $33.000). Al aprobarse el pago, el sistema genera la gift card con código y un PDF para descargar y regalar. <span className="font-bold text-slate-500">Uso único · vence a los 30 días.</span>
+                  </p>
+
+                  {/* Tramos existentes */}
+                  <div className="space-y-3">
+                    {(((designConfig as any).giftCards) || []).length === 0 ? (
+                      <p className="text-[11px] text-slate-400 italic">Todavía no cargaste ningún tramo de gift card.</p>
+                    ) : (
+                      (((designConfig as any).giftCards) || []).map((gc: any) => {
+                        const extra = (Number(gc.value) || 0) - (Number(gc.price) || 0);
+                        const pct = gc.price ? Math.round((extra / gc.price) * 100) : 0;
+                        return (
+                          <div key={gc.id} className="flex flex-wrap items-end gap-3 p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800">
+                            <div>
+                              <label className="block text-[9px] uppercase font-black text-slate-400 tracking-widest mb-1">Paga</label>
+                              <div className="flex items-center gap-1">
+                                <span className="text-slate-400 font-bold">$</span>
+                                <input type="number" value={gc.price}
+                                  onChange={(e) => updateGiftCard(gc.id, { price: Number(e.target.value) || 0 })}
+                                  className="w-28 px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm font-bold text-ink dark:text-white outline-none focus:border-love" />
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-[9px] uppercase font-black text-slate-400 tracking-widest mb-1">Recibe (saldo)</label>
+                              <div className="flex items-center gap-1">
+                                <span className="text-slate-400 font-bold">$</span>
+                                <input type="number" value={gc.value}
+                                  onChange={(e) => updateGiftCard(gc.id, { value: Number(e.target.value) || 0 })}
+                                  className="w-28 px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm font-bold text-love outline-none focus:border-love" />
+                              </div>
+                            </div>
+                            <div className="pb-2">
+                              <span className={cn("text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-full", extra > 0 ? "bg-green-500/10 text-green-600" : "bg-slate-200 text-slate-400")}>
+                                {extra > 0 ? `+$${extra.toLocaleString('es-AR')} (${pct}%)` : 'Sin extra'}
+                              </span>
+                            </div>
+                            <button type="button" onClick={() => updateGiftCard(gc.id, { isActive: !gc.isActive })}
+                              className={cn("pb-0 px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest cursor-pointer border-none transition-all", gc.isActive ? "bg-green-500/10 text-green-600 hover:bg-green-500/20" : "bg-slate-200 text-slate-400 hover:bg-slate-300")}>
+                              {gc.isActive ? 'Activa' : 'Pausada'}
+                            </button>
+                            <button type="button" onClick={() => removeGiftCard(gc.id)} title="Eliminar tramo"
+                              className="ml-auto p-2 rounded-lg text-slate-300 hover:text-love hover:bg-love/10 transition-colors bg-transparent border-none cursor-pointer">
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  {/* Nuevo tramo */}
+                  <div className="flex flex-wrap items-end gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <div>
+                      <label className="block text-[9px] uppercase font-black text-slate-400 tracking-widest mb-1">Nuevo: paga</label>
+                      <div className="flex items-center gap-1">
+                        <span className="text-slate-400 font-bold">$</span>
+                        <input type="number" value={newGiftCard.price}
+                          onChange={(e) => setNewGiftCard((p) => ({ ...p, price: Number(e.target.value) || 0 }))}
+                          className="w-28 px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-bold text-ink dark:text-white outline-none focus:border-love" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-[9px] uppercase font-black text-slate-400 tracking-widest mb-1">Recibe (saldo)</label>
+                      <div className="flex items-center gap-1">
+                        <span className="text-slate-400 font-bold">$</span>
+                        <input type="number" value={newGiftCard.value}
+                          onChange={(e) => setNewGiftCard((p) => ({ ...p, value: Number(e.target.value) || 0 }))}
+                          className="w-28 px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-sm font-bold text-love outline-none focus:border-love" />
+                      </div>
+                    </div>
+                    <button type="button" onClick={addGiftCard} disabled={savingGiftCard}
+                      className="px-5 py-2.5 rounded-lg bg-love text-white text-[11px] font-black uppercase tracking-widest cursor-pointer border-none disabled:opacity-50 hover:bg-love/90 transition-all inline-flex items-center gap-1.5">
+                      <Plus size={14} /> {savingGiftCard ? 'Guardando…' : 'Agregar tramo'}
+                    </button>
                   </div>
                 </div>
               </div>
