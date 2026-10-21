@@ -217,6 +217,9 @@ export function Admin() {
   const [newGiftCard, setNewGiftCard] = useState({ price: 30000, value: 33000 });
   // Borrador local de los tramos (se edita al instante; se guarda al salir del campo).
   const [gcList, setGcList] = useState<any[]>([]);
+  // Gift cards vendidas (para el panel de control)
+  const [giftCardsSold, setGiftCardsSold] = useState<any[]>([]);
+  const [loadingGcSold, setLoadingGcSold] = useState(false);
 
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
 
@@ -503,6 +506,26 @@ export function Admin() {
   useEffect(() => {
     setGcList(((designConfig as any)?.giftCards) || []);
   }, [(designConfig as any)?.giftCards]);
+
+  // Trae las gift cards vendidas (panel de control) al entrar a la pestaña.
+  const fetchGiftCardsSold = async () => {
+    setLoadingGcSold(true);
+    try {
+      const { data } = await supabase
+        .from('gift_cards')
+        .select('*, profiles:buyer_id(full_name, email)')
+        .order('created_at', { ascending: false });
+      setGiftCardsSold(data || []);
+    } catch {
+      // Si la tabla no existe todavía (SQL sin correr), no rompemos nada.
+      setGiftCardsSold([]);
+    } finally {
+      setLoadingGcSold(false);
+    }
+  };
+  useEffect(() => {
+    if (activeTab === 'combos') fetchGiftCardsSold();
+  }, [activeTab]);
 
   useEffect(() => {
     setSelectedClients([]);
@@ -3340,6 +3363,94 @@ export function Admin() {
                     </button>
                   </div>
                 </div>
+
+                {/* ───────── Gift Cards vendidas (control) ───────── */}
+                {(() => {
+                  const now = new Date();
+                  const eff = (c: any) => (c.status === 'usada' ? 'usada' : (new Date(c.expires_at) < now ? 'vencida' : 'activa'));
+                  const activas = giftCardsSold.filter((c) => eff(c) === 'activa');
+                  const usadas = giftCardsSold.filter((c) => eff(c) === 'usada');
+                  const vencidas = giftCardsSold.filter((c) => eff(c) === 'vencida');
+                  const saldoPendiente = activas.reduce((a, c) => a + (Number(c.value) || 0), 0);
+                  const recaudado = giftCardsSold.reduce((a, c) => a + (Number(c.price_paid) || 0), 0);
+                  const badge = (st: string) => st === 'usada'
+                    ? 'bg-slate-200 text-slate-500'
+                    : st === 'vencida' ? 'bg-amber-100 text-amber-700' : 'bg-emerald-500/10 text-emerald-600';
+                  return (
+                    <div className="bg-white dark:bg-slate-900 rounded-xl p-6 md:p-8 border border-slate-100 dark:border-slate-800 shadow-sm dark:shadow-none space-y-5">
+                      <div className="flex items-center justify-between gap-3 flex-wrap">
+                        <h4 className="text-sm font-black uppercase tracking-wider text-ink dark:text-white flex items-center gap-2">
+                          <div className="w-2.5 h-2.5 rounded-full bg-love" />
+                          Gift Cards vendidas
+                        </h4>
+                        <button onClick={fetchGiftCardsSold} disabled={loadingGcSold}
+                          className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-300 text-[9px] font-black uppercase tracking-widest cursor-pointer border-none hover:bg-slate-200 transition-all disabled:opacity-50">
+                          {loadingGcSold ? 'Actualizando…' : 'Actualizar'}
+                        </button>
+                      </div>
+
+                      {/* Resumen */}
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800">
+                          <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Recaudado</p>
+                          <p className="text-xl font-black text-ink dark:text-white mt-1">${recaudado.toLocaleString('es-AR')}</p>
+                          <p className="text-[9px] font-bold text-slate-400 mt-1">{giftCardsSold.length} vendidas</p>
+                        </div>
+                        <div className="p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
+                          <p className="text-[8px] font-black uppercase tracking-widest text-emerald-600">Saldo pendiente</p>
+                          <p className="text-xl font-black text-emerald-600 mt-1">${saldoPendiente.toLocaleString('es-AR')}</p>
+                          <p className="text-[9px] font-bold text-slate-400 mt-1">{activas.length} activas por canjear</p>
+                        </div>
+                        <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800">
+                          <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Canjeadas</p>
+                          <p className="text-xl font-black text-ink dark:text-white mt-1">{usadas.length}</p>
+                          <p className="text-[9px] font-bold text-slate-400 mt-1">${usadas.reduce((a, c) => a + (Number(c.value) || 0), 0).toLocaleString('es-AR')}</p>
+                        </div>
+                        <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800">
+                          <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Vencidas</p>
+                          <p className="text-xl font-black text-amber-600 mt-1">{vencidas.length}</p>
+                        </div>
+                      </div>
+
+                      {/* Listado */}
+                      {loadingGcSold ? (
+                        <p className="text-[11px] text-slate-400 italic py-2">Cargando…</p>
+                      ) : giftCardsSold.length === 0 ? (
+                        <p className="text-[11px] text-slate-400 italic py-2">Todavía no se vendió ninguna gift card.</p>
+                      ) : (
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left text-[11px]">
+                            <thead>
+                              <tr className="text-slate-400 uppercase text-[8px] font-black tracking-widest border-b border-slate-100 dark:border-slate-800">
+                                <th className="py-2 pr-3">Código</th>
+                                <th className="py-2 pr-3">Valor</th>
+                                <th className="py-2 pr-3">Comprador</th>
+                                <th className="py-2 pr-3">Estado</th>
+                                <th className="py-2 pr-3">Vence</th>
+                                <th className="py-2 pr-3">Canje</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {giftCardsSold.map((c) => {
+                                const st = eff(c);
+                                return (
+                                  <tr key={c.id} className="border-b border-slate-50 dark:border-slate-800/50">
+                                    <td className="py-2 pr-3 font-mono font-black text-ink dark:text-white">{c.code}</td>
+                                    <td className="py-2 pr-3 font-black text-love">${(Number(c.value) || 0).toLocaleString('es-AR')}</td>
+                                    <td className="py-2 pr-3 text-slate-500 dark:text-slate-300 truncate max-w-[140px]">{c.profiles?.full_name || c.profiles?.email || '—'}</td>
+                                    <td className="py-2 pr-3"><span className={cn("text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full", badge(st))}>{st}</span></td>
+                                    <td className="py-2 pr-3 text-slate-400">{new Date(c.expires_at).toLocaleDateString('es-AR')}</td>
+                                    <td className="py-2 pr-3 text-slate-400">{c.status === 'usada' ? `${c.used_at ? new Date(c.used_at).toLocaleDateString('es-AR') : ''}${c.invoice_number ? ` · ${c.invoice_number}` : ''}` : '—'}</td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           )}
