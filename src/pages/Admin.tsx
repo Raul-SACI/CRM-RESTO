@@ -215,6 +215,8 @@ export function Admin() {
   // Gift Cards (tramos de venta)
   const [savingGiftCard, setSavingGiftCard] = useState(false);
   const [newGiftCard, setNewGiftCard] = useState({ price: 30000, value: 33000 });
+  // Borrador local de los tramos (se edita al instante; se guarda al salir del campo).
+  const [gcList, setGcList] = useState<any[]>([]);
 
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
 
@@ -495,6 +497,12 @@ export function Admin() {
   useEffect(() => {
     if (!loading && !designLoading) setHasLoadedOnce(true);
   }, [loading, designLoading]);
+
+  // Sincroniza el borrador local de gift cards con lo guardado en designConfig.
+  // (No pisa lo que estás tipeando, porque mientras tipeás no se guarda.)
+  useEffect(() => {
+    setGcList(((designConfig as any)?.giftCards) || []);
+  }, [(designConfig as any)?.giftCards]);
 
   useEffect(() => {
     setSelectedClients([]);
@@ -1271,7 +1279,8 @@ export function Admin() {
     }
   };
 
-  // Gift Cards: alta/edición/baja de los tramos de venta (en designConfig).
+  // Gift Cards: edición LOCAL instantánea (sin guardar en cada tecla) y guardado
+  // puntual (al salir del campo, o al tocar un botón). Así no se traba.
   const saveGiftCards = async (list: any[]) => {
     setSavingGiftCard(true);
     try {
@@ -1282,22 +1291,34 @@ export function Admin() {
       setSavingGiftCard(false);
     }
   };
+  // Cambia un campo en el borrador local (no guarda todavía).
+  const setGiftCardField = (id: string, patch: any) => {
+    setGcList((prev) => prev.map((g) => (g.id === id ? { ...g, ...patch } : g)));
+  };
+  // Guarda el borrador local actual (al salir del campo editado).
+  const persistGiftCards = async () => {
+    await saveGiftCards(gcList);
+  };
   const addGiftCard = async () => {
     const price = Number(newGiftCard.price) || 0;
     const value = Number(newGiftCard.value) || 0;
     if (price <= 0 || value <= 0) { alert('Completá el precio y el saldo (ambos mayores a 0).'); return; }
     const id = (typeof crypto !== 'undefined' && (crypto as any).randomUUID) ? (crypto as any).randomUUID() : `gc_${Date.now()}`;
-    const list = [...(((designConfig as any).giftCards) || []), { id, price, value, isActive: true }];
+    const list = [...gcList, { id, price, value, isActive: true }];
+    setGcList(list);
     await saveGiftCards(list);
     setNewGiftCard({ price: 30000, value: 33000 });
   };
-  const updateGiftCard = async (id: string, patch: any) => {
-    const list = (((designConfig as any).giftCards) || []).map((g: any) => (g.id === id ? { ...g, ...patch } : g));
+  // Pausar/activar: cambia y guarda al toque (es un solo clic).
+  const toggleGiftCardActive = async (id: string) => {
+    const list = gcList.map((g) => (g.id === id ? { ...g, isActive: !g.isActive } : g));
+    setGcList(list);
     await saveGiftCards(list);
   };
   const removeGiftCard = async (id: string) => {
     if (!confirm('¿Eliminar este tramo de gift card?')) return;
-    const list = (((designConfig as any).giftCards) || []).filter((g: any) => g.id !== id);
+    const list = gcList.filter((g) => g.id !== id);
+    setGcList(list);
     await saveGiftCards(list);
   };
 
@@ -3236,10 +3257,10 @@ export function Admin() {
 
                   {/* Tramos existentes */}
                   <div className="space-y-3">
-                    {(((designConfig as any).giftCards) || []).length === 0 ? (
+                    {gcList.length === 0 ? (
                       <p className="text-[11px] text-slate-400 italic">Todavía no cargaste ningún tramo de gift card.</p>
                     ) : (
-                      (((designConfig as any).giftCards) || []).map((gc: any) => {
+                      gcList.map((gc: any) => {
                         const extra = (Number(gc.value) || 0) - (Number(gc.price) || 0);
                         const pct = gc.price ? Math.round((extra / gc.price) * 100) : 0;
                         return (
@@ -3249,7 +3270,8 @@ export function Admin() {
                               <div className="flex items-center gap-1">
                                 <span className="text-slate-400 font-bold">$</span>
                                 <input type="number" value={gc.price}
-                                  onChange={(e) => updateGiftCard(gc.id, { price: Number(e.target.value) || 0 })}
+                                  onChange={(e) => setGiftCardField(gc.id, { price: Number(e.target.value) || 0 })}
+                                  onBlur={persistGiftCards}
                                   className="w-28 px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm font-bold text-ink dark:text-white outline-none focus:border-love" />
                               </div>
                             </div>
@@ -3258,7 +3280,8 @@ export function Admin() {
                               <div className="flex items-center gap-1">
                                 <span className="text-slate-400 font-bold">$</span>
                                 <input type="number" value={gc.value}
-                                  onChange={(e) => updateGiftCard(gc.id, { value: Number(e.target.value) || 0 })}
+                                  onChange={(e) => setGiftCardField(gc.id, { value: Number(e.target.value) || 0 })}
+                                  onBlur={persistGiftCards}
                                   className="w-28 px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm font-bold text-love outline-none focus:border-love" />
                               </div>
                             </div>
@@ -3267,12 +3290,12 @@ export function Admin() {
                                 {extra > 0 ? `+$${extra.toLocaleString('es-AR')} (${pct}%)` : 'Sin extra'}
                               </span>
                             </div>
-                            <button type="button" onClick={() => updateGiftCard(gc.id, { isActive: !gc.isActive })}
-                              className={cn("pb-0 px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest cursor-pointer border-none transition-all", gc.isActive ? "bg-green-500/10 text-green-600 hover:bg-green-500/20" : "bg-slate-200 text-slate-400 hover:bg-slate-300")}>
+                            <button type="button" onClick={() => toggleGiftCardActive(gc.id)} disabled={savingGiftCard}
+                              className={cn("pb-0 px-3 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest cursor-pointer border-none transition-all disabled:opacity-50", gc.isActive ? "bg-green-500/10 text-green-600 hover:bg-green-500/20" : "bg-slate-200 text-slate-400 hover:bg-slate-300")}>
                               {gc.isActive ? 'Activa' : 'Pausada'}
                             </button>
-                            <button type="button" onClick={() => removeGiftCard(gc.id)} title="Eliminar tramo"
-                              className="ml-auto p-2 rounded-lg text-slate-300 hover:text-love hover:bg-love/10 transition-colors bg-transparent border-none cursor-pointer">
+                            <button type="button" onClick={() => removeGiftCard(gc.id)} disabled={savingGiftCard} title="Eliminar tramo"
+                              className="ml-auto p-2 rounded-lg text-slate-300 hover:text-love hover:bg-love/10 transition-colors bg-transparent border-none cursor-pointer disabled:opacity-40">
                               <Trash2 size={16} />
                             </button>
                           </div>
@@ -3280,6 +3303,16 @@ export function Admin() {
                       })
                     )}
                   </div>
+
+                  {/* Overlay de guardado: feedback claro al agregar/editar/eliminar/pausar */}
+                  {savingGiftCard && (
+                    <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-slate-950/40 backdrop-blur-sm">
+                      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl px-8 py-7 flex flex-col items-center gap-3">
+                        <div className="w-9 h-9 border-[3px] border-love/20 border-t-love rounded-full animate-spin" />
+                        <p className="text-[11px] font-black uppercase tracking-[0.25em] text-slate-500 dark:text-slate-300">Guardando…</p>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Nuevo tramo */}
                   <div className="flex flex-wrap items-end gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
