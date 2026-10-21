@@ -16,56 +16,61 @@ const esc = (s: string) =>
 export function giftCardPdfHtml(card: GiftCardPdfData, qrSvg: string): string {
   const venc = card.expires_at ? new Date(card.expires_at).toLocaleDateString('es-AR') : '';
   const value = '$' + (Number(card.value) || 0).toLocaleString('es-AR');
-  const para = card.recipient_name ? `<p class="line"><b>Para:</b> ${esc(card.recipient_name)}</p>` : '';
-  const dede = card.sender_name ? `<p class="line"><b>De:</b> ${esc(card.sender_name)}</p>` : '';
+  const para = card.recipient_name ? `<div class="tagLine"><span class="tagLbl">Para</span><span class="tagName">${esc(card.recipient_name)}</span></div>` : '';
+  const dede = card.sender_name ? `<div class="tagLine"><span class="tagLbl">De</span><span class="tagName">${esc(card.sender_name)}</span></div>` : '';
+  const tag = (para || dede) ? `<div class="tag">${para}${dede}</div>` : '';
   const msg = card.message ? `<p class="msg">“${esc(card.message)}”</p>` : '';
-  const paraDe = (para || dede || msg)
-    ? `<div class="dedic">${para}${dede}${msg}</div>`
-    : '';
 
   return (
     `<!doctype html><html lang="es"><head><meta charset="utf-8">` +
-    `<title>GiftCard-CLUB-CRAFT-${esc(card.code)}</title>` +
+    `<title>GiftCard-CRAFT-${esc(card.code)}</title>` +
     `<style>
-      * { box-sizing: border-box; }
-      body { font-family: Arial, Helvetica, sans-serif; color: #0f172a; margin: 0; padding: 28px; display: flex; justify-content: center; }
-      .card { width: 540px; border-radius: 26px; overflow: hidden; border: 2px solid #e2e8f0; box-shadow: 0 10px 30px rgba(15,23,42,.08); }
-      .top { background: #D90015; color: #fff; padding: 26px 30px 22px; }
-      .brand { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
-      .brand .w { opacity: .85; }
-      .kind { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 4px; margin-top: 4px; opacity: .9; }
-      .body { padding: 26px 30px 28px; text-align: center; }
-      .valueLbl { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; color: #94a3b8; }
-      .value { font-size: 52px; font-weight: 800; color: #0f172a; line-height: 1; margin: 4px 0 2px; }
-      .valueSub { font-size: 12px; color: #64748b; margin-bottom: 18px; }
-      .codeBox { display: flex; align-items: center; justify-content: center; gap: 20px; background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 16px; padding: 18px; margin: 8px 0 16px; }
-      .codeWrap { text-align: left; }
+      * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      body { font-family: Arial, Helvetica, sans-serif; margin: 0; padding: 30px; display: flex; justify-content: center; background: #f1f5f9; }
+      .card {
+        width: 560px; border-radius: 30px; overflow: hidden; position: relative;
+        background: #D90015;
+        background-image: radial-gradient(circle at 85% 12%, rgba(255,255,255,.14) 0 22%, transparent 23%),
+                          radial-gradient(circle at 10% 88%, rgba(0,0,0,.12) 0 26%, transparent 27%);
+        color: #fff; padding: 34px 34px 30px; box-shadow: 0 16px 40px rgba(217,0,21,.28);
+        border: 1px solid rgba(255,255,255,.12);
+      }
+      .ribbon { position:absolute; top:22px; right:-44px; transform: rotate(45deg); background:#fff; color:#D90015; font-weight:800; font-size:10px; letter-spacing:2px; padding:5px 56px; text-transform:uppercase; }
+      .brand { font-size: 27px; font-weight: 800; letter-spacing: -0.5px; }
+      .brand .w { opacity: .9; }
+      .kind { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 5px; margin-top: 2px; opacity: .92; }
+      .tag { margin: 18px 0 6px; display: flex; gap: 10px; flex-wrap: wrap; }
+      .tagLine { background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.25); border-radius: 12px; padding: 8px 14px; min-width: 150px; }
+      .tagLbl { display:block; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; opacity: .8; }
+      .tagName { display:block; font-size: 18px; font-weight: 800; margin-top: 1px; }
+      .valueBlock { text-align: center; margin: 18px 0 16px; }
+      .valueLbl { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 4px; opacity: .9; }
+      .value { font-size: 60px; font-weight: 800; line-height: 1; margin: 4px 0 2px; }
+      .valueSub { font-size: 12px; opacity: .9; }
+      .codeBox { display: flex; align-items: center; justify-content: space-between; gap: 18px; background: #fff; color: #0f172a; border-radius: 18px; padding: 18px 20px; margin: 8px 0 14px; }
       .codeLbl { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; color: #94a3b8; }
-      .code { font-size: 32px; font-weight: 800; letter-spacing: 2px; color: #D90015; font-family: 'Courier New', monospace; }
-      .qr { width: 96px; height: 96px; }
-      .qr svg { width: 96px; height: 96px; }
-      .dedic { background: #fff7f7; border: 1px solid #fde0e2; border-radius: 14px; padding: 12px 16px; margin: 6px 0 16px; text-align: left; }
-      .line { font-size: 13px; margin: 2px 0; color: #334155; }
-      .msg { font-size: 13px; font-style: italic; color: #475569; margin: 6px 0 0; }
-      .rules { font-size: 11px; color: #64748b; text-align: left; line-height: 1.55; border-top: 1px solid #e2e8f0; padding-top: 12px; margin-top: 8px; }
-      .rules b { color: #0f172a; }
-      @media print { body { padding: 0; } @page { margin: 12mm; } }
+      .code { font-size: 32px; font-weight: 800; letter-spacing: 3px; color: #D90015; font-family: 'Courier New', monospace; }
+      .qr { width: 96px; height: 96px; background:#fff; border-radius:8px; }
+      .qr svg { width: 96px; height: 96px; display:block; }
+      .msg { text-align:center; font-size: 14px; font-style: italic; margin: 0 0 14px; opacity: .95; }
+      .rules { font-size: 11px; line-height: 1.55; opacity: .92; border-top: 1px solid rgba(255,255,255,.25); padding-top: 12px; }
+      .rules b { color: #fff; }
+      @media print { body { padding: 0; background: #fff; } @page { margin: 12mm; } }
     </style></head><body>` +
     `<div class="card">` +
-    `<div class="top"><div class="brand">CLUB <span class="w">CRAFT</span></div><div class="kind">Gift Card</div></div>` +
-    `<div class="body">` +
-    `<p class="valueLbl">Saldo para consumir</p>` +
-    `<p class="value">${value}</p>` +
-    `<p class="valueSub">Válida hasta el ${esc(venc)}</p>` +
-    `<div class="codeBox"><div class="codeWrap"><p class="codeLbl">Código</p><p class="code">${esc(card.code)}</p></div><div class="qr">${qrSvg}</div></div>` +
-    paraDe +
+    `<div class="ribbon">Regalo</div>` +
+    `<div class="brand">CLUB <span class="w">CRAFT</span></div>` +
+    `<div class="kind">🎁 Gift Card</div>` +
+    tag +
+    `<div class="valueBlock"><p class="valueLbl">Vale por</p><p class="value">${value}</p><p class="valueSub">para disfrutar en CRAFT</p></div>` +
+    `<div class="codeBox"><div><p class="codeLbl">Código</p><p class="code">${esc(card.code)}</p></div><div class="qr">${qrSvg}</div></div>` +
+    msg +
     `<div class="rules">` +
-    `<b>Cómo se usa:</b> presentá este código en la caja de CLUB CRAFT al pagar tu consumo. ` +
-    `<b>Uso único:</b> se canjea entero en una sola visita (si la cuenta es menor al saldo, no se acumula la diferencia). ` +
-    `<b>Vencimiento:</b> ${esc(venc)}.` +
+    `<b>Cómo se usa:</b> presentá este código en la caja de <b>cualquier sucursal de CRAFT</b> al pagar tu consumo. ` +
+    `<b>Uso único:</b> se canjea entero en una sola visita (si la cuenta es menor al valor, no se acumula la diferencia). ` +
+    `<b>Válida hasta el ${esc(venc)}.</b>` +
     `</div>` +
-    `</div></div>` +
-    `</body></html>`
+    `</div></body></html>`
   );
 }
 

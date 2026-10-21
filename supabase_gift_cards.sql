@@ -155,6 +155,30 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- 6. El comprador personaliza "Para / De / Mensaje" de SU gift card (queda
+--    guardado para que el PDF lo muestre, también al re-descargarlo).
+CREATE OR REPLACE FUNCTION public.gift_card_set_dedication(
+  p_id UUID,
+  p_recipient TEXT DEFAULT NULL,
+  p_sender TEXT DEFAULT NULL,
+  p_message TEXT DEFAULT NULL
+) RETURNS public.gift_cards AS $$
+DECLARE v_row public.gift_cards;
+BEGIN
+  UPDATE public.gift_cards
+    SET recipient_name = NULLIF(trim(p_recipient), ''),
+        sender_name = NULLIF(trim(p_sender), ''),
+        message = NULLIF(trim(p_message), '')
+    WHERE id = p_id AND buyer_id = (SELECT auth.uid())
+    RETURNING * INTO v_row;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'No se encontró la gift card (o no es tuya)';
+  END IF;
+  RETURN v_row;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 GRANT EXECUTE ON FUNCTION public.create_gift_card(NUMERIC, NUMERIC, TEXT, TEXT, TEXT, INT) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.gift_card_lookup(TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.redeem_gift_card(TEXT, TEXT, NUMERIC) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.gift_card_set_dedication(UUID, TEXT, TEXT, TEXT) TO authenticated;

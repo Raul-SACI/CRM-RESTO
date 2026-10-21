@@ -33,6 +33,10 @@ export function MyCombos() {
   // Mis Gift Cards (compradas por este cliente)
   const [myGiftCards, setMyGiftCards] = useState<GiftCard[]>([]);
   const [pdfGiftCard, setPdfGiftCard] = useState<GiftCard | null>(null);
+  // Modal para personalizar (Para/De/Mensaje) antes de descargar.
+  const [gcEditing, setGcEditing] = useState<GiftCard | null>(null);
+  const [gcEditForm, setGcEditForm] = useState({ recipient: '', sender: '', message: '' });
+  const [gcDownloading, setGcDownloading] = useState(false);
 
   useEffect(() => {
     if (!profile) return;
@@ -48,15 +52,42 @@ export function MyCombos() {
     return { label: 'Activa', cls: 'bg-emerald-500/10 text-emerald-600' };
   };
 
-  const downloadMyGiftCard = (card: GiftCard) => {
+  // Abre el modal de personalización pre-cargado con lo que ya tenga la tarjeta.
+  const openGiftCardDownload = (card: GiftCard) => {
+    setGcEditForm({ recipient: card.recipient_name || '', sender: card.sender_name || '', message: card.message || '' });
+    setGcEditing(card);
+  };
+
+  // Guarda Para/De/Mensaje y descarga el PDF.
+  const confirmDownloadGiftCard = async () => {
+    if (!gcEditing) return;
+    setGcDownloading(true);
+    let card = gcEditing;
+    try {
+      const { data } = await supabase.rpc('gift_card_set_dedication', {
+        p_id: card.id,
+        p_recipient: gcEditForm.recipient || null,
+        p_sender: gcEditForm.sender || null,
+        p_message: gcEditForm.message || null,
+      });
+      const updated = Array.isArray(data) ? data[0] : data;
+      if (updated) {
+        card = updated;
+        setMyGiftCards((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+      }
+    } catch {
+      /* Si falla el guardado, igual descargamos con lo tipeado. */
+    }
     setPdfGiftCard(card);
     setTimeout(() => {
       const qr = serializeQr('gc-my-pdf-qr');
       const html = giftCardPdfHtml(
-        { code: card.code, value: card.value, expires_at: card.expires_at, recipient_name: card.recipient_name, sender_name: card.sender_name, message: card.message },
+        { code: card.code, value: card.value, expires_at: card.expires_at, recipient_name: gcEditForm.recipient || card.recipient_name, sender_name: gcEditForm.sender || card.sender_name, message: gcEditForm.message || card.message },
         qr
       );
       if (!printGiftCard(html)) alert('El navegador bloqueó la ventana. Permití las ventanas emergentes para descargar el PDF.');
+      setGcDownloading(false);
+      setGcEditing(null);
     }, 150);
   };
 
@@ -526,6 +557,53 @@ export function MyCombos() {
         <QRCode id="gc-my-pdf-qr" value={pdfGiftCard?.code || 'x'} size={96} />
       </div>
 
+      {/* Modal: personalizar (Para/De/Mensaje) y descargar la gift card */}
+      <AnimatePresence>
+        {gcEditing && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-ink/80 backdrop-blur-sm z-[200] flex items-center justify-center p-5"
+            onClick={() => !gcDownloading && setGcEditing(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 10 }} animate={{ scale: 1, y: 0 }}
+              className="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-6 text-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-base font-black uppercase tracking-tight text-ink">Personalizá tu regalo</h3>
+              <p className="text-[11px] text-slate-400 font-semibold mb-4">Completá para quién es y de parte de quién. Después descargás el PDF.</p>
+
+              <div className="rounded-2xl bg-slate-50 border border-slate-200 p-3 mb-4">
+                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Regalás</p>
+                <p className="text-2xl font-black text-love leading-none">${(Number(gcEditing.value) || 0).toLocaleString('es-AR')}</p>
+                <p className="text-sm font-black tracking-widest text-ink font-mono mt-1">{gcEditing.code}</p>
+              </div>
+
+              <div className="space-y-2 text-left mb-4">
+                <input value={gcEditForm.recipient} onChange={(e) => setGcEditForm((p) => ({ ...p, recipient: e.target.value }))}
+                  placeholder="Para (ej. María)"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm text-ink outline-none focus:border-love" />
+                <input value={gcEditForm.sender} onChange={(e) => setGcEditForm((p) => ({ ...p, sender: e.target.value }))}
+                  placeholder="De (ej. Raúl)"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm text-ink outline-none focus:border-love" />
+                <input value={gcEditForm.message} onChange={(e) => setGcEditForm((p) => ({ ...p, message: e.target.value }))}
+                  placeholder="Mensaje (opcional)"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm text-ink outline-none focus:border-love" />
+              </div>
+
+              <button onClick={confirmDownloadGiftCard} disabled={gcDownloading}
+                className="w-full py-3 rounded-xl bg-love text-white text-[11px] font-black uppercase tracking-widest cursor-pointer border-none hover:bg-love/90 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                {gcDownloading ? <><Loader2 size={15} className="animate-spin" /> Generando…</> : 'Descargar PDF'}
+              </button>
+              <button onClick={() => !gcDownloading && setGcEditing(null)} disabled={gcDownloading}
+                className="w-full mt-2 py-2.5 rounded-xl bg-transparent text-slate-400 text-[10px] font-black uppercase tracking-widest cursor-pointer border-none hover:text-ink transition-all">
+                Cancelar
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Mis Gift Cards */}
       {myGiftCards.length > 0 && (
         <div className="bg-white dark:bg-slate-900 rounded-[2rem] p-6 border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none space-y-5">
@@ -540,6 +618,7 @@ export function MyCombos() {
                 <div key={card.id} className="bg-slate-50 dark:bg-slate-950 p-4 rounded-3xl border border-slate-100 dark:border-slate-800 flex items-center justify-between gap-4">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Regalás</span>
                       <span className="text-lg font-black text-love leading-none">${(Number(card.value) || 0).toLocaleString('es-AR')}</span>
                       <span className={cn("text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full", st.cls)}>{st.label}</span>
                     </div>
@@ -551,7 +630,7 @@ export function MyCombos() {
                     </p>
                   </div>
                   <button
-                    onClick={() => downloadMyGiftCard(card)}
+                    onClick={() => openGiftCardDownload(card)}
                     className="shrink-0 px-3 py-2 rounded-xl bg-ink text-white text-[9px] font-black uppercase tracking-widest cursor-pointer border-none hover:bg-black transition-all"
                   >
                     Descargar PDF
