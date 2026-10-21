@@ -1305,7 +1305,7 @@ export function Dashboard() {
           <div className="flex justify-between items-center px-1">
             <div className="flex items-center gap-1.5">
               <Ticket size={16} className="text-love" />
-              <h3 className="text-sm font-black uppercase tracking-wider !text-slate-900" style={{ fontFamily: designConfig?.fontHeadings || 'inherit' }}>Comprá Ofertas</h3>
+              <h3 className="text-sm font-black uppercase tracking-wider !text-slate-900" style={{ fontFamily: designConfig?.fontHeadings || 'inherit' }}>Descuentos Exclusivos</h3>
             </div>
             <span className="text-[8px] bg-love/15 text-love px-2 py-0.5 rounded-full font-black uppercase tracking-wider animate-pulse">Precios Promo</span>
           </div>
