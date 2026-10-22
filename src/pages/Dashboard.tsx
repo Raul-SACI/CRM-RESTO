@@ -7,7 +7,7 @@ import {
   CreditCard, Award, TrendingUp, History, Users, 
   Gift, Calendar, ChevronRight, ChevronLeft, BarChart3, PieChart,
   Flag, Sparkles, Car, Trophy, ArrowLeft, ArrowRight, Star,
-  Pencil, Check, Ticket, MapPin, Clock, Phone, Loader2, X
+  Pencil, Check, Ticket, MapPin, Clock, Phone, Loader2, X, Info
 } from 'lucide-react';
 import { supabase } from '@/src/lib/supabase';
 import { notifyClient, checkLevelUp } from '@/src/lib/notify';
@@ -36,6 +36,7 @@ export function Dashboard() {
   const [isBuyingGiftCard, setIsBuyingGiftCard] = useState(false);
   const [justBoughtGiftCard, setJustBoughtGiftCard] = useState<GiftCard | null>(null);
   const [gcPersonalize, setGcPersonalize] = useState({ recipient: '', sender: '', message: '' });
+  const [showGcInfo, setShowGcInfo] = useState(false);
 
   const scrollOfertas = (dir: 'left' | 'right') => {
     if (ofertasScrollRef.current) {
@@ -1306,6 +1307,57 @@ export function Dashboard() {
     </AnimatePresence>
   );
 
+  // Modal informativo: cómo funcionan las gift cards.
+  const giftCardInfoModal = (
+    <AnimatePresence>
+      {showGcInfo && (
+        <motion.div
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-ink/80 backdrop-blur-sm z-[200] flex items-center justify-center p-5"
+          onClick={() => setShowGcInfo(false)}
+        >
+          <motion.div
+            initial={{ scale: 0.95, y: 10 }} animate={{ scale: 1, y: 0 }}
+            className="w-full max-w-sm bg-white rounded-3xl shadow-2xl p-6 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button onClick={() => setShowGcInfo(false)} className="absolute top-5 right-5 text-slate-400 hover:text-love bg-transparent border-none cursor-pointer"><X size={20} /></button>
+            <div className="w-12 h-12 rounded-2xl bg-love/10 text-love flex items-center justify-center mb-3"><Gift size={22} /></div>
+            <h3 className="text-base font-black uppercase tracking-tight text-ink">¿Cómo funcionan las Gift Cards?</h3>
+            <p className="text-[11px] text-slate-400 font-semibold mb-4">Regalá saldo para consumir en CRAFT.</p>
+
+            <ol className="space-y-3">
+              {[
+                ['Elegís y pagás', 'Comprás la gift card con Mercado Pago. Pagás un monto y regalás uno mayor (ej. pagás $50.000 y regalás $55.000).'],
+                ['Personalizás', 'Después de pagar, ponés Para quién es y De parte de quién, y un mensaje (opcional).'],
+                ['Descargás el PDF', 'El sistema genera la gift card con un código y la descargás en PDF para mandársela a quien quieras (WhatsApp, mail, impresa).'],
+                ['La canjean en el bar', 'La persona presenta el código en la caja de cualquier sucursal de CRAFT al pagar su consumo.'],
+              ].map(([t, d], i) => (
+                <li key={i} className="flex gap-3">
+                  <span className="shrink-0 w-6 h-6 rounded-full bg-love text-white text-[11px] font-black flex items-center justify-center">{i + 1}</span>
+                  <div>
+                    <p className="text-[12px] font-black text-ink leading-tight">{t}</p>
+                    <p className="text-[11px] text-slate-500 leading-snug mt-0.5">{d}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+
+            <div className="mt-4 p-3 rounded-xl bg-amber-50 border border-amber-200">
+              <p className="text-[11px] font-bold text-amber-800">Uso único: se canjea entera en una sola visita (si la cuenta es menor, no se acumula la diferencia). Vence a los 30 días.</p>
+            </div>
+            <p className="text-[10px] text-slate-400 mt-3">Las gift cards compradas las ves en <b>Mis Combos → Mis Gift Cards</b>, donde podés volver a descargar el PDF.</p>
+
+            <button onClick={() => setShowGcInfo(false)}
+              className="w-full mt-4 py-3 rounded-xl bg-love text-white text-[11px] font-black uppercase tracking-widest cursor-pointer border-none hover:bg-love/90 transition-all">
+              Entendido
+            </button>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+
   if (isMobileView && profile) {
     const nextTierPoints = clientTier.id.includes('black') 
       ? null 
@@ -1635,6 +1687,10 @@ export function Dashboard() {
               <div className="flex items-center gap-1.5">
                 <Gift size={16} className="text-love" />
                 <h3 className="text-sm font-black uppercase tracking-wider !text-slate-900" style={{ fontFamily: designConfig?.fontHeadings || 'inherit' }}>Gift Cards</h3>
+                <button onClick={() => setShowGcInfo(true)} title="¿Cómo funcionan?"
+                  className="w-5 h-5 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center cursor-pointer border-none hover:bg-love hover:text-white transition-all">
+                  <Info size={12} />
+                </button>
               </div>
               <span className="text-[8px] bg-love/15 text-love px-2 py-0.5 rounded-full font-black uppercase tracking-wider">Para regalar</span>
             </div>
@@ -1886,6 +1942,7 @@ export function Dashboard() {
         {/* Modal de detalle de combo (reutilizable) */}
         {comboDetailModal}
         {giftCardSuccessModal}
+        {giftCardInfoModal}
       </motion.div>
     );
   }
@@ -3384,6 +3441,7 @@ export function Dashboard() {
       {/* Modal de detalle de combo (reutilizable) */}
       {comboDetailModal}
       {giftCardSuccessModal}
+      {giftCardInfoModal}
 
       {/* Modal: código de uso para mostrar al cajero */}
       <AnimatePresence>
