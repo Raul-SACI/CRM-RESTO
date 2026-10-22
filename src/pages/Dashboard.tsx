@@ -1693,9 +1693,9 @@ export function Dashboard() {
               <div className="flex items-center gap-1.5">
                 <Gift size={16} className="text-love" />
                 <h3 className="text-sm font-black uppercase tracking-wider !text-slate-900" style={{ fontFamily: designConfig?.fontHeadings || 'inherit' }}>Gift Cards</h3>
-                <button onClick={() => setShowGcInfo(true)} title="¿Cómo funcionan?"
-                  className="w-5 h-5 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center cursor-pointer border-none hover:bg-love hover:text-white transition-all">
-                  <Info size={12} />
+                <button onClick={() => setShowGcInfo(true)} title="¿Cómo funcionan las gift cards?"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-love text-white text-[9px] font-black uppercase tracking-wider cursor-pointer border-none shadow-sm shadow-love/30 hover:bg-love/90 transition-all animate-pulse">
+                  <Info size={12} /> Cómo funciona
                 </button>
               </div>
               <span className="text-[8px] bg-love/15 text-love px-2 py-0.5 rounded-full font-black uppercase tracking-wider">Para regalar</span>
