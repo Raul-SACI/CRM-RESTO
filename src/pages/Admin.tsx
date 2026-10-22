@@ -217,6 +217,8 @@ export function Admin() {
   const [newGiftCard, setNewGiftCard] = useState({ price: 30000, value: 33000 });
   // Borrador local de los tramos (se edita al instante; se guarda al salir del campo).
   const [gcList, setGcList] = useState<any[]>([]);
+  // Gift Card a elección (monto libre con bono por tramos) — borrador local.
+  const [gcCustom, setGcCustom] = useState<{ enabled: boolean; tiers: any[] }>({ enabled: false, tiers: [] });
   // Gift cards vendidas (para el panel de control)
   const [giftCardsSold, setGiftCardsSold] = useState<any[]>([]);
   const [loadingGcSold, setLoadingGcSold] = useState(false);
@@ -506,6 +508,11 @@ export function Admin() {
   useEffect(() => {
     setGcList(((designConfig as any)?.giftCards) || []);
   }, [(designConfig as any)?.giftCards]);
+
+  useEffect(() => {
+    const c = (designConfig as any)?.giftCardCustom;
+    setGcCustom({ enabled: !!c?.enabled, tiers: Array.isArray(c?.tiers) ? c.tiers : [] });
+  }, [(designConfig as any)?.giftCardCustom]);
 
   // Trae las gift cards vendidas (panel de control) al entrar a la pestaña.
   const fetchGiftCardsSold = async () => {
@@ -1343,6 +1350,38 @@ export function Admin() {
     const list = gcList.filter((g) => g.id !== id);
     setGcList(list);
     await saveGiftCards(list);
+  };
+
+  // Gift Card a elección (monto libre + bono por tramos).
+  const saveGcCustom = async (next: { enabled: boolean; tiers: any[] }) => {
+    setSavingGiftCard(true);
+    try {
+      await saveDesignConfig({ ...designConfig, giftCardCustom: next });
+    } catch (e: any) {
+      alert('No se pudo guardar: ' + (e?.message || e));
+    } finally {
+      setSavingGiftCard(false);
+    }
+  };
+  const toggleGcCustom = async () => {
+    const next = { ...gcCustom, enabled: !gcCustom.enabled };
+    setGcCustom(next);
+    await saveGcCustom(next);
+  };
+  const setGcTierField = (id: string, patch: any) => {
+    setGcCustom((prev) => ({ ...prev, tiers: prev.tiers.map((t) => (t.id === id ? { ...t, ...patch } : t)) }));
+  };
+  const persistGcCustom = async () => { await saveGcCustom(gcCustom); };
+  const addGcTier = async () => {
+    const id = (typeof crypto !== 'undefined' && (crypto as any).randomUUID) ? (crypto as any).randomUUID() : `tier_${Date.now()}`;
+    const next = { ...gcCustom, tiers: [...gcCustom.tiers, { id, minAmount: 30000, bonusPct: 5 }] };
+    setGcCustom(next);
+    await saveGcCustom(next);
+  };
+  const removeGcTier = async (id: string) => {
+    const next = { ...gcCustom, tiers: gcCustom.tiers.filter((t) => t.id !== id) };
+    setGcCustom(next);
+    await saveGcCustom(next);
   };
 
   // Estado de vigencia programada de un premio (si tiene fechas configuradas).
@@ -3361,6 +3400,59 @@ export function Admin() {
                       className="px-5 py-2.5 rounded-lg bg-love text-white text-[11px] font-black uppercase tracking-widest cursor-pointer border-none disabled:opacity-50 hover:bg-love/90 transition-all inline-flex items-center gap-1.5">
                       <Plus size={14} /> {savingGiftCard ? 'Guardando…' : 'Agregar tramo'}
                     </button>
+                  </div>
+
+                  {/* Gift Card a elección (monto libre + bono por tramos) */}
+                  <div className="pt-5 border-t border-slate-100 dark:border-slate-800 space-y-3">
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <input type="checkbox" checked={gcCustom.enabled} onChange={toggleGcCustom}
+                        className="rounded border-slate-300 text-love focus:ring-love" />
+                      <span className="text-[11px] font-black uppercase tracking-[0.15em] text-ink dark:text-white">Gift Card a elección (monto libre)</span>
+                    </label>
+                    <p className="text-[11px] text-slate-400 font-medium">
+                      El cliente elige cuánto pagar y recibe un bono según el monto. Ej: $30.000 o más → +5% · $70.000 o más → +10%.
+                    </p>
+
+                    {gcCustom.enabled && (
+                      <div className="space-y-2">
+                        {gcCustom.tiers.length === 0 ? (
+                          <p className="text-[11px] text-slate-400 italic">Sin tramos: el cliente paga y regala el mismo monto. Agregá tramos para dar bono.</p>
+                        ) : (
+                          gcCustom.tiers.map((t: any) => (
+                            <div key={t.id} className="flex flex-wrap items-end gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800">
+                              <div>
+                                <label className="block text-[9px] uppercase font-black text-slate-400 tracking-widest mb-1">Si paga desde</label>
+                                <div className="flex items-center gap-1">
+                                  <span className="text-slate-400 font-bold">$</span>
+                                  <input type="number" value={t.minAmount}
+                                    onChange={(e) => setGcTierField(t.id, { minAmount: Number(e.target.value) || 0 })}
+                                    onBlur={persistGcCustom}
+                                    className="w-28 px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm font-bold text-ink dark:text-white outline-none focus:border-love" />
+                                </div>
+                              </div>
+                              <div>
+                                <label className="block text-[9px] uppercase font-black text-slate-400 tracking-widest mb-1">Bono</label>
+                                <div className="flex items-center gap-1">
+                                  <input type="number" value={t.bonusPct}
+                                    onChange={(e) => setGcTierField(t.id, { bonusPct: Number(e.target.value) || 0 })}
+                                    onBlur={persistGcCustom}
+                                    className="w-20 px-3 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-sm font-bold text-love outline-none focus:border-love" />
+                                  <span className="text-slate-400 font-bold">%</span>
+                                </div>
+                              </div>
+                              <button type="button" onClick={() => removeGcTier(t.id)} disabled={savingGiftCard} title="Eliminar tramo"
+                                className="ml-auto p-2 rounded-lg text-slate-300 hover:text-love hover:bg-love/10 transition-colors bg-transparent border-none cursor-pointer disabled:opacity-40">
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          ))
+                        )}
+                        <button type="button" onClick={addGcTier} disabled={savingGiftCard}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-ink text-white text-[9px] font-black uppercase tracking-widest cursor-pointer border-none hover:bg-black transition-all disabled:opacity-50">
+                          <Plus size={12} /> Agregar tramo de bono
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
 

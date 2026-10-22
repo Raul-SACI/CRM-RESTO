@@ -13,6 +13,24 @@ export interface GiftCardPdfData {
 const esc = (s: string) =>
   String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
+// Tramos por monto para la gift card "a elección": devuelve el % de bono del
+// tramo más alto cuyo mínimo no supera el monto pagado (0 si no alcanza ninguno).
+export interface GiftCardTier { id?: string; minAmount: number; bonusPct: number }
+export function giftCardBonusPct(amount: number, tiers?: GiftCardTier[]): number {
+  if (!Array.isArray(tiers) || tiers.length === 0) return 0;
+  const a = Number(amount) || 0;
+  const eligibles = tiers
+    .filter((t) => (Number(t.minAmount) || 0) <= a)
+    .sort((x, y) => (Number(y.minAmount) || 0) - (Number(x.minAmount) || 0));
+  return eligibles.length ? (Number(eligibles[0].bonusPct) || 0) : 0;
+}
+// Saldo que recibe (regalás) a partir del monto pagado y los tramos.
+export function giftCardCustomValue(amount: number, tiers?: GiftCardTier[]): number {
+  const a = Number(amount) || 0;
+  const pct = giftCardBonusPct(a, tiers);
+  return Math.round(a * (1 + pct / 100));
+}
+
 export function giftCardPdfHtml(card: GiftCardPdfData, qrSvg: string): string {
   const venc = card.expires_at ? new Date(card.expires_at).toLocaleDateString('es-AR') : '';
   const value = '$' + (Number(card.value) || 0).toLocaleString('es-AR');
@@ -29,11 +47,9 @@ export function giftCardPdfHtml(card: GiftCardPdfData, qrSvg: string): string {
       body { font-family: Arial, Helvetica, sans-serif; margin: 0; padding: 30px; display: flex; justify-content: center; background: #f1f5f9; }
       .card {
         width: 560px; border-radius: 30px; overflow: hidden; position: relative;
-        background: #D90015;
-        background-image: radial-gradient(circle at 85% 12%, rgba(255,255,255,.14) 0 22%, transparent 23%),
-                          radial-gradient(circle at 10% 88%, rgba(0,0,0,.12) 0 26%, transparent 27%);
+        background-color: #D90015;
         color: #fff; padding: 34px 34px 30px; box-shadow: 0 16px 40px rgba(217,0,21,.28);
-        border: 1px solid rgba(255,255,255,.12);
+        border: 1px solid rgba(255,255,255,.18);
       }
       .ribbon { position:absolute; top:22px; right:-44px; transform: rotate(45deg); background:#fff; color:#D90015; font-weight:800; font-size:10px; letter-spacing:2px; padding:5px 56px; text-transform:uppercase; }
       .brand { font-size: 27px; font-weight: 800; letter-spacing: -0.5px; }

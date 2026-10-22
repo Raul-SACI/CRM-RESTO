@@ -57,6 +57,12 @@ export interface GiftCardConfig {
   isActive: boolean;
 }
 
+// Gift Card "a elección": el cliente pone el monto y se aplica un bono por tramos.
+export interface GiftCardCustomConfig {
+  enabled: boolean;
+  tiers: { id: string; minAmount: number; bonusPct: number }[];
+}
+
 export interface AutoNotifConfig {
   birthday: { enabled: boolean; message: string; giftPoints: number };
   comboExpiring: { enabled: boolean; message: string; daysBefore: number };
@@ -97,6 +103,8 @@ export interface DesignConfig {
 
   // Tramos de Gift Card que se venden en "Descuentos Exclusivos"
   giftCards?: GiftCardConfig[];
+  // Gift Card a elección (monto libre con bono por tramos)
+  giftCardCustom?: GiftCardCustomConfig;
 
   // Configuración editable del formulario de supervisión (clientes ocultos)
   supervision?: import('@/src/lib/supervision').SupervisionConfig;
@@ -219,6 +227,7 @@ export const DEFAULT_DESIGN: DesignConfig = {
   branches: [],
   combos: [],
   giftCards: [],
+  giftCardCustom: { enabled: false, tiers: [] },
   autoNotif: {
     birthday: {
       enabled: true,

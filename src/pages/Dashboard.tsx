@@ -13,7 +13,7 @@ import { supabase } from '@/src/lib/supabase';
 import { notifyClient, checkLevelUp } from '@/src/lib/notify';
 import { Transaction, SystemSettings, Profile, Prize, GiftCard } from '@/src/types';
 import { cn, isPrizeActiveNow } from '@/src/lib/utils';
-import { giftCardPdfHtml, printGiftCard, serializeQr } from '@/src/lib/giftcard';
+import { giftCardPdfHtml, printGiftCard, serializeQr, giftCardBonusPct, giftCardCustomValue } from '@/src/lib/giftcard';
 import { useDesign } from '@/src/components/DesignEngine';
 import { WelcomeGuide, CLIENT_GUIDE_STEPS } from '@/src/components/WelcomeGuide';
 
@@ -37,6 +37,7 @@ export function Dashboard() {
   const [justBoughtGiftCard, setJustBoughtGiftCard] = useState<GiftCard | null>(null);
   const [gcPersonalize, setGcPersonalize] = useState({ recipient: '', sender: '', message: '' });
   const [showGcInfo, setShowGcInfo] = useState(false);
+  const [customGcAmount, setCustomGcAmount] = useState('');
 
   const scrollOfertas = (dir: 'left' | 'right') => {
     if (ofertasScrollRef.current) {
@@ -1373,6 +1374,11 @@ export function Dashboard() {
     const activeCombosForSale = avCombos.filter((c: any) => c.isActive);
 
     const activeGiftCards = ((designConfig as any)?.giftCards || []).filter((g: any) => g.isActive && Number(g.value) > 0);
+    const giftCardCustom = (designConfig as any)?.giftCardCustom;
+    const customGcEnabled = !!giftCardCustom?.enabled;
+    const customAmountNum = Number((customGcAmount || '').replace(/\D/g, '')) || 0;
+    const customBonusPct = giftCardBonusPct(customAmountNum, giftCardCustom?.tiers);
+    const customGcValue = giftCardCustomValue(customAmountNum, giftCardCustom?.tiers);
 
     const branchesList = designConfig?.branches || [];
 
@@ -1681,7 +1687,7 @@ export function Dashboard() {
         </div>
 
         {/* 5b. Gift Cards */}
-        {activeGiftCards.length > 0 && (
+        {(activeGiftCards.length > 0 || customGcEnabled) && (
           <div className="space-y-3">
             <div className="flex justify-between items-center px-1">
               <div className="flex items-center gap-1.5">
@@ -1695,6 +1701,45 @@ export function Dashboard() {
               <span className="text-[8px] bg-love/15 text-love px-2 py-0.5 rounded-full font-black uppercase tracking-wider">Para regalar</span>
             </div>
             <div className="flex gap-4 overflow-x-auto no-scrollbar pb-1 px-0.5 scroll-smooth">
+              {/* Gift Card a elección (monto libre) */}
+              {customGcEnabled && (
+                <div className="shrink-0 w-[240px] bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 p-4 shadow-sm flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[8px] font-black uppercase tracking-[0.18em] text-slate-400">Gift Card</span>
+                      <span className="text-[8px] bg-love/15 text-love px-2 py-0.5 rounded-full font-black uppercase tracking-wider">A elección</span>
+                    </div>
+                    <div className="mt-2 rounded-2xl bg-love/5 border border-love/15 p-3">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">Elegí cuánto pagás</p>
+                      <div className="flex items-center justify-center gap-1 mt-1.5">
+                        <span className="text-xl font-black text-slate-400">$</span>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="0"
+                          value={customGcAmount ? customAmountNum.toLocaleString('es-AR') : ''}
+                          onChange={(e) => setCustomGcAmount(e.target.value.replace(/\D/g, ''))}
+                          className="w-28 bg-transparent border-b-2 border-love/30 text-2xl font-black text-ink text-center outline-none focus:border-love"
+                        />
+                      </div>
+                      <div className="mt-2 pt-2 border-t border-love/15 text-center">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">
+                          Regalás {customBonusPct > 0 && <span className="text-green-600">(+{customBonusPct}%)</span>}
+                        </p>
+                        <p className="text-2xl font-black text-love leading-none mt-0.5">${customGcValue.toLocaleString('es-AR')}</p>
+                      </div>
+                    </div>
+                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-2 text-center">Uso único · vence a los 30 días</p>
+                  </div>
+                  <button
+                    onClick={() => handleBuyGiftCard({ id: `custom-${Date.now()}`, price: customAmountNum, value: customGcValue })}
+                    disabled={isBuyingGiftCard || customAmountNum <= 0}
+                    className="mt-3 w-full py-2.5 bg-love hover:bg-love/90 text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all cursor-pointer border-none flex items-center justify-center gap-1.5 disabled:opacity-50"
+                  >
+                    {isBuyingGiftCard ? <><Loader2 size={14} className="animate-spin" /> Procesando…</> : <><Gift size={14} /> Regalar</>}
+                  </button>
+                </div>
+              )}
               {activeGiftCards.map((gc: any) => {
                 const extra = (Number(gc.value) || 0) - (Number(gc.price) || 0);
                 return (
