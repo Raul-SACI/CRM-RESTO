@@ -1325,8 +1325,10 @@ export function Admin() {
   const setGiftCardField = (id: string, patch: any) => {
     setGcList((prev) => prev.map((g) => (g.id === id ? { ...g, ...patch } : g)));
   };
-  // Guarda el borrador local actual (al salir del campo editado).
+  // Guarda el borrador local actual SOLO si cambió (al salir del campo editado).
   const persistGiftCards = async () => {
+    const current = ((designConfig as any)?.giftCards) || [];
+    if (JSON.stringify(current) === JSON.stringify(gcList)) return;
     await saveGiftCards(gcList);
   };
   const addGiftCard = async () => {
@@ -1371,7 +1373,12 @@ export function Admin() {
   const setGcTierField = (id: string, patch: any) => {
     setGcCustom((prev) => ({ ...prev, tiers: prev.tiers.map((t) => (t.id === id ? { ...t, ...patch } : t)) }));
   };
-  const persistGcCustom = async () => { await saveGcCustom(gcCustom); };
+  const persistGcCustom = async () => {
+    const current = (designConfig as any)?.giftCardCustom || { enabled: false, tiers: [] };
+    const now = { enabled: !!gcCustom.enabled, tiers: gcCustom.tiers || [] };
+    if (JSON.stringify({ enabled: !!current.enabled, tiers: current.tiers || [] }) === JSON.stringify(now)) return;
+    await saveGcCustom(gcCustom);
+  };
   const addGcTier = async () => {
     const id = (typeof crypto !== 'undefined' && (crypto as any).randomUUID) ? (crypto as any).randomUUID() : `tier_${Date.now()}`;
     const next = { ...gcCustom, tiers: [...gcCustom.tiers, { id, minAmount: 30000, bonusPct: 5 }] };
@@ -3366,13 +3373,11 @@ export function Admin() {
                     )}
                   </div>
 
-                  {/* Overlay de guardado: feedback claro al agregar/editar/eliminar/pausar */}
+                  {/* Aviso de guardado: chip chico en la esquina que NO bloquea la edición */}
                   {savingGiftCard && (
-                    <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-slate-950/40 backdrop-blur-sm">
-                      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl px-8 py-7 flex flex-col items-center gap-3">
-                        <div className="w-9 h-9 border-[3px] border-love/20 border-t-love rounded-full animate-spin" />
-                        <p className="text-[11px] font-black uppercase tracking-[0.25em] text-slate-500 dark:text-slate-300">Guardando…</p>
-                      </div>
+                    <div className="fixed bottom-5 right-5 z-[9999] pointer-events-none flex items-center gap-2 bg-ink text-white rounded-full px-4 py-2 shadow-xl">
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span className="text-[10px] font-black uppercase tracking-widest">Guardando…</span>
                     </div>
                   )}
 
