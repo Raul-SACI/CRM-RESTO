@@ -116,7 +116,7 @@ export function Admin() {
   // Invitaciones a cena (comp para clientes ocultos)
   const [invitations, setInvitations] = useState<MysteryInvitation[]>([]);
   const [mysteryShoppers, setMysteryShoppers] = useState<Profile[]>([]);
-  const [inviteForm, setInviteForm] = useState({ clientId: '', branch: '', date: '', title: 'Cena para 2 (cena + 2 bebidas)' });
+  const [inviteForm, setInviteForm] = useState({ clientId: '', branch: '', date: '', meal: 'Cena' });
   const [creatingInvite, setCreatingInvite] = useState(false);
   const [amountDrafts, setAmountDrafts] = useState<Record<string, string>>({});
   const [savingAmount, setSavingAmount] = useState<string | null>(null);
@@ -1910,11 +1910,12 @@ export function Admin() {
     if (!inviteForm.date) { alert('Elegí el día de la invitación.'); return; }
     setCreatingInvite(true);
     try {
+      const title = `${inviteForm.meal} para 2`;
       const { error } = await supabase.from('mystery_invitations').insert({
         client_id: inviteForm.clientId,
         branch: inviteForm.branch,
         valid_date: inviteForm.date,
-        title: inviteForm.title.trim() || 'Cena para 2 (cena + 2 bebidas)',
+        title,
         status: 'pendiente',
       });
       if (error) throw error;
@@ -1925,10 +1926,10 @@ export function Admin() {
         clientId: inviteForm.clientId,
         clientEmail: (shopper as any)?.email,
         title: '🍽️ Tenés una invitación especial',
-        message: `Te espera una ${inviteForm.title || 'Cena para 2'} en ${inviteForm.branch} para el ${fecha}. Ese día vas a poder usarla desde la sección Premios de tu app.`,
+        message: `Te espera un${inviteForm.meal === 'Cena' || inviteForm.meal === 'Merienda' ? 'a' : ''} ${title} en ${inviteForm.branch} para el ${fecha}. Ese día vas a poder usarla desde la sección Premios de tu app.`,
       });
 
-      setInviteForm({ clientId: '', branch: '', date: '', title: 'Cena para 2 (cena + 2 bebidas)' });
+      setInviteForm({ clientId: '', branch: '', date: '', meal: 'Cena' });
       await fetchData();
     } catch (err: any) {
       alert('No se pudo crear la invitación: ' + (err?.message || err));
@@ -7018,8 +7019,8 @@ export function Admin() {
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-ink/5 rounded-xl flex items-center justify-center text-ink">🍽️</div>
                     <div>
-                      <h3 className="text-xl font-black uppercase tracking-tighter text-ink">Invitaciones a <span className="text-love">cena</span></h3>
-                      <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mt-1">Cena para 2 cubierta, asignada a un cliente oculto</p>
+                      <h3 className="text-xl font-black uppercase tracking-tighter text-ink">Invitaciones a <span className="text-love">comer</span></h3>
+                      <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mt-1">Desayuno, merienda, almuerzo o cena para 2, asignada a un cliente oculto</p>
                     </div>
                   </div>
                   {invitations.some((i) => i.amount_spent) && (
@@ -7033,7 +7034,7 @@ export function Admin() {
                 </div>
 
                 {/* Crear invitación */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-3 p-4 rounded-2xl bg-slate-50 border border-slate-100 mb-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 p-4 rounded-2xl bg-slate-50 border border-slate-100 mb-5">
                   <div>
                     <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1 block">Cliente oculto</label>
                     <select value={inviteForm.clientId} onChange={(e) => setInviteForm({ ...inviteForm, clientId: e.target.value })}
@@ -7042,6 +7043,16 @@ export function Admin() {
                       {mysteryShoppers.map((s) => <option key={s.id} value={s.id}>{s.full_name}</option>)}
                     </select>
                     {mysteryShoppers.length === 0 && <p className="text-[9px] text-slate-400 mt-1 italic">Designá clientes ocultos en la pestaña Clientes.</p>}
+                  </div>
+                  <div>
+                    <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1 block">Tipo (para 2)</label>
+                    <select value={inviteForm.meal} onChange={(e) => setInviteForm({ ...inviteForm, meal: e.target.value })}
+                      className="w-full px-3 py-2 rounded-lg bg-white border border-slate-200 text-sm font-medium text-ink outline-none focus:border-love">
+                      <option value="Desayuno">Desayuno para 2</option>
+                      <option value="Merienda">Merienda para 2</option>
+                      <option value="Almuerzo">Almuerzo para 2</option>
+                      <option value="Cena">Cena para 2</option>
+                    </select>
                   </div>
                   <div>
                     <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1 block">Sucursal</label>
@@ -7086,7 +7097,7 @@ export function Admin() {
                               )}
                             </div>
                             <p className="text-[11px] text-slate-500 mt-0.5">
-                              {inv.branch} · {new Date(inv.valid_date + 'T00:00:00').toLocaleDateString('es-AR')}
+                              {inv.title ? `${inv.title} · ` : ''}{inv.branch} · {new Date(inv.valid_date + 'T00:00:00').toLocaleDateString('es-AR')}
                               {inv.code ? ` · Código ${inv.code}` : ''}
                               {inv.invoice_number ? ` · Comp: ${inv.invoice_number}` : ''}
                             </p>
