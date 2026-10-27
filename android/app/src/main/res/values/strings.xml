@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">CLUB CRAFT</string>
+    <string name="title_activity_main">CLUB CRAFT</string>
+    <string name="package_name">ar.com.craftclub.app</string>
+    <string name="custom_url_scheme">ar.com.craftclub.app</string>
+</resources>

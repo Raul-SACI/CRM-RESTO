@@ -6,3 +6,9 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Capacitor: web assets copiados (se regeneran con cap sync)
+android/app/src/main/assets/public/
+android/app/src/main/assets/capacitor.config.json
+android/app/src/main/res/xml/config.xml
+.gradle/
