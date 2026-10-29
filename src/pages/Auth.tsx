@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/src/lib/supabase';
 import { motion } from 'motion/react';
-import { User, Mail, Lock, CreditCard, Calendar, Info, AlertTriangle, ExternalLink } from 'lucide-react';
+import { User, Mail, Lock, CreditCard, Calendar, Info, AlertTriangle, ExternalLink, Eye, EyeOff } from 'lucide-react';
 import { cn, normalizeDni, capturePendingRef, getPendingRef, clearPendingRef } from '@/src/lib/utils';
 
 export function Auth() {
@@ -9,6 +9,7 @@ export function Auth() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showGoogleGuide, setShowGoogleGuide] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const [formData, setFormData] = useState({
     email: '',
@@ -237,13 +238,21 @@ export function Auth() {
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 placeholder="Contraseña"
                 required
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-4 text-sm focus:border-love outline-none transition-all placeholder:text-slate-300 text-ink"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-10 pr-11 text-sm focus:border-love outline-none transition-all placeholder:text-slate-300 text-ink"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword((v) => !v)}
+                title={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-ink bg-transparent border-none cursor-pointer p-0"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
 
             {error && (
