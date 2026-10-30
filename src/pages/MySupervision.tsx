@@ -414,7 +414,7 @@ export function MySupervision() {
               )}>
                 {uploadingPhoto ? <Loader2 size={18} className="animate-spin" /> : <Camera size={18} />}
                 {uploadingPhoto ? 'Subiendo…' : 'Tomar / subir foto'}
-                <input type="file" accept="image/*" capture="environment" onChange={handlePhoto} className="hidden" />
+                <input type="file" accept="image/*" onChange={handlePhoto} className="hidden" />
               </label>
             )}
           </Field>
