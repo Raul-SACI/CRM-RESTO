@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase, createIsolatedClient } from '@/src/lib/supabase';
 import { Profile, Prize, Transaction, SystemSettings, MysteryReport, MysteryInvitation } from '@/src/types';
 import { motion, AnimatePresence } from 'motion/react';
-import { Users, Gift, Settings, Search, Plus, Trash2, Pencil, Calendar, Award, History, DollarSign, Upload, Image as ImageIcon, FileSpreadsheet, UserPlus, X, Palette, Home, User, Star, MessageSquare, FileText, HelpCircle, LogOut, MapPin, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Package, Bell, Send, Sun, Moon, ShieldCheck, Clock, CheckCircle2, AlertTriangle, Download } from 'lucide-react';
+import { Users, Gift, Settings, Search, Plus, Trash2, Pencil, Calendar, Award, History, DollarSign, Upload, Image as ImageIcon, FileSpreadsheet, UserPlus, X, Palette, Home, User, Star, MessageSquare, FileText, HelpCircle, LogOut, MapPin, ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Package, Bell, Send, Sun, Moon, ShieldCheck, Clock, CheckCircle2, AlertTriangle, Download, Eye, EyeOff } from 'lucide-react';
 import { cn, normalizeDni } from '@/src/lib/utils';
 import * as XLSX from 'xlsx';
 import { useDesign, COLOR_PRESETS, CORNER_PRESETS, AVAILABLE_FONTS, type DesignConfig, type BannerConfig } from '@/src/components/DesignEngine';
@@ -110,6 +110,8 @@ export function Admin() {
   const [feedbacks, setFeedbacks] = useState<any[]>([]);
   // Supervisiones de clientes ocultos (mystery shoppers)
   const [mysteryReports, setMysteryReports] = useState<MysteryReport[]>([]);
+  // Ocultar la identidad del cliente oculto al mostrar/exportar las respuestas.
+  const [hideShopperData, setHideShopperData] = useState(false);
   const [rewardReport, setRewardReport] = useState<MysteryReport | null>(null);
   const [rewardForm, setRewardForm] = useState({ points: '', message: '' });
   const [rewardSaving, setRewardSaving] = useState(false);
@@ -2046,6 +2048,75 @@ export function Admin() {
     } catch (e: any) {
       alert('No se pudo eliminar la supervisión: ' + (e?.message || e));
     }
+  };
+
+  // Exporta las supervisiones a PDF (respeta el ocultar datos del cliente oculto).
+  const downloadSupervisionsPdf = () => {
+    const esc = (s: any) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const stars = (n?: number | null) => (n ? '★'.repeat(n) + '☆'.repeat(Math.max(0, 5 - n)) + ` (${n}/5)` : '—');
+    const customQs = resolveSupervisionConfig(designConfig?.supervision).customQuestions;
+
+    const cards = mysteryReports.map((r) => {
+      const cats = [
+        ['Limpieza local', r.rating_cleanliness], ['Limpieza baño', r.rating_cleanliness_bathroom],
+        ['Predisposición', r.rating_service], ['Estética comida', r.rating_aesthetics], ['Calidad comida', r.rating_food],
+        ['Estética bebida', r.rating_aesthetics_drink], ['Calidad bebida', r.rating_food_drink],
+      ].filter(([, v]) => !!v) as [string, number][];
+      const orderTypeLabel = r.order_type === 'bebida' ? 'Solo bebida' : r.order_type === 'bebida_comida' ? 'Bebida y comida' : '';
+      const waits = [
+        ['Espera atención', r.wait_greeting], ['Toma de pedido', r.wait_order_taken],
+        [`Entrega${orderTypeLabel ? ' · ' + orderTypeLabel : ''}`, r.wait_order_delivered], ['Cuenta', r.wait_bill],
+      ].filter(([, v]) => !!v) as [string, string][];
+      const ans = r.custom_answers || {};
+      const extra = customQs.map((q) => ({ q, val: (ans as any)[q.id] })).filter((x) => x.val !== undefined && x.val !== null && x.val !== '');
+
+      const shopper = hideShopperData ? 'Cliente oculto' : (r.profiles?.full_name || 'Cliente oculto');
+      const visit = `${r.visit_date ? new Date(r.visit_date + 'T00:00:00').toLocaleDateString('es-AR') : '—'}${r.visit_time ? ' · ' + r.visit_time + ' hs' : ''}`;
+
+      return (
+        `<section>` +
+        `<div class="head"><span class="branch">${esc(r.branch || 'Sin sucursal')}</span>` +
+        `<span class="st ${r.status === 'revisado' ? 'ok' : 'pend'}">${r.status === 'revisado' ? 'Revisado' : 'Pendiente'}</span></div>` +
+        `<p class="meta">Visita: ${esc(visit)} · ${esc(shopper)}${r.waiter_name ? ' · Atendió: ' + esc(r.waiter_name) : ''}</p>` +
+        `<p class="row"><b>General:</b> ${stars(r.rating_overall)}</p>` +
+        (cats.length ? `<ul>${cats.map(([l, v]) => `<li><b>${esc(l)}:</b> ${stars(v)}</li>`).join('')}</ul>` : '') +
+        (waits.length ? `<p class="row"><b>Tiempos:</b> ${waits.map(([l, v]) => `${esc(l)}: ${esc(v)}`).join(' · ')}</p>` : '') +
+        (r.comment ? `<p class="obs">“${esc(r.comment)}”</p>` : '') +
+        (extra.length ? `<ul>${extra.map(({ q, val }) => `<li><b>${esc(q.label)}:</b> ${q.type === 'stars' ? stars(Number(val)) : esc(val)}</li>`).join('')}</ul>` : '') +
+        (r.photo_url ? `<p class="row"><b>Foto:</b> <a href="${esc(r.photo_url)}">ver foto del plato</a></p>` : '') +
+        `</section>`
+      );
+    }).join('');
+
+    const html =
+      `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>Supervisiones-CLUB-CRAFT</title>` +
+      `<style>
+        *{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+        body{font-family:Arial,Helvetica,sans-serif;color:#0f172a;margin:0;padding:28px 32px;}
+        .brandhead{border-bottom:3px solid #D90015;padding-bottom:12px;margin-bottom:20px;}
+        .brandhead .b{font-size:26px;font-weight:800;}.brandhead .b .r{color:#D90015;}
+        .brandhead .s{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#64748b;margin-top:2px;}
+        section{border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px;margin-bottom:14px;break-inside:avoid;}
+        .head{display:flex;justify-content:space-between;align-items:center;}
+        .branch{font-weight:800;font-size:14px;text-transform:uppercase;}
+        .st{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1px;padding:3px 8px;border-radius:999px;}
+        .st.ok{background:#ecfdf5;color:#059669;}.st.pend{background:#fffbeb;color:#d97706;}
+        .meta{font-size:11px;color:#64748b;margin:4px 0 8px;}
+        .row{font-size:12.5px;margin:4px 0;color:#334155;}
+        ul{margin:4px 0;padding-left:20px;}li{font-size:12px;color:#334155;margin:1px 0;}
+        .obs{font-size:12.5px;font-style:italic;color:#475569;border-left:3px solid #fecaca;padding-left:10px;margin:6px 0;}
+        a{color:#D90015;}
+        @media print{@page{margin:14mm;}}
+      </style></head><body>` +
+      `<div class="brandhead"><div class="b">CLUB <span class="r">CRAFT</span></div><div class="s">Reportes de supervisión — Clientes ocultos</div></div>` +
+      `<p style="font-size:11px;color:#64748b;margin:0 0 16px">Generado el ${new Date().toLocaleString('es-AR')} · ${mysteryReports.length} supervisiones${hideShopperData ? ' · Identidad del cliente oculta' : ''}</p>` +
+      (cards || '<p>No hay supervisiones.</p>') +
+      `</body></html>`;
+
+    const w = window.open('', '_blank');
+    if (!w) { alert('El navegador bloqueó la ventana. Permití las ventanas emergentes para descargar el PDF.'); return; }
+    w.document.open(); w.document.write(html); w.document.close();
+    setTimeout(() => { try { w.focus(); w.print(); } catch { /* imprimir manual */ } }, 400);
   };
 
   const handleDeleteStaff = async (member: any) => {
@@ -7143,14 +7214,38 @@ export function Admin() {
               </div>
 
               <div className="bg-white rounded-[2rem] p-6 md:p-8 border border-slate-100 shadow-sm">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 bg-love/10 rounded-xl flex items-center justify-center text-love">
-                    <ShieldCheck size={20} />
+                <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-love/10 rounded-xl flex items-center justify-center text-love">
+                      <ShieldCheck size={20} />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-black uppercase tracking-tighter text-ink">Reportes de <span className="text-love">Supervisión</span></h3>
+                      <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mt-1">Solo vos podés ver esta información</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-xl font-black uppercase tracking-tighter text-ink">Reportes de <span className="text-love">Supervisión</span></h3>
-                    <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 mt-1">Solo vos podés ver esta información</p>
-                  </div>
+                  {mysteryReports.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setHideShopperData((v) => !v)}
+                        title={hideShopperData ? 'Mostrar identidad del cliente oculto' : 'Ocultar identidad del cliente oculto'}
+                        className={cn(
+                          "inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer border transition-all",
+                          hideShopperData ? "bg-ink text-white border-ink" : "bg-white text-slate-500 border-slate-200 hover:text-ink"
+                        )}
+                      >
+                        {hideShopperData ? <EyeOff size={14} /> : <Eye size={14} />}
+                        {hideShopperData ? 'Datos ocultos' : 'Ocultar datos'}
+                      </button>
+                      <button
+                        onClick={downloadSupervisionsPdf}
+                        title="Exportar las supervisiones a PDF"
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-love/10 text-love text-[10px] font-black uppercase tracking-widest cursor-pointer border-none hover:bg-love hover:text-white transition-all"
+                      >
+                        <Download size={14} /> Descargar PDF
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {mysteryReports.length === 0 ? (
@@ -7204,8 +7299,8 @@ export function Admin() {
                               </div>
 
                               <p className="text-sm font-extrabold text-ink mt-2">
-                                {r.profiles?.full_name || 'Cliente oculto'}
-                                <span className="text-[10px] font-mono text-slate-400 ml-2">{r.profiles?.email || ''}</span>
+                                {hideShopperData ? 'Cliente oculto' : (r.profiles?.full_name || 'Cliente oculto')}
+                                {!hideShopperData && <span className="text-[10px] font-mono text-slate-400 ml-2">{r.profiles?.email || ''}</span>}
                               </p>
                               {r.waiter_name && (
                                 <p className="text-[11px] text-slate-500 mt-0.5">Atendido por: <span className="font-bold text-ink">{r.waiter_name}</span></p>
