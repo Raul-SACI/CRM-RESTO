@@ -2036,6 +2036,18 @@ export function Admin() {
     }
   };
 
+  // Eliminar una supervisión (solo admin).
+  const handleDeleteReport = async (r: MysteryReport) => {
+    if (!confirm('¿Eliminar esta supervisión? Esta acción no se puede deshacer.')) return;
+    try {
+      const { error } = await supabase.from('mystery_reports').delete().eq('id', r.id);
+      if (error) throw error;
+      setMysteryReports((prev) => prev.filter((x) => x.id !== r.id));
+    } catch (e: any) {
+      alert('No se pudo eliminar la supervisión: ' + (e?.message || e));
+    }
+  };
+
   const handleDeleteStaff = async (member: any) => {
     if (member.email === 'administrador@organizacionysistemasr.com' || member.role === 'admin') {
       alert('No se puede eliminar una cuenta de administrador desde acá, por seguridad.');
@@ -7276,6 +7288,13 @@ export function Admin() {
                                 title={r.status === 'revisado' ? 'Volver a revisar / ajustar puntos' : 'Leer y regalar puntos'}
                               >
                                 <Gift size={13} /> {r.status === 'revisado' ? 'Ajustar' : 'Regalar puntos'}
+                              </button>
+                              <button
+                                onClick={() => handleDeleteReport(r)}
+                                className="flex items-center justify-center gap-1.5 bg-white text-slate-400 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:text-love hover:border-love/30 transition-all cursor-pointer border border-slate-200"
+                                title="Eliminar esta supervisión"
+                              >
+                                <Trash2 size={13} /> Eliminar
                               </button>
                             </div>
                           </div>
