@@ -8,7 +8,7 @@ import * as XLSX from 'xlsx';
 import { useDesign, COLOR_PRESETS, CORNER_PRESETS, AVAILABLE_FONTS, type DesignConfig, type BannerConfig } from '@/src/components/DesignEngine';
 import { BirthdayCalendar } from '@/src/components/BirthdayCalendar';
 import { notifyClient } from '@/src/lib/notify';
-import { resolveSupervisionConfig, SUP_TEXT_FIELDS, SUP_OPTION_LISTS, SUP_REQUIRED_FIELDS, SUP_SECTIONS, SUP_FIXED_SECTION_KEYS, DEFAULT_SUPERVISION, makeCustomQuestion, makeCustomSection, type SupervisionConfig, type CustomQuestion } from '@/src/lib/supervision';
+import { resolveSupervisionConfig, SUP_TEXT_FIELDS, SUP_REQUIRED_FIELDS, SUP_SECTIONS, SUP_FIXED_SECTION_KEYS, DEFAULT_SUPERVISION, makeCustomQuestion, makeCustomSection, type SupervisionConfig, type CustomQuestion } from '@/src/lib/supervision';
 import { useAuth, useTheme } from '@/src/App';
 import QRCode from 'react-qr-code';
 
@@ -6902,6 +6902,20 @@ export function Admin() {
                         else groups.push({ section: f.section, sectionKey: f.sectionKey, fields: [f] });
                       });
 
+                      // Editor inline de las opciones de respuesta de una pregunta.
+                      const optionEditor = (key: string, label: string) => (
+                        <div className="mt-2">
+                          <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1 block">{label}</label>
+                          <textarea
+                            rows={3}
+                            value={((supDraft as any)[key] as string[]).join('\n')}
+                            onChange={(e) => setSupOptions(key, e.target.value.split('\n'))}
+                            placeholder="Una opción por línea"
+                            className="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm font-medium text-ink outline-none focus:border-love resize-none font-mono text-xs"
+                          />
+                        </div>
+                      );
+
                       const renderFixedField = (f: typeof SUP_TEXT_FIELDS[number]) => {
                         const excluded = (supDraft.disabledFields || []).includes(f.key);
                         const required = SUP_REQUIRED_FIELDS.includes(f.key);
@@ -6961,6 +6975,17 @@ export function Admin() {
                                 </div>
                               </div>
                             )}
+
+                            {/* Opciones de respuesta de esta pregunta (una por línea) */}
+                            {f.key === 'waitGreeting' && optionEditor('waitGreetingOptions', 'Opciones de respuesta')}
+                            {f.key === 'waitOrderTaken' && optionEditor('waitOrderTakenOptions', 'Opciones de respuesta')}
+                            {f.key === 'waitBill' && optionEditor('waitBillOptions', 'Opciones de respuesta')}
+                            {f.key === 'waitOrderDelivered' && (
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-1">
+                                {optionEditor('deliverDrinkOptions', 'Opciones si pidió solo bebida')}
+                                {optionEditor('deliverFoodOptions', 'Opciones si pidió bebida y comida')}
+                              </div>
+                            )}
                           </div>
                         );
                       };
@@ -6980,25 +7005,7 @@ export function Admin() {
                       });
                     })()}
 
-                    {/* Listas de opciones (una por línea) */}
-                    <div className="pt-2">
-                      <p className="text-[11px] font-black uppercase tracking-[0.2em] text-love mb-2">Opciones de respuesta</p>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {SUP_OPTION_LISTS.map((o) => (
-                          <div key={o.key}>
-                            <label className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1 block">{o.label}</label>
-                            <textarea
-                              rows={3}
-                              value={(supDraft[o.key] as string[]).join('\n')}
-                              onChange={(e) => setSupOptions(o.key, e.target.value.split('\n'))}
-                              placeholder="Una opción por línea"
-                              className="w-full px-3 py-2 rounded-lg bg-slate-50 border border-slate-200 text-sm font-medium text-ink outline-none focus:border-love resize-none font-mono text-xs"
-                            />
-                          </div>
-                        ))}
-                      </div>
-                      <p className="text-[10px] text-slate-400 mt-2 italic">Escribí una opción por línea. Cambiar estas opciones no afecta los reportes ya enviados.</p>
-                    </div>
+                    <p className="text-[10px] text-slate-400 italic pt-1">En las preguntas de opciones, escribí una opción por línea. Cambiar estas opciones no afecta los reportes ya enviados.</p>
 
                     {/* Secciones nuevas creadas por el admin */}
                     <div className="pt-2 border-t border-slate-100">
