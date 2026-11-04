@@ -151,8 +151,8 @@ export interface DesignConfig {
 }
 
 export const DEFAULT_DESIGN: DesignConfig = {
-  fontSans: 'Epilogue',
-  fontHeadings: 'Epilogue',
+  fontSans: 'Inter',
+  fontHeadings: 'Inter',
   primaryColor: '#D90015',
   primaryColorHover: '#D90015',
   primaryColorRgb: '239, 68, 68',
@@ -324,6 +324,16 @@ export const CORNER_PRESETS = [
   { name: 'Extra Redondo (Playful)', lg: '40px', md: '24px', sm: '12px' }
 ];
 
+// Migración tipográfica: las configuraciones viejas quedaron con 'Epilogue'
+// (el default anterior). Las subimos a 'Inter' para unificar la estética limpia.
+// Si el admin elige a propósito otra fuente desde el panel de Diseño, se respeta.
+export function migrateLegacyFonts<T extends { fontSans?: string; fontHeadings?: string }>(cfg: T): T {
+  const next = { ...cfg };
+  if (!next.fontSans || next.fontSans === 'Epilogue') next.fontSans = 'Inter';
+  if (!next.fontHeadings || next.fontHeadings === 'Epilogue') next.fontHeadings = 'Inter';
+  return next;
+}
+
 // Available Google Fonts for dropdown selection
 export const AVAILABLE_FONTS = [
   'Epilogue',
@@ -380,11 +390,11 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
       if (data && data.description) {
         const parsed = JSON.parse(data.description);
         // Fallbacks for any newly added fields to prevent crashes
-        const merged = {
+        const merged = migrateLegacyFonts({
           ...DEFAULT_DESIGN,
           ...parsed,
           banners: Array.isArray(parsed.banners) ? parsed.banners : DEFAULT_DESIGN.banners
-        };
+        });
         setDesignConfig(merged);
         // Guardamos en caché local para pintar instantáneo en la próxima carga.
         try { localStorage.setItem('design_config_cache', JSON.stringify(merged)); } catch (e) { /* cuota llena */ }
@@ -405,7 +415,7 @@ export function DesignProvider({ children }: { children: React.ReactNode }) {
     try {
       const cached = localStorage.getItem('design_config_cache');
       if (cached) {
-        setDesignConfig({ ...DEFAULT_DESIGN, ...JSON.parse(cached) });
+        setDesignConfig(migrateLegacyFonts({ ...DEFAULT_DESIGN, ...JSON.parse(cached) }));
         setLoading(false);
       }
     } catch (e) { /* caché inválida: seguimos con el fetch */ }
