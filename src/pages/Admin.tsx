@@ -2236,7 +2236,7 @@ export function Admin() {
               <h2 className="text-xl md:text-2xl font-black uppercase tracking-tighter italic !text-slate-900 dark:!text-white">
                 CLUB <span className="text-love dark:text-white">CRAFT</span>
               </h2>
-              <p className="text-[9px] md:text-[10px] uppercase tracking-[0.25em] !text-slate-500 dark:!text-white/50 font-bold font-mono">
+              <p className="text-[9px] md:text-[10px] uppercase tracking-[0.18em] !text-slate-400 dark:!text-white/50 font-medium mt-0.5">
                 Panel Administrativo
               </p>
             </div>
@@ -2264,7 +2264,7 @@ export function Admin() {
           className={cn(
             "flex items-center justify-center bg-slate-950 hover:bg-slate-900 dark:!bg-[#141414] dark:hover:!bg-[#222] text-white transition-all shadow-lg active:scale-95 cursor-pointer",
             isSidebarExpanded 
-              ? "w-full gap-2 px-4 py-3 text-[10px] font-black uppercase tracking-widest rounded-2xl" 
+              ? "w-full gap-2 px-4 py-3 text-[12px] font-semibold tracking-normal rounded-xl" 
               : "w-11 h-11 p-0 rounded-xl lg:mx-auto"
           )}
           title="Ver la aplicación exactamente como la ve un cliente"
@@ -2283,7 +2283,7 @@ export function Admin() {
           className={cn(
             "flex items-center justify-center bg-slate-950 hover:bg-slate-800 dark:!bg-[#141414] dark:hover:!bg-[#222] text-white transition-all shadow-sm active:scale-95 cursor-pointer mt-2",
             isSidebarExpanded
-              ? "w-full gap-2 px-4 py-3 text-[10px] font-black uppercase tracking-widest rounded-2xl"
+              ? "w-full gap-2 px-4 py-3 text-[12px] font-semibold tracking-normal rounded-xl"
               : "w-11 h-11 p-0 rounded-xl lg:mx-auto"
           )}
           title="Ver la pantalla de caja tal como la usa el cajero"
@@ -2297,7 +2297,7 @@ export function Admin() {
           className={cn(
             "flex items-center justify-center bg-slate-100 hover:bg-slate-200 dark:!bg-[#283548] dark:hover:!bg-[#374151] text-slate-700 dark:text-amber-400 transition-all shadow-sm active:scale-95 cursor-pointer mt-2 border-none",
             isSidebarExpanded
-              ? "w-full gap-2 px-4 py-3 text-[10px] font-black uppercase tracking-widest rounded-2xl"
+              ? "w-full gap-2 px-4 py-3 text-[12px] font-semibold tracking-normal rounded-xl"
               : "w-11 h-11 p-0 rounded-xl lg:mx-auto"
           )}
           title="Cambiar entre modo claro y oscuro"
@@ -2357,13 +2357,13 @@ export function Admin() {
                 key={tab}
                 onClick={() => setActiveTab(tab as any)}
                 className={cn(
-                  "flex items-center rounded-lg text-[10px] md:text-[13px] font-bold tracking-wide transition-all whitespace-nowrap font-mono",
+                  "flex items-center rounded-xl text-[11px] md:text-[13.5px] tracking-normal transition-all whitespace-nowrap",
                   isSidebarExpanded
-                    ? "gap-2.5 px-3 lg:px-4 py-2 lg:py-2.5 lg:w-full lg:justify-start"
+                    ? "gap-3 px-3 lg:px-3.5 py-2 lg:py-2.5 lg:w-full lg:justify-start"
                     : "justify-center p-3 lg:w-12 lg:h-12 lg:mx-auto",
                   activeTab === tab
-                    ? "bg-love text-white shadow-md shadow-love/25 dark:bg-amber-500 dark:text-amber-950"
-                    : "text-slate-700 hover:text-ink lg:hover:bg-slate-100 dark:text-white/70 dark:hover:text-white dark:hover:bg-white/10"
+                    ? "bg-love text-white font-semibold shadow-sm shadow-love/25 dark:bg-amber-500 dark:text-amber-950"
+                    : "text-slate-600 font-medium hover:text-ink lg:hover:bg-slate-100 dark:text-white/70 dark:hover:text-white dark:hover:bg-white/10"
                 )}
                 title={labels[tab]}
               >
@@ -2379,8 +2379,8 @@ export function Admin() {
                   <div key={g.title} className={cn("contents lg:block", isSidebarExpanded ? "lg:mb-2" : "")}>
                     {isSidebarExpanded && (
                       <p className={cn(
-                        "hidden lg:block text-[8px] uppercase tracking-[0.2em] font-black text-slate-400 dark:text-white/40 px-4 mb-2",
-                        gi > 0 ? "mt-5" : "mt-4"
+                        "hidden lg:block text-[10px] uppercase tracking-[0.14em] font-semibold text-slate-400 dark:text-white/40 px-3.5 mb-1.5",
+                        gi > 0 ? "mt-5" : "mt-3"
                       )}>
                         {g.title}
                       </p>
@@ -2393,23 +2393,49 @@ export function Admin() {
           })()}
         </div>
 
-        {/* Acciones inferiores: cerrar sesión */}
+        {/* Acciones inferiores: perfil + cerrar sesión (estilo sistema de gestión) */}
         <div className={cn(
-          "hidden lg:flex flex-col gap-1.5 mt-3 pt-3 border-t border-slate-200 dark:border-white/15",
+          "hidden lg:flex flex-col gap-2 mt-3 pt-3 border-t border-slate-200 dark:border-white/15",
           !isSidebarExpanded && "items-center"
         )}>
+          {(() => {
+            const name = realProfile?.full_name?.trim() || 'Administrador';
+            const initials = name.split(/\s+/).slice(0, 2).map(p => p[0]).join('').toUpperCase() || 'A';
+            const roleLabel = realProfile?.role === 'admin'
+              ? 'Administrador'
+              : realProfile?.role === 'waiter'
+                ? 'Cajero'
+                : (realProfile?.role || 'Usuario');
+            const branchLabel = realProfile?.branch || 'Todas las sucursales';
+            return (
+              <div className={cn(
+                "flex items-center gap-3",
+                isSidebarExpanded ? "px-1 py-1" : "flex-col"
+              )}>
+                <div className="w-9 h-9 rounded-full bg-love text-white flex items-center justify-center text-[12px] font-bold shrink-0 shadow-sm">
+                  {initials}
+                </div>
+                {isSidebarExpanded && (
+                  <div className="min-w-0">
+                    <p className="text-[13px] font-semibold text-slate-800 dark:text-white truncate leading-tight">{name}</p>
+                    <p className="text-[10px] uppercase tracking-[0.12em] text-slate-400 dark:text-white/50 font-medium truncate">{roleLabel} · {branchLabel}</p>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
           <button
             onClick={signOut}
             className={cn(
-              "flex items-center rounded-xl text-[10px] md:text-sm font-black uppercase tracking-wider transition-all whitespace-nowrap text-love dark:text-white hover:text-white hover:bg-love dark:hover:bg-white/15",
+              "flex items-center rounded-xl text-[12px] md:text-[13px] font-semibold transition-all whitespace-nowrap text-slate-500 hover:text-white hover:bg-love dark:text-white/80 dark:hover:bg-white/15",
               isSidebarExpanded
-                ? "gap-2.5 px-4 lg:px-5 py-2.5 lg:py-3.5 lg:w-full lg:justify-start"
+                ? "gap-3 px-3 lg:px-3.5 py-2.5 lg:w-full lg:justify-start"
                 : "justify-center p-3 lg:w-12 lg:h-12"
             )}
             title="Cerrar Sesión"
           >
-            <LogOut size={14} />
-            {isSidebarExpanded && <span>Cerrar Sesión</span>}
+            <LogOut size={15} />
+            {isSidebarExpanded && <span>Cerrar sesión</span>}
           </button>
         </div>
       </div>
