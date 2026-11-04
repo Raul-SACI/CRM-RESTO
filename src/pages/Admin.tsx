@@ -2473,7 +2473,7 @@ export function Admin() {
           {activeTab === 'dashboard' && (
             <div className="space-y-6">
               {/* Grid de Métricas Rápidas (arriba) */}
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
                 <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-col items-center">
                   <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Clientes Totales</p>
                   <p className="text-lg font-black text-love mt-1 font-mono">{clients.length.toLocaleString('es-AR')}</p>
@@ -2505,6 +2505,34 @@ export function Admin() {
                   <p className="text-lg font-black text-ink mt-1 font-mono">{dashboardData.comboMpUnits} u.</p>
                   <p className="text-[10px] font-black text-emerald-600 font-mono">${dashboardData.comboMpAmount.toLocaleString('es-AR')}</p>
                 </div>
+                {(() => {
+                  // Edad a partir de la fecha de nacimiento (acepta AAAA-MM-DD y DD/MM/AAAA).
+                  const ageFromBirth = (bd?: string | null): number | null => {
+                    if (!bd) return null;
+                    const s = String(bd).trim();
+                    let y: number, mo: number, d: number;
+                    const iso = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+                    const dmy = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+                    if (iso) { y = +iso[1]; mo = +iso[2]; d = +iso[3]; }
+                    else if (dmy) { d = +dmy[1]; mo = +dmy[2]; y = +dmy[3]; }
+                    else return null;
+                    if (!y || !mo || !d || mo > 12 || d > 31) return null;
+                    const now = new Date();
+                    let age = now.getFullYear() - y;
+                    const m = (now.getMonth() + 1) - mo;
+                    if (m < 0 || (m === 0 && now.getDate() < d)) age--;
+                    return age >= 0 && age <= 120 ? age : null;
+                  };
+                  const ages = clients.map(c => ageFromBirth(c.birth_date)).filter((a): a is number => a !== null);
+                  const avg = ages.length ? Math.round(ages.reduce((acc, a) => acc + a, 0) / ages.length) : null;
+                  return (
+                    <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex flex-col items-center">
+                      <p className="text-[8px] font-black uppercase tracking-widest text-slate-400 text-center">Edad Promedio</p>
+                      <p className="text-lg font-black text-love mt-1 font-mono">{avg !== null ? `${avg} años` : '—'}</p>
+                      <p className="text-[10px] font-semibold text-slate-400 font-mono">{ages.length} con fecha</p>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Calendario de cumpleaños de clientes */}
